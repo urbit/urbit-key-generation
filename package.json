@@ -1,0 +1,29 @@
+{
+  "name": "urbit-keygen",
+  "version": "0.0.0",
+  "description": "Wrapper functions for key generation according to the Urbit hierarchical wallet design.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/urbit/keygen-js.git"
+  },
+  "keywords": [
+    "urbit"
+  ],
+  "author": "Tlon",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/urbit/keygen-js/issues"
+  },
+  "homepage": "https://github.com/urbit/keygen-js#readme",
+  "dependencies": {
+    "argon2-wasm": "git+https://git@github.com/urbit/argon2-wasm.git",
+    "bip32": "^1.0.2",
+    "hmac-drbg": "^1.0.1",
+    "isomorphic-webcrypto": "^1.6.0",
+    "tweetnacl": "^1.0.0"
+  }
+}
