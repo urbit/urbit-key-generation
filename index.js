@@ -40,21 +40,20 @@ async function argon2u(entropy, ticketSize)
   });
 }
 
-function getChildSeed(seed, salt) // Uint8Array, string
+function getChildSeed(seed, type, series, ship) // Uint8Array, string, ...
 {
   return crypto.subtle.digest(
     {name: 'SHA-512'},
-    Buffer.concat([Buffer.from(seed), Buffer.from(salt)])
+    Buffer.concat([
+      Buffer.from(seed),
+      Buffer.from(type+'-'+series+'-'+ship)
+    ])
   );
 }
 
 function walletFromSeed(seed)
 {
-  return bip32.fromSeed(Buffer.from(seed));
-}
-
-function walletToData(wallet)
-{
+  let wallet = bip32.fromSeed(Buffer.from(seed));
   return {
     public:  buf2hex(wallet.publicKey),
     private: buf2hex(wallet.privateKey),
@@ -62,48 +61,64 @@ function walletToData(wallet)
   }
 }
 
-async function generateFullWallet(ticket, transferKeys, spawnKeys, ships)
+async function deriveWallet(startSeed, path)
+{
+  let childSeed = startSeed;
+  for(i = 0; i < path.length; i++)
+  {
+    let node = path[i];
+    childSeed = await getChildSeed(childSeed, node.type, node.series, node.ship);
+  }
+  return walletFromSeed(Buffer.from(ownerSeed));
+}
+
+async function generateSparseWallet(entropy, ships)
+{
+  let result = generateFullWallet(entropy, ships);
+  let maxi = 0;
+  for (i = 0; i < ships.length; i++)
+  {
+    if(ships[i] > ships[maxi]) maxi = i;
+  }
+  result = await result;
+  result.manageKeys = [result.manageKeys[maxi]];
+  return result;
+}
+
+async function generateFullWallet(entropy, ships)
 {
   let result = {};
 
-  let ownerSeed = (await argon2u(ticket, 16)).hash; // Uint8Array
-  result.owner = walletToData(walletFromSeed(Buffer.from(ownerSeed)));
+  let ownerSeed = (await argon2u(entropy, 16)).hash; // Uint8Array
+  result.owner = walletFromSeed(Buffer.from(ownerSeed));
 
-  let transferSeed    = await getChildSeed(ownerSeed, 'transferseed'+0);
-  let transferMaster  = walletFromSeed(Buffer.from(await transferSeed));
   result.transferKeys = [];
-  for(i = 0; i < transferKeys; i++)
+  result.spawnKeys    = [];
+  result.manageKeys   = [];
+  result.urbitKeys    = [];
+  for (i = 0; i < ships.length; i++)
   {
-    result.transferKeys[i] = walletToData(transferMaster.derive(i));
-  }
+    let ship = ships[i];
 
-  let spawnSeed    = await getChildSeed(transferSeed, 'spawnseed'+0);
-  let spawnMaster  = walletFromSeed(Buffer.from(spawnSeed));
-  result.spawnKeys = [];
-  for(i = 0; i < spawnKeys; i++)
-  {
-    result.spawnKeys[i] = walletToData(spawnMaster.derive(i));
-  }
+    let transferSeed = await getChildSeed(ownerSeed, 'transfer', 0, ship);
+    result.transferKeys[i] = walletFromSeed(transferSeed);
 
-  let manageSeed    = await getChildSeed(spawnSeed, 'manageseed'+0);
-  let urbitSeed     = await getChildSeed(manageSeed, 'urbitseed'+0);
-  let manageMaster  = walletFromSeed(Buffer.from(manageSeed));
-  result.manageKeys = [];
-  result.liveKeys   = [];
-  urbitSeed;
-  for(i = 0; i < ships; i++)
-  {
-    let liveSeed = getChildSeed(urbitSeed, 'liveseed'+i);
-    result.manageKeys[i] = walletToData(manageMaster.derive(i));
+    let spawnSeed    = await getChildSeed(transferSeed, 'spawn', 0, ship);
+    result.spawnKeys[i]    = walletFromSeed(spawnSeed);
+
+    let manageSeed   = await getChildSeed(transferSeed, 'manage', 0, ship);
+    result.manageKeys[i]   = walletFromSeed(manageSeed);
+
+    let urbitSeed    = await getChildSeed(manageSeed, 'urbit', 0, ship);
     let auth = nacl.sign.keyPair.fromSeed(
       // the nacl function only accepts 32-byte seeds
-      Buffer.from((await liveSeed).slice(0,32))
+      Buffer.from(urbitSeed.slice(0,32))
     );
     //TODO crypt should use curve25519, which is somehow different from ed25519
     let crypt = nacl.sign.keyPair.fromSeed(
-      Buffer.from((await liveSeed).slice(0,32))
+      Buffer.from(urbitSeed.slice(0,32))
     );
-    result.liveKeys[i] = {
+    result.urbitKeys[i] = {
       auth: {
         public:  buf2hex(auth.publicKey),
         private: buf2hex(auth.secretKey)
@@ -112,7 +127,7 @@ async function generateFullWallet(ticket, transferKeys, spawnKeys, ships)
         public:  buf2hex(crypt.publicKey),
         private: buf2hex(crypt.secretKey)
       }
-    }
+    };
   }
 
   return result;
@@ -120,5 +135,6 @@ async function generateFullWallet(ticket, transferKeys, spawnKeys, ships)
 
 module.exports = {
   argon2u,
+  generateSparseWallet,
   generateFullWallet
 };
