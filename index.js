@@ -72,6 +72,27 @@ async function deriveWallet(startSeed, path)
   return walletFromSeed(Buffer.from(ownerSeed));
 }
 
+// matches ++pit:nu:crub:crypto
+function urbitKeysFromSeed(seed, size)
+{
+  let hash = [];
+  nacl.lowlevel.crypto_hash(hash, seed.reverse(), size);
+  let c = hash.slice(32);
+  let a = hash.slice(0, 32);
+  let crypt = nacl.sign.keyPair.fromSeed(Buffer.from(c));
+  let auth = nacl.sign.keyPair.fromSeed(Buffer.from(a));
+  return {
+    crypt: {
+      private: buf2hex(c.reverse()),
+      public: buf2hex(crypt.publicKey.reverse())
+    },
+    auth: {
+      private: buf2hex(a.reverse()),
+      public: buf2hex(auth.publicKey.reverse())
+    }
+  }
+}
+
 async function generateSparseWallet(entropy, ships)
 {
   let result = generateFullWallet(entropy, ships);
@@ -110,24 +131,8 @@ async function generateFullWallet(entropy, ships)
     result.manageKeys[i]   = walletFromSeed(manageSeed);
 
     let urbitSeed    = await getChildSeed(manageSeed, 'urbit', 0, ship);
-    let auth = nacl.sign.keyPair.fromSeed(
-      // the nacl function only accepts 32-byte seeds
-      Buffer.from(urbitSeed.slice(0,32))
-    );
-    //TODO crypt should use curve25519, which is somehow different from ed25519
-    let crypt = nacl.sign.keyPair.fromSeed(
-      Buffer.from(urbitSeed.slice(0,32))
-    );
-    result.urbitKeys[i] = {
-      auth: {
-        public:  buf2hex(auth.publicKey),
-        private: buf2hex(auth.secretKey)
-      },
-      crypt:  {
-        public:  buf2hex(crypt.publicKey),
-        private: buf2hex(crypt.secretKey)
-      }
-    };
+    let usb = Buffer.from(urbitSeed);
+    result.urbitKeys[i] = urbitKeysFromSeed(usb, usb.length);
   }
 
   return result;
