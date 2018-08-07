@@ -4,7 +4,7 @@ npm install
 
 ```
 > kg = require('.')
-> kg.generateFullWallet('16+ bytes entropy', 1, 1, 1).then(console.log).catch(console.error)
+> kg.generateFullWallet('16+ bytes entropy', [1]).then(console.log).catch(console.error)
 Promise { ... }
 { owner:
    { public:
@@ -15,34 +15,34 @@ Promise { ... }
       'a513838d35e2d26aeee6e742a5a616395c317cbfc15b0835a4492e8a9633404a' },
   transferKeys:
    [ { public:
-        '02d60fd37b79766fa46f7c812ea91574a3ee7d88edafe6438a4b314d6c935dd68d',
+        '022ca29b0c5917896d32500b34e9e6a9f654f629ddfb9e75b149fec14394a87e7f',
        private:
-        'f88b21561cb8ffd57614ec0b6c2474e8de3ecd1894efdd495c503a8b616f46ca',
+        '0fd2d05f404dc0fe29cb9753255567326d4489295b058f0ff9be70aa441b5d7d',
        chain:
-        '33049cb88c52f72119d402a04ef522204feeaab3e4193015986b5877847449f1' } ],
+        '17e2c784d2358c50df4437708a9952841836bd0f53f5a2061e57ecf436cd610b' } ],
   spawnKeys:
    [ { public:
-        '02ed8202727883438c5f8f94f56da65fa617ce638a3c2c95647133441e9e6b236a',
+        '03faf7091d69d4bf9c19a03b56d55932d3fd72506b83bba535c469dc642b0b0546',
        private:
-        '2c41a0ec72d3a7e121340fde98674c02c8a2f5a3ba66e97d38aea3f24f5b0531',
+        '37fe5e06283fbc60f800a8042dde69272247e21a3f8f7db2d1ed58e51622eca6',
        chain:
-        '3865d59bc99ab15c06e830342d8f021e1a4e1e3dd434b35a2804f90d4e4ea3ec' } ],
+        'd9a1c49465a52148b072eacef40403793c6de0859cc2d2bcc2673130ff178ce5' } ],
   manageKeys:
    [ { public:
-        '029a18c0ff96fc3fc1964fbc09463272747b9a87d4fefbd093b7da7e942b242d23',
+        '0354a10b954ae4a3d4ff901e2cec87656f62d9a42d5bb538fba00f39efe2872873',
        private:
-        'eda1d902a583d55eaaac578f62789e9c05363d611e1693c8f1df986dea01fbc9',
+        'b61d78c8c3114d689579603bf2d6c85351c284a6c1e4a72948f73a98768eee20',
        chain:
-        '43b6c27b3a79645816080dbd9d643366ef7f6aa67a6ba0abb75279a10bbf1d4b' } ],
-  liveKeys:
-   [ { auth:
-        { public:
-           '42a8bb603f84293f7e0ea6925a4c5eefc6f28fc8e8182f611eda41fb6b7a2376',
-          private:
-           '5b683e3def02b0e57f208af7fe8064d0df008fd718340a996530feb61f48816c42a8bb603f84293f7e0ea6925a4c5eefc6f28fc8e8182f611eda41fb6b7a2376' },
-       crypt:
-        { public:
-           '42a8bb603f84293f7e0ea6925a4c5eefc6f28fc8e8182f611eda41fb6b7a2376',
-          private:
-           '5b683e3def02b0e57f208af7fe8064d0df008fd718340a996530feb61f48816c42a8bb603f84293f7e0ea6925a4c5eefc6f28fc8e8182f611eda41fb6b7a2376' } } ] }
+        '36863615a3ef8692d0b6379466485b5e9c4a8c95b2f505c87ac37986be76debe' } ],
+  urbitKeys:
+   { crypt:
+      { private:
+         'dad3c87827dd85b619b1a48fd111c72e3729ec9b65365331b6f065fed2115fef',
+        public:
+         '45dba1df79d35ed80614eb929a707b87cd264d3c908af98d81df8c6a29e93ecd' },
+     auth:
+      { private:
+         '076b0e12e8696bc092a6441b9da71c0f146ebd38ba43f5299433377777154e9f',
+        public:
+         '36ecfa7d385e29e354692ed79e5b3bb34483f2c390b9dcdc4cd580ed6bd1a3e7' } } ] }
 ```
