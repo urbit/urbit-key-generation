@@ -6,7 +6,8 @@ const drbg = require('hmac-drbg');
 const hash = require('hash.js');
 
 //TODO figure out which format to work with externally: Buffer, Uint8Array, BufferArray?
-//TODO lots of discussion about desired interface etc
+//TODO generate arbitrary-length seeds
+//TODO maybe variable for storing password so you don't have to pass it in?
 
 function buf2hex(buffer) // ArrayBuffer
 {
@@ -40,20 +41,27 @@ async function argon2u(entropy, ticketSize)
   });
 }
 
-function getChildSeed(seed, type, series, ship) // Uint8Array, string, ...
+function getChildSeed(seed, type, revision, ship, password) // Uint8Array, string, ...
 {
+  let salt = type+'-'+revision;
+  if (typeof ship === 'number') salt = salt+'-'+ship;
   return crypto.subtle.digest(
     {name: 'SHA-512'},
     Buffer.concat([
       Buffer.from(seed),
-      Buffer.from(type+'-'+series+'-'+ship)
+      Buffer.from(salt),
+      Buffer.from(password || '')
     ])
   );
 }
 
-function walletFromSeed(seed)
+function walletFromSeed(seed, password)
 {
-  let wallet = bip32.fromSeed(Buffer.from(seed));
+  //TODO doesn't support seeds of lengths < 128 bits and > 512
+  let wallet = bip32.fromSeed(Buffer.concat([
+    Buffer.from(seed),
+    Buffer.from(password || '')
+  ]));
   return {
     public:  buf2hex(wallet.publicKey),
     private: buf2hex(wallet.privateKey),
@@ -67,16 +75,17 @@ async function deriveWallet(startSeed, path)
   for(i = 0; i < path.length; i++)
   {
     let node = path[i];
-    childSeed = await getChildSeed(childSeed, node.type, node.series, node.ship);
+    childSeed = await getChildSeed(childSeed, node.type, node.revision, node.ship);
   }
   return walletFromSeed(Buffer.from(ownerSeed));
 }
 
 // matches ++pit:nu:crub:crypto
-function urbitKeysFromSeed(seed, size)
+function urbitKeysFromSeed(seed, size, password)
 {
+  seed = Buffer.concat([seed, Buffer.from(password || '')]);
   let hash = [];
-  nacl.lowlevel.crypto_hash(hash, seed.reverse(), size);
+  nacl.lowlevel.crypto_hash(hash, seed.reverse(), seed.length);
   let c = hash.slice(32);
   let a = hash.slice(0, 32);
   let crypt = nacl.sign.keyPair.fromSeed(Buffer.from(c));
@@ -93,46 +102,44 @@ function urbitKeysFromSeed(seed, size)
   }
 }
 
-async function generateSparseWallet(entropy, ships)
+async function fullWalletFromEntropy(entropy, ships, password)
 {
-  let result = generateFullWallet(entropy, ships);
-  let maxi = 0;
-  for (i = 0; i < ships.length; i++)
-  {
-    if(ships[i] > ships[maxi]) maxi = i;
-  }
-  result = await result;
-  result.manageKeys = [result.manageKeys[maxi]];
-  return result;
+  let ownerSeed = (await argon2u(entropy, 16)).hash; // Uint8Array
+  return fullWalletFromSeed(ownerSeed, ships, password);
 }
 
-async function generateFullWallet(entropy, ships)
+async function fullWalletFromSeed(ownerSeed, ships, password)
 {
   let result = {};
 
-  let ownerSeed = (await argon2u(entropy, 16)).hash; // Uint8Array
-  result.owner = walletFromSeed(Buffer.from(ownerSeed));
+  result.owner = walletFromSeed(Buffer.from(ownerSeed), password);
+
+  let deletageSeed =
+    await getChildSeed(ownerSeed, 'delegate', 0, null, password);
+  result.delegate = walletFromSeed(deletageSeed, password);
+
+  let manageSeed =
+    await getChildSeed(ownerSeed, 'manage', 0, null, password);
+  result.manager = walletFromSeed(manageSeed, password);
 
   result.transferKeys = [];
   result.spawnKeys    = [];
-  result.manageKeys   = [];
-  result.urbitKeys    = [];
+  result.networkKeys  = [];
   for (i = 0; i < ships.length; i++)
   {
     let ship = ships[i];
 
-    let transferSeed = await getChildSeed(ownerSeed, 'transfer', 0, ship);
-    result.transferKeys[i] = walletFromSeed(transferSeed);
+    let transferSeed =
+      await getChildSeed(ownerSeed, 'transfer', 0, ship, password);
+    result.transferKeys[i] = walletFromSeed(transferSeed, password);
 
-    let spawnSeed    = await getChildSeed(transferSeed, 'spawn', 0, ship);
-    result.spawnKeys[i]    = walletFromSeed(spawnSeed);
+    let spawnSeed =
+      await getChildSeed(transferSeed, 'spawn', 0, ship, password);
+    result.spawnKeys[i]    = walletFromSeed(spawnSeed, password);
 
-    let manageSeed   = await getChildSeed(transferSeed, 'manage', 0, ship);
-    result.manageKeys[i]   = walletFromSeed(manageSeed);
-
-    let urbitSeed    = await getChildSeed(manageSeed, 'urbit', 0, ship);
-    let usb = Buffer.from(urbitSeed);
-    result.urbitKeys[i] = urbitKeysFromSeed(usb, usb.length);
+    let urbitSeed =
+      await getChildSeed(manageSeed, 'network', 0, ship, password);
+    result.networkKeys[i] = urbitKeysFromSeed(Buffer.from(urbitSeed), password);
   }
 
   return result;
@@ -140,6 +147,6 @@ async function generateFullWallet(entropy, ships)
 
 module.exports = {
   argon2u,
-  generateSparseWallet,
-  generateFullWallet
+  fullWalletFromEntropy,
+  fullWalletFromSeed
 };
