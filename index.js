@@ -2,8 +2,6 @@ const crypto = require('isomorphic-webcrypto')
 const bip32 = require('bip32');
 const nacl = require('tweetnacl');
 const argon2 = require('argon2-wasm');
-const drbg = require('hmac-drbg');
-const hash = require('hash.js');
 
 //TODO figure out which format to work with externally: Buffer, Uint8Array, BufferArray?
 //TODO generate arbitrary-length seeds
@@ -17,17 +15,12 @@ function buf2hex(buffer) // ArrayBuffer
   ).join('');
 }
 
-//TODO isn't user generated entropy actual entropy already? what does
-//     deterministically deriving new entropy from that gain us?
-function generateEntropy(entropySeed, entropySize)
+function hash() // any number of arguments
 {
-  const d = new drbg({
-    hash:    hash.sha256,
-    entropy: entropySeed,
-    nonce:   'todo',
-    pers:    null
-  });
-  return d.generate(entropySize, 'arr'); // 'hex', or anything else for array
+  return crypto.subtle.digest(
+    {name: 'SHA-512'},
+    Buffer.concat(Array.from(arguments).map(Buffer.from))
+  );
 }
 
 async function argon2u(entropy, ticketSize)
@@ -41,43 +34,29 @@ async function argon2u(entropy, ticketSize)
   });
 }
 
-function getChildSeed(seed, type, revision, ship, password) // Uint8Array, string, ...
+async function getChildSeed(seed, seedSize, type, revision, ship, password) // Uint8Array, string, ...
 {
   let salt = type+'-'+revision;
   if (typeof ship === 'number') salt = salt+'-'+ship;
-  return crypto.subtle.digest(
-    {name: 'SHA-512'},
-    Buffer.concat([
-      Buffer.from(seed),
-      Buffer.from(salt),
-      Buffer.from(password || '')
-    ])
-  );
+  //TODO the Buffer.from is needed for ArrayBuffer seeds, but... why?
+  //     we already to Buffer.from within hash()...
+  return (await hash(Buffer.from(seed), salt, password || ''))
+         .slice(0, seedSize);
 }
 
-function walletFromSeed(seed, password)
+async function walletFromSeed(seed, password)
 {
-  //TODO doesn't support seeds of lengths < 128 bits and > 512
-  let wallet = bip32.fromSeed(Buffer.concat([
-    Buffer.from(seed),
-    Buffer.from(password || '')
-  ]));
+  // we hash the seed with SHA-512 before doing BIP32 wallet generation,
+  // because BIP32 doesn't support seeds of bit-lengths < 128 or > 512.
+  let wallet = bip32.fromSeed(Buffer.from(
+    //TODO why Buffer.from? also see getChildSeed().
+    await hash(Buffer.from(seed), password || '')
+  ));
   return {
     public:  buf2hex(wallet.publicKey),
     private: buf2hex(wallet.privateKey),
     chain:   buf2hex(wallet.chainCode)
   }
-}
-
-async function deriveWallet(startSeed, path)
-{
-  let childSeed = startSeed;
-  for(i = 0; i < path.length; i++)
-  {
-    let node = path[i];
-    childSeed = await getChildSeed(childSeed, node.type, node.revision, node.ship);
-  }
-  return walletFromSeed(Buffer.from(ownerSeed));
 }
 
 // matches ++pit:nu:crub:crypto
@@ -102,44 +81,55 @@ function urbitKeysFromSeed(seed, size, password)
   }
 }
 
-async function fullWalletFromEntropy(entropy, ships, password)
+async function fullWalletFromEntropy(entropy, seedSize, ships, password)
 {
-  let ownerSeed = (await argon2u(entropy, 16)).hash; // Uint8Array
+  let ownerSeed = Buffer.from((await argon2u(entropy, seedSize)).hash);
   return fullWalletFromSeed(ownerSeed, ships, password);
 }
 
 async function fullWalletFromSeed(ownerSeed, ships, password)
 {
   let result = {};
+  result.seeds = {};
+  let seedSize = ownerSeed.length;
 
-  result.owner = walletFromSeed(Buffer.from(ownerSeed), password);
+  result.seeds.owner = buf2hex(ownerSeed);
+  result.owner = await walletFromSeed(ownerSeed, password);
 
-  let deletageSeed =
-    await getChildSeed(ownerSeed, 'delegate', 0, null, password);
-  result.delegate = walletFromSeed(deletageSeed, password);
+  let delegateSeed =
+    await getChildSeed(ownerSeed, seedSize, 'delegate', 0, null, password);
+  result.seeds.delegate = buf2hex(delegateSeed);
+  result.delegate = await walletFromSeed(delegateSeed, password);
 
   let manageSeed =
-    await getChildSeed(ownerSeed, 'manage', 0, null, password);
-  result.manager = walletFromSeed(manageSeed, password);
+    await getChildSeed(ownerSeed, seedSize, 'manage', 0, null, password);
+  result.seeds.manage = buf2hex(manageSeed);
+  result.manager = await walletFromSeed(manageSeed, password);
 
-  result.transferKeys = [];
-  result.spawnKeys    = [];
-  result.networkKeys  = [];
+  result.seeds.transfer = [];
+  result.seeds.spawn    = [];
+  result.seeds.network  = [];
+  result.transferKeys   = [];
+  result.spawnKeys      = [];
+  result.networkKeys    = [];
   for (i = 0; i < ships.length; i++)
   {
     let ship = ships[i];
 
     let transferSeed =
-      await getChildSeed(ownerSeed, 'transfer', 0, ship, password);
-    result.transferKeys[i] = walletFromSeed(transferSeed, password);
+      await getChildSeed(ownerSeed, seedSize, 'transfer', 0, ship, password);
+    result.seeds.transfer[i] = buf2hex(transferSeed);
+    result.transferKeys[i] = await walletFromSeed(transferSeed, password);
 
     let spawnSeed =
-      await getChildSeed(transferSeed, 'spawn', 0, ship, password);
-    result.spawnKeys[i]    = walletFromSeed(spawnSeed, password);
+      await getChildSeed(transferSeed, seedSize, 'spawn', 0, ship, password);
+    result.seeds.spawn[i] = buf2hex(spawnSeed);
+    result.spawnKeys[i]    = await walletFromSeed(spawnSeed, password);
 
-    let urbitSeed =
-      await getChildSeed(manageSeed, 'network', 0, ship, password);
-    result.networkKeys[i] = urbitKeysFromSeed(Buffer.from(urbitSeed), password);
+    let networkSeed =
+      await getChildSeed(manageSeed, seedSize, 'network', 0, ship, password);
+    result.seeds.network[i] = buf2hex(networkSeed);
+    result.networkKeys[i] = urbitKeysFromSeed(Buffer.from(networkSeed), password);
   }
 
   return result;
