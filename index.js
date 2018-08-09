@@ -23,9 +23,9 @@ function hash() // any number of arguments
   );
 }
 
-async function argon2u(entropy, ticketSize)
+function argon2u(entropy, ticketSize)
 {
-  return await argon2({
+  return argon2({
     pass:     entropy, // string or Uint8Array
     salt:     'urbitkeygen',
     type:     10, // argon2.ArgonType.Argon2u,
@@ -94,24 +94,24 @@ async function fullWalletFromSeed(ownerSeed, ships, password)
   let seedSize = ownerSeed.length;
 
   result.seeds.owner = buf2hex(ownerSeed);
-  result.owner = await walletFromSeed(ownerSeed, password);
+  let ownerPromise = walletFromSeed(ownerSeed, password);
 
   let delegateSeed =
     await getChildSeed(ownerSeed, seedSize, 'delegate', 0, null, password);
   result.seeds.delegate = buf2hex(delegateSeed);
-  result.delegate = await walletFromSeed(delegateSeed, password);
+  let delegatePromise = walletFromSeed(delegateSeed, password);
 
   let manageSeed =
     await getChildSeed(ownerSeed, seedSize, 'manage', 0, null, password);
   result.seeds.manage = buf2hex(manageSeed);
-  result.manager = await walletFromSeed(manageSeed, password);
+  let managePromise = walletFromSeed(manageSeed, password);
 
   result.seeds.transfer = [];
   result.seeds.spawn    = [];
   result.seeds.network  = [];
-  result.transferKeys   = [];
-  result.spawnKeys      = [];
-  result.networkKeys    = [];
+  let transferPromises  = [];
+  let spawnPromises     = [];
+  let networkPromises   = [];
   for (i = 0; i < ships.length; i++)
   {
     let ship = ships[i];
@@ -119,17 +119,31 @@ async function fullWalletFromSeed(ownerSeed, ships, password)
     let transferSeed =
       await getChildSeed(ownerSeed, seedSize, 'transfer', 0, ship, password);
     result.seeds.transfer[i] = buf2hex(transferSeed);
-    result.transferKeys[i] = await walletFromSeed(transferSeed, password);
+    transferPromises[i] = walletFromSeed(transferSeed, password);
 
     let spawnSeed =
       await getChildSeed(transferSeed, seedSize, 'spawn', 0, ship, password);
     result.seeds.spawn[i] = buf2hex(spawnSeed);
-    result.spawnKeys[i]    = await walletFromSeed(spawnSeed, password);
+    spawnPromises[i] = walletFromSeed(spawnSeed, password);
 
     let networkSeed =
       await getChildSeed(manageSeed, seedSize, 'network', 0, ship, password);
     result.seeds.network[i] = buf2hex(networkSeed);
-    result.networkKeys[i] = urbitKeysFromSeed(Buffer.from(networkSeed), password);
+    networkPromises[i] = urbitKeysFromSeed(Buffer.from(networkSeed), password);
+  }
+
+  result.owner    = await ownerPromise;
+  result.delegate = await delegatePromise;
+  result.manager  = await managePromise;
+
+  result.transferKeys = [];
+  result.spawnKeys    = [];
+  result.networkKeys  = [];
+  for (i = 0; i < ships.length; i++)
+  {
+    result.transferKeys[i] = await transferPromises[i];
+    result.spawnKeys[i]    = await spawnPromises[i];
+    result.networkKeys[i]  = await networkPromises[i];
   }
 
   return result;
