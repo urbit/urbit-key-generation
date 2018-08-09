@@ -60,7 +60,7 @@ async function walletFromSeed(seed, password)
 }
 
 // matches ++pit:nu:crub:crypto
-function urbitKeysFromSeed(seed, size, password)
+function urbitKeysFromSeed(seed, password)
 {
   seed = Buffer.concat([seed, Buffer.from(password || '')]);
   let hash = [];
