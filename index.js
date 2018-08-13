@@ -138,16 +138,11 @@ async function fullWalletFromSeed(ownerSeed, ships, password, revisions)
   {
     let ship = ships[i];
 
-    result.transfer[i] = {};
-    let transferSeed = await getChildSeed(ownerSeed, seedSize,
-                                          'transfer', revisions.transfer,
-                                          ship, password);
-    result.transfer[i].meta =
-      {type: 'transfer', revision: revisions.transfer, ship: ship};
-    result.transfer[i].seed = buf2hex(transferSeed);
-    transferPromises[i] = walletFromSeed(transferSeed, password);
+    transferPromises[i] = childNodeFromSeed(ownerSeed, seedSize,
+                                            'transfer', revisions.transfer,
+                                            ship, password);
 
-    spawnPromises[i] = childNodeFromSeed(transferSeed, seedSize,
+    spawnPromises[i] = childNodeFromSeed(ownerSeed, seedSize,
                                          'spawn', revisions.spawn,
                                          ship, password);
 
@@ -165,9 +160,9 @@ async function fullWalletFromSeed(ownerSeed, ships, password, revisions)
 
   for (i = 0; i < ships.length; i++)
   {
-    result.transfer[i].keys = await transferPromises[i];
-    result.spawn[i]         = await spawnPromises[i];
-    
+    result.transfer[i] = await transferPromises[i];
+    result.spawn[i]    = await spawnPromises[i];
+
     let networkSeed = await networkPromises[i];
     result.network[i].seed = buf2hex(networkSeed);
     result.network[i].keys = urbitKeysFromSeed(Buffer.from(networkSeed), password);
