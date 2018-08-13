@@ -95,9 +95,9 @@ async function childNodeFromSeed(seed, size, type, revision, ship, password)
   return result;
 }
 
-async function fullWalletFromEntropy(entropy, seedSize, ships, password, revs)
+async function fullWalletFromTicket(ticket, seedSize, ships, password, revs)
 {
-  let ownerSeed = Buffer.from((await argon2u(entropy, seedSize)).hash);
+  let ownerSeed = Buffer.from((await argon2u(ticket, seedSize)).hash);
   return fullWalletFromSeed(ownerSeed, ships, password, revs);
 }
 
@@ -172,7 +172,7 @@ async function fullWalletFromSeed(ownerSeed, ships, password, revisions)
 }
 
 module.exports = {
-  fullWalletFromEntropy,
+  fullWalletFromTicket,
   fullWalletFromSeed,
   childNodeFromSeed,
   getChildSeed,
