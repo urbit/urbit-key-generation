@@ -29,7 +29,10 @@ function argon2u(entropy, ticketSize)
     salt:     'urbitkeygen',
     type:     10, // argon2.ArgonType.Argon2u,
     hashLen:  +(ticketSize),
-    distPath: 'node_modules/argon2-wasm/dist'
+    distPath: 'node_modules/argon2-wasm/dist',
+    parallelism: +(4),
+    mem:      +(512000),
+    time:     +(1)
   });
 }
 
