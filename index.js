@@ -33,7 +33,7 @@ function argon2u(entropy, ticketSize)
   });
 }
 
-async function getChildSeed(seed, type, revision, ship, password) // Uint8Array, string, ...
+async function childSeedFromSeed(seed, type, revision, ship, password) // Uint8Array, string, ...
 {
   let salt = type+'-'+revision;
   if (typeof ship === 'number') salt = salt+'-'+ship;
@@ -48,7 +48,7 @@ async function walletFromSeed(seed, password)
   // we hash the seed with SHA-512 before doing BIP32 wallet generation,
   // because BIP32 doesn't support seeds of bit-lengths < 128 or > 512.
   let wallet = bip32.fromSeed(Buffer.from(
-    //TODO why Buffer.from? also see getChildSeed().
+    //TODO why Buffer.from? also see childSeedFromSeed().
     await hash(Buffer.from(seed), password || '')
   ));
   return {
@@ -87,9 +87,9 @@ async function childNodeFromSeed(seed, type, revision, ship, password)
 
   result.meta = {type: type, revision: revision};
   if (typeof ship !== 'undefined' && ship !== null) result.meta.ship = ship;
-  let childSeed = await getChildSeed(seed,
-                                     type, revision,
-                                     ship, password);
+  let childSeed = await childSeedFromSeed(seed,
+                                          type, revision,
+                                          ship, password);
   result.seed = buf2hex(childSeed);
   result.keys = await walletFromSeed(childSeed, password);
   return result;
@@ -120,9 +120,9 @@ async function fullWalletFromSeed(ownerSeed, ships, password, revisions)
                                           'delegate', revisions.delegate,
                                           null, password);
 
-  let manageSeed = await getChildSeed(ownerSeed,
-                                      'manage', revisions.manage,
-                                      null, password);
+  let manageSeed = await childSeedFromSeed(ownerSeed,
+                                           'manage', revisions.manage,
+                                           null, password);
   result.manage = {};
   result.manage.meta = {type: 'manage', revision: revisions.manage};
   result.manage.seed = buf2hex(manageSeed);
@@ -149,9 +149,9 @@ async function fullWalletFromSeed(ownerSeed, ships, password, revisions)
     result.network[i] = {}
     result.network[i].meta =
       {type: 'network', revision: revisions.network, ship: ship};
-    networkPromises[i] = getChildSeed(manageSeed,
-                                      'network', revisions.network,
-                                      ship, password);
+    networkPromises[i] = childSeedFromSeed(manageSeed,
+                                           'network', revisions.network,
+                                           ship, password);
   }
 
   result.owner.keys  = await ownerPromise;
@@ -175,7 +175,7 @@ module.exports = {
   fullWalletFromTicket,
   fullWalletFromSeed,
   childNodeFromSeed,
-  getChildSeed,
+  childSeedFromSeed,
   walletFromSeed,
   urbitKeysFromSeed
 };
