@@ -33,14 +33,14 @@ function argon2u(entropy, ticketSize)
   });
 }
 
-async function getChildSeed(seed, seedSize, type, revision, ship, password) // Uint8Array, string, ...
+async function getChildSeed(seed, type, revision, ship, password) // Uint8Array, string, ...
 {
   let salt = type+'-'+revision;
   if (typeof ship === 'number') salt = salt+'-'+ship;
   //TODO the Buffer.from is needed for ArrayBuffer seeds, but... why?
   //     we already to Buffer.from within hash()...
   return (await hash(Buffer.from(seed), salt, password || ''))
-         .slice(0, seedSize);
+         .slice(0, seed.length);
 }
 
 async function walletFromSeed(seed, password)
@@ -80,14 +80,14 @@ function urbitKeysFromSeed(seed, password)
   }
 }
 
-async function childNodeFromSeed(seed, size, type, revision, ship, password)
+async function childNodeFromSeed(seed, type, revision, ship, password)
 {
   let result = {};
   revision = revision || 0;
 
   result.meta = {type: type, revision: revision};
   if (typeof ship !== 'undefined') result.meta.ship = ship;
-  let childSeed = await getChildSeed(seed, size,
+  let childSeed = await getChildSeed(seed,
                                      type, revision,
                                      ship, password);
   result.seed = buf2hex(childSeed);
@@ -116,11 +116,11 @@ async function fullWalletFromSeed(ownerSeed, ships, password, revisions)
   result.owner.seed = buf2hex(ownerSeed);
   let ownerPromise = walletFromSeed(ownerSeed, password);
 
-  let delegatePromise = childNodeFromSeed(ownerSeed, seedSize,
+  let delegatePromise = childNodeFromSeed(ownerSeed,
                                           'delegate', revisions.delegate,
                                           null, password);
 
-  let manageSeed = await getChildSeed(ownerSeed, seedSize,
+  let manageSeed = await getChildSeed(ownerSeed,
                                       'manage', revisions.manage,
                                       null, password);
   result.manage = {};
@@ -138,18 +138,18 @@ async function fullWalletFromSeed(ownerSeed, ships, password, revisions)
   {
     let ship = ships[i];
 
-    transferPromises[i] = childNodeFromSeed(ownerSeed, seedSize,
+    transferPromises[i] = childNodeFromSeed(ownerSeed,
                                             'transfer', revisions.transfer,
                                             ship, password);
 
-    spawnPromises[i] = childNodeFromSeed(ownerSeed, seedSize,
+    spawnPromises[i] = childNodeFromSeed(ownerSeed,
                                          'spawn', revisions.spawn,
                                          ship, password);
 
     result.network[i] = {}
     result.network[i].meta =
       {type: 'network', revision: revisions.network, ship: ship};
-    networkPromises[i] = getChildSeed(manageSeed, seedSize,
+    networkPromises[i] = getChildSeed(manageSeed,
                                       'network', revisions.network,
                                       ship, password);
   }
