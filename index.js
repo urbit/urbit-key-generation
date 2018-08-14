@@ -86,7 +86,7 @@ async function childNodeFromSeed(seed, type, revision, ship, password)
   revision = revision || 0;
 
   result.meta = {type: type, revision: revision};
-  if (typeof ship !== 'undefined') result.meta.ship = ship;
+  if (typeof ship !== 'undefined' && ship !== null) result.meta.ship = ship;
   let childSeed = await getChildSeed(seed,
                                      type, revision,
                                      ship, password);
