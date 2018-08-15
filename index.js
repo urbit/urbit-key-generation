@@ -43,7 +43,7 @@ async function childSeedFromSeed(seed, type, revision, ship, password) // Uint8A
   //TODO the Buffer.from is needed for ArrayBuffer seeds, but... why?
   //     we already to Buffer.from within hash()...
   return (await hash(Buffer.from(seed), salt, password || ''))
-         .slice(0, seed.length);
+         .slice(0, seed.length || seed.byteLength);
 }
 
 async function walletFromSeed(seed, password)
