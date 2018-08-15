@@ -3,9 +3,6 @@ const bip32 = require('bip32');
 const nacl = require('tweetnacl');
 const argon2 = require('argon2-wasm');
 
-//TODO figure out which format to work with externally: Buffer, Uint8Array, BufferArray?
-//TODO maybe variable for storing password so you don't have to pass it in?
-
 function buf2hex(buffer) // ArrayBuffer
 {
   return Array.prototype.map.call(
