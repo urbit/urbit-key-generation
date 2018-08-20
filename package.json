@@ -4,7 +4,7 @@
   "description": "Wrapper functions for key generation according to the Urbit hierarchical wallet design.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test/main.js"
   },
   "repository": {
     "type": "git",
@@ -19,6 +19,9 @@
     "url": "https://github.com/urbit/keygen-js/issues"
   },
   "homepage": "https://github.com/urbit/keygen-js#readme",
+  "devDependencies": {
+    "test": "^0.6.0"
+  },
   "dependencies": {
     "argon2-wasm": "git+https://git@github.com/urbit/argon2-wasm.git",
     "bip32": "^1.0.2",
