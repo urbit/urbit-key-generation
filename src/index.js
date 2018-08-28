@@ -50,8 +50,11 @@ const argon2u = (entropy, ticketSize) => argon2({
 const childSeedFromSeed = async config =>  {
   const { seed, type, revision, ship, password } = config
 
+  // let salt = `${type}-${revision}`
+  // if (typeof ship === 'number') salt = `${salt}-${ship}`
+
   const salt = typeof ship === 'number'
-    ? `${salt}-${ship}`
+    ? `${type}-${revision}-${ship}`
     : `${type}-${revision}`
 
   const childSeed = await hash(seed, salt, defaultTo(password, ''))
