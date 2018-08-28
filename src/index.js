@@ -19,6 +19,8 @@ const get = (o, k, d) => {
 
 const isUndefined = any => typeof any === 'undefined'
 
+const isNumber = any => typeof any === 'number' && isFinite(any)
+
 const buf2hex = buffer => {
   return Array.from(new Uint8Array(buffer))
     .map(b => b.toString(16).padStart(2, '0'))
@@ -53,7 +55,7 @@ const childSeedFromSeed = async config =>  {
   // let salt = `${type}-${revision}`
   // if (typeof ship === 'number') salt = `${salt}-${ship}`
 
-  const salt = typeof ship === 'number'
+  const salt = isNumber(ship)
     ? `${type}-${revision}-${ship}`
     : `${type}-${revision}`
 
