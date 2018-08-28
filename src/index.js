@@ -87,8 +87,8 @@ const buf2hex = buffer => {
 
 /**
  * executes SHA-512 on any size input
- * @param  {[array, arrayBuffer, buffer]} args any number of arguments
- * @return {[Promise => arrayBuffer]} Promise that resolves to arrayBuffer
+ * @param  {array, arrayBuffer, buffer} args any number of arguments
+ * @return {Promise => arrayBuffer} Promise that resolves to arrayBuffer
  */
 const hash = async (...args) => {
   // map args into buffers and concat into one buffer
@@ -101,10 +101,10 @@ const hash = async (...args) => {
 
 /**
  * Runs argon2wasm to return a seed of desired bytes
- * @param  {[string, Uint8Array]} entropy ticket bytes as string or Uint8Array
+ * @param  {string, Uint8Array} entropy ticket bytes as string or Uint8Array
  * or Buffer, at least 16 bytes
- * @param  {[int]} seedSize desired size of the generated seeds in bytes
- * @return {[Promise => arrayBuffer]} Promise that resolves to arrayBuffer
+ * @param  {int} seedSize desired size of the generated seeds in bytes
+ * @return {Promise => arrayBuffer} Promise that resolves to arrayBuffer
  */
 const argon2u = (entropy, seedSize) => argon2({
   pass: entropy, // string or Uint8Array
