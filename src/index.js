@@ -19,6 +19,8 @@ const bufferFrom = arr => Buffer.from(arr);
  */
 const bufferConcat = arr => Buffer.concat(arr);
 
+
+
 /**
  * Wraps array.reverse
  * @param  {array} arr
