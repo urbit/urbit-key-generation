@@ -166,13 +166,13 @@ const fullWalletFromSeed = async config => {
     password: password,
   })
 
-  const transferNodes = ships.map(ship => childNodeFromSeed({
+  const transferNodes = await Promise.all(ships.map(ship => childNodeFromSeed({
     seed: ownerSeed,
     type: 'transfer',
     revision: _revisions.transfer,
     ship: ship,
     password: password,
-  }))
+  })))
 
   const spawnNodes = await Promise.all(ships.map(ship => childNodeFromSeed({
     seed: ownerSeed,
