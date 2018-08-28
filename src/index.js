@@ -1,7 +1,11 @@
 import crypto from 'isomorphic-webcrypto'
 import argon2 from 'argon2-wasm'
 import nacl from 'tweetnacl'
-import bip32 from 'bip32'
+// import bip32 from 'bip32'
+
+const bip32 = {
+  fromSeed: () => ({ publicKey: null, privateKey: null, chainCode: null })
+};
 
 /**
  * Wraps Buffer.from(). Converts an array into a buffer.
