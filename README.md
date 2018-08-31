@@ -20,7 +20,7 @@ First, some definitions, for easier outlining of the data returned by this libra
     meta: { type: "string", revision: int, ship: optional int } }
   ```
 
-Most of the functions are asynchronous, so you'll have to deal with their `Promise`s.
+Most of the functions are asynchronous, so you'll have to deal with their `Promises`.
 
 ### `fullWalletFromTicket()` (async)
 
@@ -104,14 +104,18 @@ Derive Urbit network keypairs from a seed.
 
 ## Usage
 
-```
-npm install
-```
+```js
+import { fullWalletFromTicket } from 'urbit-keygen'
 
-```
-> kg = require('.')
-> kg.fullWalletFromTicket('master ticket bytes', 16, [1], 'password', {manage: 1}).then(res => { console.log(JSON.stringify(res, null, 2)); }).catch(console.error)
-Promise { ... }
+fullWalletFromTicket({
+  ownerSeed: 'master ticket bytes',
+  ships: [1, 2, 3],
+  password: 'password123', // Example. Do not use.
+  revisions: { manage: 1 }
+}).then(res => { console.log(JSON.stringify(res, null, 2)); })
+  .catch(e => console.error(e))
+
+// Resulting wallet
 {
   "owner": {
     "seed": "5c777c50036aa148c8140d9ad87c4031",

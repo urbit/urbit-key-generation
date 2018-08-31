@@ -10,6 +10,7 @@ var replace = require('rollup-plugin-replace');
 var json = require('rollup-plugin-json');
 var builtins = require('rollup-plugin-node-builtins');
 var rootImport = require('rollup-plugin-root-import');
+var globals = require('rollup-plugin-node-globals');
 
 var cache;
 
@@ -31,6 +32,7 @@ gulp.task('default', function(cb) {
       //   extensions: '.js'
       // }),
       json(),
+      globals(),
       builtins(),
     ]
   }).on('bundle', function(bundle){ cache = bundle; })
