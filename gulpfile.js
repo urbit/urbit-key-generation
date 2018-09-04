@@ -1,8 +1,6 @@
 var gulp = require('gulp');
-
 var rollup = require('rollup-stream');
 var source = require('vinyl-source-stream');
-
 var babel = require('rollup-plugin-babel');
 var resolve = require('rollup-plugin-node-resolve');
 var commonjs = require('rollup-plugin-commonjs');
@@ -20,7 +18,7 @@ gulp.task('default', function(cb) {
     cache: cache,
     format: "es",
     plugins: [
-      resolve(),
+      resolve({browser: true}),
       commonjs(),
       babel({
         ignore: ['node_modules/**']

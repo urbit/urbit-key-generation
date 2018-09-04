@@ -1,5 +1,3 @@
-// import kg from '../src/index'
-
 import {
   argon2u,
   fullWalletFromTicket,
@@ -15,6 +13,15 @@ const buf2hex = buffer => {
     .map(b => b.toString(16).padStart(2, '0'))
     .join('');
 };
+
+test('argon2u', async () => {
+  let res = await argon2u({
+    entropy: 'password123',
+    seedSize: 64,
+  })
+
+  expect(res).toBeDefined();
+})
 
 test('child seed from seed', async () => {
   let res = await childSeedFromSeed({
