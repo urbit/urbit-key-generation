@@ -23,9 +23,8 @@
   "dependencies": {
     "argon2-wasm": "git+https://git@github.com/urbit/argon2-wasm.git",
     "babel-core": "^7.0.0-bridge.0",
-    "bip32": "^1.0.2",
+    "bip32": "github:bitcoinjs/bip32.git",
     "hmac-drbg": "^1.0.1",
-    "rollup-plugin-node-globals": "^1.2.1",
     "tweetnacl": "^1.0.0"
   },
   "devDependencies": {
@@ -44,6 +43,7 @@
     "vinyl-source-stream": "^2.0.0",
     "babel-jest": "^23.4.2",
     "jest": "^23.5.0",
+    "rollup-plugin-node-globals": "^1.2.1",
     "regenerator-runtime": "^0.12.1"
   }
 }
