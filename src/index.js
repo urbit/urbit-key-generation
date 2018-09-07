@@ -1,7 +1,7 @@
 import crypto from 'isomorphic-webcrypto'
 import argon2 from 'argon2-wasm'
 import nacl from 'tweetnacl'
-import bip32 from 'bip32'
+import { fromSeed } from 'bip32'
 
 /**
  * Wraps Buffer.from(). Converts an array into a buffer.
@@ -18,6 +18,8 @@ const bufferFrom = arr => Buffer.from(arr);
  * @return {buffer}
  */
 const bufferConcat = arr => Buffer.concat(arr);
+
+
 
 /**
  * Wraps array.reverse
@@ -186,7 +188,7 @@ const walletFromSeed = async (seed, password) => {
   // we hash the seed with SHA-512 before doing BIP32 wallet generation,
   // because BIP32 doesn't support seeds of bit-lengths < 128 or > 512.
   const seedHash = await hash(seed, defaultTo(password, ''));
-  const { publicKey, privateKey, chainCode } = bip32.fromSeed(bufferFrom(seedHash));
+  const { publicKey, privateKey, chainCode } = fromSeed(bufferFrom(seedHash));
   return {
     public: buf2hex(publicKey),
     private: buf2hex(privateKey),
@@ -249,9 +251,9 @@ const urbitKeysFromSeed = (seed, password) => {
  * @return {Promise => object} an object representing a full HD wallet.
  */
 const fullWalletFromTicket = async config => {
-  const { ticket, seedSize, ships, password, revisions } = config;
+  const { ticket, seedSize, ships, password, revisions, boot } = config;
   const seed = await argon2u(ticket, seedSize).hash;
-  return fullWalletFromSeed(bufferFrom(seed), ships, password, revisions);
+  return fullWalletFromSeed(bufferFrom(seed), ships, password, revisions, boot);
 }
 
 
@@ -266,7 +268,7 @@ const fullWalletFromTicket = async config => {
  * @return {Promise => object} an object representing a full HD wallet.
  */
 const fullWalletFromSeed = async config => {
-  const { ownerSeed, ships, password, revisions } = config;
+  const { ownerSeed, ships, password, revisions, boot } = config;
 
   // Normalize revisions object
   const _revisions = {
@@ -277,13 +279,10 @@ const fullWalletFromSeed = async config => {
     network: get(revisions, 'network', 0),
   };
 
-  const ownershipNode = await childNodeFromSeed({
+  const ownershipNode = {
+    keys: await walletFromSeed(ownerSeed, password),
     seed: ownerSeed,
-    type: 'owner',
-    revision: null,
-    ship: null,
-    password: password,
-  });
+  }
 
   const managementNode = await childNodeFromSeed({
     seed: ownerSeed,
@@ -317,23 +316,30 @@ const fullWalletFromSeed = async config => {
     password: password,
   })));
 
-  const networkSeeds = await Promise.all(ships.map(ship => childSeedFromSeed({
-    seed: bufferFrom(managementNode.seed),
-    type: 'network',
-    revision: _revisions.network,
-    ship: ship,
-    password: password,
-  })));
 
-  const networkNodes = await Promise.all(networkSeeds.map((seed, index) => ({
-    seed: buf2hex(seed),
-    keys: urbitKeysFromSeed(bufferFrom(seed), bufferFrom(defaultTo(password, ''))),
-    meta: {
+  let networkSeeds = [];
+  let networkNodes = [];
+
+  if (boot === true) {
+
+    networkSeeds = await Promise.all(ships.map(ship => childSeedFromSeed({
+      seed: bufferFrom(managementNode.seed),
       type: 'network',
       revision: _revisions.network,
-      ship: ships[index],
-    }
-  })));
+      ship: ship,
+      password: password,
+    })));
+
+    networkNodes = await Promise.all(networkSeeds.map((seed, index) => ({
+      seed: buf2hex(seed),
+      keys: urbitKeysFromSeed(bufferFrom(seed), bufferFrom(defaultTo(password, ''))),
+      meta: {
+        type: 'network',
+        revision: _revisions.network,
+        ship: ships[index],
+      }
+    })));
+  };
 
   const wallet = {
     owner: ownershipNode,
@@ -347,6 +353,15 @@ const fullWalletFromSeed = async config => {
   return wallet;
 }
 
+
+// export helper functions for test
+const _buf2hex = buf2hex;
+const _hash = hash;
+const _argon2 = argon2;
+const _defaultTo = defaultTo;
+const _get = get;
+
+
 export {
   argon2u,
   fullWalletFromTicket,
@@ -355,4 +370,9 @@ export {
   childSeedFromSeed,
   walletFromSeed,
   urbitKeysFromSeed,
+  _buf2hex,
+  _hash,
+  _argon2,
+  _defaultTo,
+  _get,
 }
