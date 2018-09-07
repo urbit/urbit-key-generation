@@ -1,7 +1,7 @@
-import crypto from 'isomorphic-webcrypto'
-import argon2 from 'argon2-wasm'
-import nacl from 'tweetnacl'
-import bip32 from 'bip32'
+const crypto = require('isomorphic-webcrypto');
+const argon2 = require('argon2-wasm');
+const nacl = require('tweetnacl');
+const bip32 = require('bip32');
 
 /**
  * Wraps Buffer.from(). Converts an array into a buffer.
@@ -349,7 +349,7 @@ const fullWalletFromSeed = async config => {
   return wallet;
 }
 
-export {
+module.exports = {
   argon2u,
   fullWalletFromTicket,
   fullWalletFromSeed,
