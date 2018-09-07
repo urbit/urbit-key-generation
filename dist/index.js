@@ -1,3 +1,7 @@
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
 var global$1 = (typeof global !== "undefined" ? global :
             typeof self !== "undefined" ? self :
             typeof window !== "undefined" ? window : {});
@@ -112,7 +116,7 @@ function fromByteArray (uint8) {
   return parts.join('')
 }
 
-function read (buffer, offset, isLE, mLen, nBytes) {
+function read$1 (buffer, offset, isLE, mLen, nBytes) {
   var e, m;
   var eLen = nBytes * 8 - mLen - 1;
   var eMax = (1 << eLen) - 1;
@@ -911,7 +915,7 @@ function arrayIndexOf (arr, val, byteOffset, encoding, dir) {
     }
   }
 
-  function read$$1 (buf, i) {
+  function read (buf, i) {
     if (indexSize === 1) {
       return buf[i]
     } else {
@@ -923,7 +927,7 @@ function arrayIndexOf (arr, val, byteOffset, encoding, dir) {
   if (dir) {
     var foundIndex = -1;
     for (i = byteOffset; i < arrLength; i++) {
-      if (read$$1(arr, i) === read$$1(val, foundIndex === -1 ? 0 : i - foundIndex)) {
+      if (read(arr, i) === read(val, foundIndex === -1 ? 0 : i - foundIndex)) {
         if (foundIndex === -1) foundIndex = i;
         if (i - foundIndex + 1 === valLength) return foundIndex * indexSize
       } else {
@@ -936,7 +940,7 @@ function arrayIndexOf (arr, val, byteOffset, encoding, dir) {
     for (i = byteOffset; i >= 0; i--) {
       var found = true;
       for (var j = 0; j < valLength; j++) {
-        if (read$$1(arr, i + j) !== read$$1(val, j)) {
+        if (read(arr, i + j) !== read(val, j)) {
           found = false;
           break
         }
@@ -1414,22 +1418,22 @@ Buffer.prototype.readInt32BE = function readInt32BE (offset, noAssert) {
 
 Buffer.prototype.readFloatLE = function readFloatLE (offset, noAssert) {
   if (!noAssert) checkOffset(offset, 4, this.length);
-  return read(this, offset, true, 23, 4)
+  return read$1(this, offset, true, 23, 4)
 };
 
 Buffer.prototype.readFloatBE = function readFloatBE (offset, noAssert) {
   if (!noAssert) checkOffset(offset, 4, this.length);
-  return read(this, offset, false, 23, 4)
+  return read$1(this, offset, false, 23, 4)
 };
 
 Buffer.prototype.readDoubleLE = function readDoubleLE (offset, noAssert) {
   if (!noAssert) checkOffset(offset, 8, this.length);
-  return read(this, offset, true, 52, 8)
+  return read$1(this, offset, true, 52, 8)
 };
 
 Buffer.prototype.readDoubleBE = function readDoubleBE (offset, noAssert) {
   if (!noAssert) checkOffset(offset, 8, this.length);
-  return read(this, offset, false, 52, 8)
+  return read$1(this, offset, false, 52, 8)
 };
 
 function checkInt (buf, value, offset, ext, max, min) {
@@ -2742,6 +2746,231 @@ function _asyncToGenerator(fn) {
 
 var crypto = window.crypto;
 
+// shim for using process in browser
+// based off https://github.com/defunctzombie/node-process/blob/master/browser.js
+
+function defaultSetTimout() {
+    throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout () {
+    throw new Error('clearTimeout has not been defined');
+}
+var cachedSetTimeout = defaultSetTimout;
+var cachedClearTimeout = defaultClearTimeout;
+if (typeof global$1.setTimeout === 'function') {
+    cachedSetTimeout = setTimeout;
+}
+if (typeof global$1.clearTimeout === 'function') {
+    cachedClearTimeout = clearTimeout;
+}
+
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    // if setTimeout wasn't available but was latter defined
+    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+        cachedSetTimeout = setTimeout;
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    // if clearTimeout wasn't available but was latter defined
+    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+        cachedClearTimeout = clearTimeout;
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = runTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    runClearTimeout(timeout);
+}
+function nextTick(fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        runTimeout(drainQueue);
+    }
+}
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+var title = 'browser';
+var platform = 'browser';
+var browser = true;
+var env = {};
+var argv = [];
+var version = ''; // empty string to avoid regexp issues
+var versions = {};
+var release = {};
+var config = {};
+
+function noop() {}
+
+var on = noop;
+var addListener = noop;
+var once = noop;
+var off = noop;
+var removeListener = noop;
+var removeAllListeners = noop;
+var emit = noop;
+
+function binding(name) {
+    throw new Error('process.binding is not supported');
+}
+
+function cwd () { return '/' }
+function chdir (dir) {
+    throw new Error('process.chdir is not supported');
+}
+function umask() { return 0; }
+
+// from https://github.com/kumavis/browser-process-hrtime/blob/master/index.js
+var performance = global$1.performance || {};
+var performanceNow =
+  performance.now        ||
+  performance.mozNow     ||
+  performance.msNow      ||
+  performance.oNow       ||
+  performance.webkitNow  ||
+  function(){ return (new Date()).getTime() };
+
+// generate timestamp or delta
+// see http://nodejs.org/api/process.html#process_process_hrtime
+function hrtime(previousTimestamp){
+  var clocktime = performanceNow.call(performance)*1e-3;
+  var seconds = Math.floor(clocktime);
+  var nanoseconds = Math.floor((clocktime%1)*1e9);
+  if (previousTimestamp) {
+    seconds = seconds - previousTimestamp[0];
+    nanoseconds = nanoseconds - previousTimestamp[1];
+    if (nanoseconds<0) {
+      seconds--;
+      nanoseconds += 1e9;
+    }
+  }
+  return [seconds,nanoseconds]
+}
+
+var startTime = new Date();
+function uptime() {
+  var currentTime = new Date();
+  var dif = currentTime - startTime;
+  return dif / 1000;
+}
+
+var process = {
+  nextTick: nextTick,
+  title: title,
+  browser: browser,
+  env: env,
+  argv: argv,
+  version: version,
+  versions: versions,
+  on: on,
+  addListener: addListener,
+  once: once,
+  off: off,
+  removeListener: removeListener,
+  removeAllListeners: removeAllListeners,
+  emit: emit,
+  binding: binding,
+  cwd: cwd,
+  chdir: chdir,
+  umask: umask,
+  hrtime: hrtime,
+  platform: platform,
+  release: release,
+  config: config,
+  uptime: uptime
+};
+
+var __dirname = '/Users/gavinatkinson/Tlon/keygen-js/node_modules/argon2-wasm/generated';
+
 var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
 function commonjsRequire () {
@@ -2754,173 +2983,6 @@ function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
 }
 
-'use strict';
-
-var g = typeof window === 'undefined' ? commonjsGlobal : window;
-var root = typeof window === 'undefined' ? '../' : '';
-
-/**
- * Argon2 hash
- * @param {string} params.pass - password string
- * @param {string} params.salt - salt string
- * @param {float}  [params.time=1] - the number of iterations
- * @param {float}  [params.mem=1024] - used memory, in KiB
- * @param {float}  [params.hashLen=24] - desired hash length
- * @param {float}  [params.parallelism=1] - desired parallelism (will be computed in parallel only for PNaCl)
- * @param {number} [params.type=argon2.ArgonType.Argon2d] - hash type: argon2.ArgonType.Argon2d, .Argon2i, .Argon2id or .Argon2u
- * @param {number} [params.distPath=.] - asm.js script location, without trailing slash
- *
- * @return Promise
- *
- * @example
- *  argon2.hash({ pass: 'password', salt: 'somesalt' })
- *      .then(h => console.log(h.hash, h.hashHex, h.encoded))
- *      .catch(e => console.error(e.message, e.code))
- */
-function argon2(args) {
-    if (!WebAssembly) {
-        return new Promise((resolve, reject) => {
-            reject({message: 'WebAssembly not supported here.', code:-4040});
-        });
-    }
-
-    if (g.Module && g.Module._argon2_hash) {
-        return new Promise((resolve, reject) => {
-            try {
-                resolve(calcHash(args));
-            } catch(e) {
-                reject(e);
-            }
-        });
-    }
-
-    const KB = 1024 * 1024;
-    const MB = 1024 * KB;
-    const GB = 1024 * MB;
-    const WASM_PAGE_SIZE = 64 * 1024;
-
-    const totalMemory = (2*GB - 64*KB) / 1024 / WASM_PAGE_SIZE;
-    const mem = args.mem || +(1024);
-    const initialMemory = Math.min(Math.max(Math.ceil(mem * 1024 / WASM_PAGE_SIZE), 256) + 256, totalMemory);
-    const wasmMemory = new WebAssembly.Memory({
-        initial: initialMemory,
-        maximum: totalMemory
-    });
-
-    g.Module = {
-        print: console.log,
-        printErr: console.error,
-        setStatus: console.log,
-        wasmBinary: null,
-        wasmBinaryFile: root + 'dist/argon2.wasm',
-        locateFile: function(file) { return (args.distPath || '') + '/' + file; }
-    };
-
-    return new Promise((resolve, reject) => {
-        g.Module.onRuntimeInitialized = function() {
-            try {
-                resolve(calcHash(args));
-            } catch(e) {
-                reject(e);
-            }
-        };
-
-        if (typeof document === 'undefined') {
-            Module = commonjsRequire(root + 'dist/argon2.js');
-        } else {
-            var xhr = new XMLHttpRequest();
-            xhr.open('GET', root + 'dist/argon2.wasm', true);
-            xhr.responseType = 'arraybuffer';
-            xhr.onload = function() {
-                g.Module.wasmBinary = xhr.response;
-                loadScript(root + 'dist/argon2.js', function() {
-                }, function() {
-                    console.error('Error loading script');
-                    reject({message:'Error loading script', code:-4042});
-                });
-            };
-            xhr.onerror = function () {
-                reject({message:'Error loading wasm', code:-4041});
-            };
-            xhr.send(null);
-        }
-    });
-}
-
-function calcHash(arg) {
-    if (!Module._argon2_hash) {
-        return console.error('Error: _argon2_hash not available');
-    }
-    var t_cost = arg && arg.time || 10;
-    var m_cost = arg && arg.mem || 1024;
-    var parallelism = arg && arg.parallelism || 1;
-    var pwd = allocateArray(arg && arg.pass || 'password');
-    var pwdlen = arg && arg.pass ? arg.pass.length : 8;
-    var salt = allocateArray(arg && arg.salt || 'somesalt');
-    var saltlen = arg && arg.salt ? arg.salt.length : 8;
-    var hash = Module.allocate(new Array(arg && arg.hashLen || 32), 'i8', Module.ALLOC_NORMAL);
-    var hashlen = arg && arg.hashLen || 32;
-    var encoded = Module.allocate(new Array(512), 'i8', Module.ALLOC_NORMAL);
-    var encodedlen = 512;
-    var argon2_type = arg && arg.type || 0;
-    var version = 0x13;
-    var err;
-    try {
-        var res = Module._argon2_hash(t_cost, m_cost, parallelism, pwd, pwdlen, salt, saltlen,
-            hash, hashlen, encoded, encodedlen,
-            argon2_type, version);
-    } catch (e) {
-        err = e;
-    }
-    var result;
-    if (res === 0 && !err) {
-        var hashStr = '';
-        var hashArr = new Uint8Array(hashlen);
-        for (var i = 0; i < hashlen; i++) {
-            var byte = Module.HEAP8[hash + i];
-            hashArr[i] = byte;
-            hashStr += ('0' + (0xFF & byte).toString(16)).slice(-2);
-        }
-        var encodedStr = Module.Pointer_stringify(encoded);
-        result = { hash: hashArr, hashHex: hashStr, encoded: encodedStr };
-    } else {
-        try {
-            if (!err) {
-                err = Module.Pointer_stringify(Module._argon2_error_message(res));
-            }
-        } catch (e) {
-        }
-        result = { message: err, code: res };
-    }
-    try {
-        Module._free(pwd);
-        Module._free(salt);
-        Module._free(hash);
-        Module._free(encoded);
-    } catch (e) { }
-    if (err) {
-        throw result;
-    } else {
-        return result;
-    }
-}
-
-function loadScript(src, onload, onerror) {
-    var el = document.createElement("script");
-    el.src = src;
-    el.onload = onload;
-    el.onerror = onerror;
-    document.body.appendChild(el);
-}
-
-function allocateArray(strOrArr) {
-    var arr = strOrArr instanceof Uint8Array || strOrArr instanceof Array ? strOrArr
-        : Module.intArrayFromString(strOrArr);
-    return Module.allocate(arr, 'i8', Module.ALLOC_NORMAL);
-}
-
-var argon2_1 = argon2;
-
 var empty = {};
 
 
@@ -2928,7 +2990,579 @@ var empty$1 = Object.freeze({
 	default: empty
 });
 
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+// resolves . and .. elements in a path array with directory names there
+// must be no slashes, empty elements, or device names (c:\) in the array
+// (so also no leading and trailing slashes - it does not distinguish
+// relative and absolute paths)
+function normalizeArray(parts, allowAboveRoot) {
+  // if the path tries to go above the root, `up` ends up > 0
+  var up = 0;
+  for (var i = parts.length - 1; i >= 0; i--) {
+    var last = parts[i];
+    if (last === '.') {
+      parts.splice(i, 1);
+    } else if (last === '..') {
+      parts.splice(i, 1);
+      up++;
+    } else if (up) {
+      parts.splice(i, 1);
+      up--;
+    }
+  }
+
+  // if the path is allowed to go above the root, restore leading ..s
+  if (allowAboveRoot) {
+    for (; up--; up) {
+      parts.unshift('..');
+    }
+  }
+
+  return parts;
+}
+
+// Split a filename into [root, dir, basename, ext], unix version
+// 'root' is just a slash, or nothing.
+var splitPathRe =
+    /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/;
+var splitPath = function(filename) {
+  return splitPathRe.exec(filename).slice(1);
+};
+
+// path.resolve([from ...], to)
+// posix version
+function resolve() {
+  var resolvedPath = '',
+      resolvedAbsolute = false;
+
+  for (var i = arguments.length - 1; i >= -1 && !resolvedAbsolute; i--) {
+    var path = (i >= 0) ? arguments[i] : '/';
+
+    // Skip empty and invalid entries
+    if (typeof path !== 'string') {
+      throw new TypeError('Arguments to path.resolve must be strings');
+    } else if (!path) {
+      continue;
+    }
+
+    resolvedPath = path + '/' + resolvedPath;
+    resolvedAbsolute = path.charAt(0) === '/';
+  }
+
+  // At this point the path should be resolved to a full absolute path, but
+  // handle relative paths to be safe (might happen when process.cwd() fails)
+
+  // Normalize the path
+  resolvedPath = normalizeArray(filter(resolvedPath.split('/'), function(p) {
+    return !!p;
+  }), !resolvedAbsolute).join('/');
+
+  return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
+}
+
+// path.normalize(path)
+// posix version
+function normalize(path) {
+  var isPathAbsolute = isAbsolute(path),
+      trailingSlash = substr(path, -1) === '/';
+
+  // Normalize the path
+  path = normalizeArray(filter(path.split('/'), function(p) {
+    return !!p;
+  }), !isPathAbsolute).join('/');
+
+  if (!path && !isPathAbsolute) {
+    path = '.';
+  }
+  if (path && trailingSlash) {
+    path += '/';
+  }
+
+  return (isPathAbsolute ? '/' : '') + path;
+}
+
+// posix version
+function isAbsolute(path) {
+  return path.charAt(0) === '/';
+}
+
+// posix version
+function join() {
+  var paths = Array.prototype.slice.call(arguments, 0);
+  return normalize(filter(paths, function(p, index) {
+    if (typeof p !== 'string') {
+      throw new TypeError('Arguments to path.join must be strings');
+    }
+    return p;
+  }).join('/'));
+}
+
+
+// path.relative(from, to)
+// posix version
+function relative(from, to) {
+  from = resolve(from).substr(1);
+  to = resolve(to).substr(1);
+
+  function trim(arr) {
+    var start = 0;
+    for (; start < arr.length; start++) {
+      if (arr[start] !== '') break;
+    }
+
+    var end = arr.length - 1;
+    for (; end >= 0; end--) {
+      if (arr[end] !== '') break;
+    }
+
+    if (start > end) return [];
+    return arr.slice(start, end - start + 1);
+  }
+
+  var fromParts = trim(from.split('/'));
+  var toParts = trim(to.split('/'));
+
+  var length = Math.min(fromParts.length, toParts.length);
+  var samePartsLength = length;
+  for (var i = 0; i < length; i++) {
+    if (fromParts[i] !== toParts[i]) {
+      samePartsLength = i;
+      break;
+    }
+  }
+
+  var outputParts = [];
+  for (var i = samePartsLength; i < fromParts.length; i++) {
+    outputParts.push('..');
+  }
+
+  outputParts = outputParts.concat(toParts.slice(samePartsLength));
+
+  return outputParts.join('/');
+}
+
+var sep = '/';
+var delimiter = ':';
+
+function dirname(path) {
+  var result = splitPath(path),
+      root = result[0],
+      dir = result[1];
+
+  if (!root && !dir) {
+    // No dirname whatsoever
+    return '.';
+  }
+
+  if (dir) {
+    // It has a dirname, strip trailing slash
+    dir = dir.substr(0, dir.length - 1);
+  }
+
+  return root + dir;
+}
+
+function basename(path, ext) {
+  var f = splitPath(path)[2];
+  // TODO: make this comparison case-insensitive on windows?
+  if (ext && f.substr(-1 * ext.length) === ext) {
+    f = f.substr(0, f.length - ext.length);
+  }
+  return f;
+}
+
+
+function extname(path) {
+  return splitPath(path)[3];
+}
+var path = {
+  extname: extname,
+  basename: basename,
+  dirname: dirname,
+  sep: sep,
+  delimiter: delimiter,
+  relative: relative,
+  join: join,
+  isAbsolute: isAbsolute,
+  normalize: normalize,
+  resolve: resolve
+};
+function filter (xs, f) {
+    if (xs.filter) return xs.filter(f);
+    var res = [];
+    for (var i = 0; i < xs.length; i++) {
+        if (f(xs[i], i, xs)) res.push(xs[i]);
+    }
+    return res;
+}
+
+// String.prototype.substr - negative index don't work in IE8
+var substr = 'ab'.substr(-1) === 'b' ?
+    function (str, start, len) { return str.substr(start, len) } :
+    function (str, start, len) {
+        if (start < 0) start = str.length + start;
+        return str.substr(start, len);
+    };
+
+
+var path$1 = Object.freeze({
+	resolve: resolve,
+	normalize: normalize,
+	isAbsolute: isAbsolute,
+	join: join,
+	relative: relative,
+	sep: sep,
+	delimiter: delimiter,
+	dirname: dirname,
+	basename: basename,
+	extname: extname,
+	default: path
+});
+
 var require$$0$1 = ( empty$1 && empty ) || empty$1;
+
+var require$$1 = ( path$1 && path ) || path$1;
+
+var emscriptenRunner = createCommonjsModule(function (module, exports) {
+var Module = (function() {
+  var _scriptDir = typeof document !== 'undefined' && document.currentScript ? document.currentScript.src : undefined;
+  return (
+function(Module) {
+  Module = Module || {};
+
+var Module=typeof Module!=="undefined"?Module:{};var moduleOverrides={};var key;for(key in Module){if(Module.hasOwnProperty(key)){moduleOverrides[key]=Module[key];}}Module["arguments"]=[];Module["thisProgram"]="./this.program";Module["quit"]=(function(status,toThrow){throw toThrow});Module["preRun"]=[];Module["postRun"]=[];var ENVIRONMENT_IS_WEB=false;var ENVIRONMENT_IS_WORKER=false;var ENVIRONMENT_IS_NODE=false;var ENVIRONMENT_IS_SHELL=false;ENVIRONMENT_IS_WEB=typeof window==="object";ENVIRONMENT_IS_WORKER=typeof importScripts==="function";ENVIRONMENT_IS_NODE=typeof process==="object"&&typeof commonjsRequire==="function"&&!ENVIRONMENT_IS_WEB&&!ENVIRONMENT_IS_WORKER;ENVIRONMENT_IS_SHELL=!ENVIRONMENT_IS_WEB&&!ENVIRONMENT_IS_NODE&&!ENVIRONMENT_IS_WORKER;if(Module["ENVIRONMENT"]){throw new Error("Module.ENVIRONMENT has been deprecated. To force the environment, use the ENVIRONMENT compile-time option (for example, -s ENVIRONMENT=web or -s ENVIRONMENT=node)")}assert(typeof Module["memoryInitializerPrefixURL"]==="undefined","Module.memoryInitializerPrefixURL option was removed, use Module.locateFile instead");assert(typeof Module["pthreadMainPrefixURL"]==="undefined","Module.pthreadMainPrefixURL option was removed, use Module.locateFile instead");assert(typeof Module["cdInitializerPrefixURL"]==="undefined","Module.cdInitializerPrefixURL option was removed, use Module.locateFile instead");assert(typeof Module["filePackagePrefixURL"]==="undefined","Module.filePackagePrefixURL option was removed, use Module.locateFile instead");var scriptDirectory="";function locateFile(path){if(Module["locateFile"]){return Module["locateFile"](path,scriptDirectory)}else{return scriptDirectory+path}}if(ENVIRONMENT_IS_NODE){scriptDirectory=__dirname+"/";var nodeFS;var nodePath;Module["read"]=function shell_read(filename,binary){var ret;if(!nodeFS)nodeFS=require$$0$1;if(!nodePath)nodePath=require$$1;filename=nodePath["normalize"](filename);ret=nodeFS["readFileSync"](filename);return binary?ret:ret.toString()};Module["readBinary"]=function readBinary(filename){var ret=Module["read"](filename,true);if(!ret.buffer){ret=new Uint8Array(ret);}assert(ret.buffer);return ret};if(process["argv"].length>1){Module["thisProgram"]=process["argv"][1].replace(/\\/g,"/");}Module["arguments"]=process["argv"].slice(2);process["on"]("uncaughtException",(function(ex){if(!(ex instanceof ExitStatus)){throw ex}}));process["on"]("unhandledRejection",(function(reason,p){err("node.js exiting due to unhandled promise rejection");process["exit"](1);}));Module["quit"]=(function(status){process["exit"](status);});Module["inspect"]=(function(){return"[Emscripten Module object]"});}else if(ENVIRONMENT_IS_SHELL){if(typeof read!="undefined"){Module["read"]=function shell_read(f){return read(f)};}Module["readBinary"]=function readBinary(f){var data;if(typeof readbuffer==="function"){return new Uint8Array(readbuffer(f))}data=read(f,"binary");assert(typeof data==="object");return data};if(typeof scriptArgs!="undefined"){Module["arguments"]=scriptArgs;}else if(typeof arguments!="undefined"){Module["arguments"]=arguments;}if(typeof quit==="function"){Module["quit"]=(function(status){quit(status);});}}else if(ENVIRONMENT_IS_WEB||ENVIRONMENT_IS_WORKER){if(ENVIRONMENT_IS_WEB){if(document.currentScript){scriptDirectory=document.currentScript.src;}}else{scriptDirectory=self.location.href;}if(_scriptDir){scriptDirectory=_scriptDir;}if(scriptDirectory.indexOf("blob:")!==0){scriptDirectory=scriptDirectory.substr(0,scriptDirectory.lastIndexOf("/")+1);}else{scriptDirectory="";}Module["read"]=function shell_read(url){var xhr=new XMLHttpRequest;xhr.open("GET",url,false);xhr.send(null);return xhr.responseText};if(ENVIRONMENT_IS_WORKER){Module["readBinary"]=function readBinary(url){var xhr=new XMLHttpRequest;xhr.open("GET",url,false);xhr.responseType="arraybuffer";xhr.send(null);return new Uint8Array(xhr.response)};}Module["readAsync"]=function readAsync(url,onload,onerror){var xhr=new XMLHttpRequest;xhr.open("GET",url,true);xhr.responseType="arraybuffer";xhr.onload=function xhr_onload(){if(xhr.status==200||xhr.status==0&&xhr.response){onload(xhr.response);return}onerror();};xhr.onerror=onerror;xhr.send(null);};Module["setWindowTitle"]=(function(title$$1){document.title=title$$1;});}else{throw new Error("environment detection error")}var out=Module["print"]||(typeof console!=="undefined"?console.log.bind(console):typeof print!=="undefined"?print:null);var err=Module["printErr"]||(typeof printErr!=="undefined"?printErr:typeof console!=="undefined"&&console.warn.bind(console)||out);for(key in moduleOverrides){if(moduleOverrides.hasOwnProperty(key)){Module[key]=moduleOverrides[key];}}moduleOverrides=undefined;var STACK_ALIGN=16;stackSave=stackRestore=stackAlloc=setTempRet0=getTempRet0=(function(){abort("cannot use the stack before compiled code is ready to run, and has provided stack access");});function staticAlloc(size){assert(!staticSealed);var ret=STATICTOP;STATICTOP=STATICTOP+size+15&-16;assert(STATICTOP<TOTAL_MEMORY,"not enough memory for static allocation - increase TOTAL_MEMORY");return ret}function dynamicAlloc(size){assert(DYNAMICTOP_PTR);var ret=HEAP32[DYNAMICTOP_PTR>>2];var end=ret+size+15&-16;HEAP32[DYNAMICTOP_PTR>>2]=end;if(end>=TOTAL_MEMORY){var success=enlargeMemory();if(!success){HEAP32[DYNAMICTOP_PTR>>2]=ret;return 0}}return ret}function alignMemory(size,factor){if(!factor)factor=STACK_ALIGN;var ret=size=Math.ceil(size/factor)*factor;return ret}function getNativeTypeSize(type){switch(type){case"i1":case"i8":return 1;case"i16":return 2;case"i32":return 4;case"i64":return 8;case"float":return 4;case"double":return 8;default:{if(type[type.length-1]==="*"){return 4}else if(type[0]==="i"){var bits=parseInt(type.substr(1));assert(bits%8===0);return bits/8}else{return 0}}}}function warnOnce(text){if(!warnOnce.shown)warnOnce.shown={};if(!warnOnce.shown[text]){warnOnce.shown[text]=1;err(text);}}var asm2wasmImports={"f64-rem":(function(x,y){return x%y}),"debugger":(function(){debugger})};var GLOBAL_BASE=1024;var ABORT=false;function assert(condition,text){if(!condition){abort("Assertion failed: "+text);}}function setValue(ptr,value,type,noSafe){type=type||"i8";if(type.charAt(type.length-1)==="*")type="i32";switch(type){case"i1":HEAP8[ptr>>0]=value;break;case"i8":HEAP8[ptr>>0]=value;break;case"i16":HEAP16[ptr>>1]=value;break;case"i32":HEAP32[ptr>>2]=value;break;case"i64":tempI64=[value>>>0,(tempDouble=value,+Math_abs(tempDouble)>=1?tempDouble>0?(Math_min(+Math_floor(tempDouble/4294967296),4294967295)|0)>>>0:~~+Math_ceil((tempDouble- +(~~tempDouble>>>0))/4294967296)>>>0:0)],HEAP32[ptr>>2]=tempI64[0],HEAP32[ptr+4>>2]=tempI64[1];break;case"float":HEAPF32[ptr>>2]=value;break;case"double":HEAPF64[ptr>>3]=value;break;default:abort("invalid type for setValue: "+type);}}var ALLOC_NORMAL=0;var ALLOC_STATIC=2;var ALLOC_NONE=4;function allocate(slab,types,allocator,ptr){var zeroinit,size;if(typeof slab==="number"){zeroinit=true;size=slab;}else{zeroinit=false;size=slab.length;}var singleType=typeof types==="string"?types:null;var ret;if(allocator==ALLOC_NONE){ret=ptr;}else{ret=[typeof _malloc==="function"?_malloc:staticAlloc,stackAlloc,staticAlloc,dynamicAlloc][allocator===undefined?ALLOC_STATIC:allocator](Math.max(size,singleType?1:types.length));}if(zeroinit){var stop;ptr=ret;assert((ret&3)==0);stop=ret+(size&~3);for(;ptr<stop;ptr+=4){HEAP32[ptr>>2]=0;}stop=ret+size;while(ptr<stop){HEAP8[ptr++>>0]=0;}return ret}if(singleType==="i8"){if(slab.subarray||slab.slice){HEAPU8.set(slab,ret);}else{HEAPU8.set(new Uint8Array(slab),ret);}return ret}var i=0,type,typeSize,previousType;while(i<size){var curr=slab[i];type=singleType||types[i];if(type===0){i++;continue}assert(type,"Must know what type to store in allocate!");if(type=="i64")type="i32";setValue(ret+i,curr,type);if(previousType!==type){typeSize=getNativeTypeSize(type);previousType=type;}i+=typeSize;}return ret}function Pointer_stringify(ptr,length){if(length===0||!ptr)return"";var hasUtf=0;var t;var i=0;while(1){assert(ptr+i<TOTAL_MEMORY);t=HEAPU8[ptr+i>>0];hasUtf|=t;if(t==0&&!length)break;i++;if(length&&i==length)break}if(!length)length=i;var ret="";if(hasUtf<128){var MAX_CHUNK=1024;var curr;while(length>0){curr=String.fromCharCode.apply(String,HEAPU8.subarray(ptr,ptr+Math.min(length,MAX_CHUNK)));ret=ret?ret+curr:curr;ptr+=MAX_CHUNK;length-=MAX_CHUNK;}return ret}return UTF8ToString(ptr)}var UTF8Decoder=typeof TextDecoder!=="undefined"?new TextDecoder("utf8"):undefined;function UTF8ArrayToString(u8Array,idx){var endPtr=idx;while(u8Array[endPtr])++endPtr;if(endPtr-idx>16&&u8Array.subarray&&UTF8Decoder){return UTF8Decoder.decode(u8Array.subarray(idx,endPtr))}else{var u0,u1,u2,u3,u4,u5;var str="";while(1){u0=u8Array[idx++];if(!u0)return str;if(!(u0&128)){str+=String.fromCharCode(u0);continue}u1=u8Array[idx++]&63;if((u0&224)==192){str+=String.fromCharCode((u0&31)<<6|u1);continue}u2=u8Array[idx++]&63;if((u0&240)==224){u0=(u0&15)<<12|u1<<6|u2;}else{u3=u8Array[idx++]&63;if((u0&248)==240){u0=(u0&7)<<18|u1<<12|u2<<6|u3;}else{u4=u8Array[idx++]&63;if((u0&252)==248){u0=(u0&3)<<24|u1<<18|u2<<12|u3<<6|u4;}else{u5=u8Array[idx++]&63;u0=(u0&1)<<30|u1<<24|u2<<18|u3<<12|u4<<6|u5;}}}if(u0<65536){str+=String.fromCharCode(u0);}else{var ch=u0-65536;str+=String.fromCharCode(55296|ch>>10,56320|ch&1023);}}}}function UTF8ToString(ptr){return UTF8ArrayToString(HEAPU8,ptr)}function stringToUTF8Array(str,outU8Array,outIdx,maxBytesToWrite){if(!(maxBytesToWrite>0))return 0;var startIdx=outIdx;var endIdx=outIdx+maxBytesToWrite-1;for(var i=0;i<str.length;++i){var u=str.charCodeAt(i);if(u>=55296&&u<=57343){var u1=str.charCodeAt(++i);u=65536+((u&1023)<<10)|u1&1023;}if(u<=127){if(outIdx>=endIdx)break;outU8Array[outIdx++]=u;}else if(u<=2047){if(outIdx+1>=endIdx)break;outU8Array[outIdx++]=192|u>>6;outU8Array[outIdx++]=128|u&63;}else if(u<=65535){if(outIdx+2>=endIdx)break;outU8Array[outIdx++]=224|u>>12;outU8Array[outIdx++]=128|u>>6&63;outU8Array[outIdx++]=128|u&63;}else if(u<=2097151){if(outIdx+3>=endIdx)break;outU8Array[outIdx++]=240|u>>18;outU8Array[outIdx++]=128|u>>12&63;outU8Array[outIdx++]=128|u>>6&63;outU8Array[outIdx++]=128|u&63;}else if(u<=67108863){if(outIdx+4>=endIdx)break;outU8Array[outIdx++]=248|u>>24;outU8Array[outIdx++]=128|u>>18&63;outU8Array[outIdx++]=128|u>>12&63;outU8Array[outIdx++]=128|u>>6&63;outU8Array[outIdx++]=128|u&63;}else{if(outIdx+5>=endIdx)break;outU8Array[outIdx++]=252|u>>30;outU8Array[outIdx++]=128|u>>24&63;outU8Array[outIdx++]=128|u>>18&63;outU8Array[outIdx++]=128|u>>12&63;outU8Array[outIdx++]=128|u>>6&63;outU8Array[outIdx++]=128|u&63;}}outU8Array[outIdx]=0;return outIdx-startIdx}function lengthBytesUTF8(str){var len=0;for(var i=0;i<str.length;++i){var u=str.charCodeAt(i);if(u>=55296&&u<=57343)u=65536+((u&1023)<<10)|str.charCodeAt(++i)&1023;if(u<=127){++len;}else if(u<=2047){len+=2;}else if(u<=65535){len+=3;}else if(u<=2097151){len+=4;}else if(u<=67108863){len+=5;}else{len+=6;}}return len}var UTF16Decoder=typeof TextDecoder!=="undefined"?new TextDecoder("utf-16le"):undefined;function demangle(func){warnOnce("warning: build with  -s DEMANGLE_SUPPORT=1  to link in libcxxabi demangling");return func}function demangleAll(text){var regex=/__Z[\w\d_]+/g;return text.replace(regex,(function(x){var y=demangle(x);return x===y?x:x+" ["+y+"]"}))}function jsStackTrace(){var err=new Error;if(!err.stack){try{throw new Error(0)}catch(e){err=e;}if(!err.stack){return"(no stack trace available)"}}return err.stack.toString()}function stackTrace(){var js=jsStackTrace();if(Module["extraStackTrace"])js+="\n"+Module["extraStackTrace"]();return demangleAll(js)}var WASM_PAGE_SIZE=65536;var ASMJS_PAGE_SIZE=16777216;function alignUp(x,multiple){if(x%multiple>0){x+=multiple-x%multiple;}return x}var buffer,HEAP8,HEAPU8,HEAP16,HEAPU16,HEAP32,HEAPU32,HEAPF32,HEAPF64;function updateGlobalBuffer(buf){Module["buffer"]=buffer=buf;}function updateGlobalBufferViews(){Module["HEAP8"]=HEAP8=new Int8Array(buffer);Module["HEAP16"]=HEAP16=new Int16Array(buffer);Module["HEAP32"]=HEAP32=new Int32Array(buffer);Module["HEAPU8"]=HEAPU8=new Uint8Array(buffer);Module["HEAPU16"]=HEAPU16=new Uint16Array(buffer);Module["HEAPU32"]=HEAPU32=new Uint32Array(buffer);Module["HEAPF32"]=HEAPF32=new Float32Array(buffer);Module["HEAPF64"]=HEAPF64=new Float64Array(buffer);}var STATIC_BASE,STATICTOP,staticSealed;var STACK_BASE,STACKTOP,STACK_MAX;var DYNAMIC_BASE,DYNAMICTOP_PTR;STATIC_BASE=STATICTOP=STACK_BASE=STACKTOP=STACK_MAX=DYNAMIC_BASE=DYNAMICTOP_PTR=0;staticSealed=false;function writeStackCookie(){assert((STACK_MAX&3)==0);HEAPU32[(STACK_MAX>>2)-1]=34821223;HEAPU32[(STACK_MAX>>2)-2]=2310721022;}function checkStackCookie(){if(HEAPU32[(STACK_MAX>>2)-1]!=34821223||HEAPU32[(STACK_MAX>>2)-2]!=2310721022){abort("Stack overflow! Stack cookie has been overwritten, expected hex dwords 0x89BACDFE and 0x02135467, but received 0x"+HEAPU32[(STACK_MAX>>2)-2].toString(16)+" "+HEAPU32[(STACK_MAX>>2)-1].toString(16));}if(HEAP32[0]!==1668509029)throw"Runtime error: The application has corrupted its heap memory area (address zero)!"}function abortStackOverflow(allocSize){abort("Stack overflow! Attempted to allocate "+allocSize+" bytes on the stack, but stack has only "+(STACK_MAX-stackSave()+allocSize)+" bytes available!");}function abortOnCannotGrowMemory(){abort("Cannot enlarge memory arrays. Either (1) compile with  -s TOTAL_MEMORY=X  with X higher than the current value "+TOTAL_MEMORY+", (2) compile with  -s ALLOW_MEMORY_GROWTH=1  which allows increasing the size at runtime, or (3) if you want malloc to return NULL (0) instead of this abort, compile with  -s ABORTING_MALLOC=0 ");}function enlargeMemory(){abortOnCannotGrowMemory();}var TOTAL_STACK=Module["TOTAL_STACK"]||5242880;var TOTAL_MEMORY=Module["TOTAL_MEMORY"]||1073741824;if(TOTAL_MEMORY<TOTAL_STACK)err("TOTAL_MEMORY should be larger than TOTAL_STACK, was "+TOTAL_MEMORY+"! (TOTAL_STACK="+TOTAL_STACK+")");assert(typeof Int32Array!=="undefined"&&typeof Float64Array!=="undefined"&&Int32Array.prototype.subarray!==undefined&&Int32Array.prototype.set!==undefined,"JS engine does not provide full typed array support");if(Module["buffer"]){buffer=Module["buffer"];assert(buffer.byteLength===TOTAL_MEMORY,"provided buffer should be "+TOTAL_MEMORY+" bytes, but it is "+buffer.byteLength);}else{if(typeof WebAssembly==="object"&&typeof WebAssembly.Memory==="function"){assert(TOTAL_MEMORY%WASM_PAGE_SIZE===0);Module["wasmMemory"]=new WebAssembly.Memory({"initial":TOTAL_MEMORY/WASM_PAGE_SIZE,"maximum":TOTAL_MEMORY/WASM_PAGE_SIZE});buffer=Module["wasmMemory"].buffer;}else{buffer=new ArrayBuffer(TOTAL_MEMORY);}assert(buffer.byteLength===TOTAL_MEMORY);Module["buffer"]=buffer;}updateGlobalBufferViews();function getTotalMemory(){return TOTAL_MEMORY}HEAP32[0]=1668509029;HEAP16[1]=25459;if(HEAPU8[2]!==115||HEAPU8[3]!==99)throw"Runtime error: expected the system to be little-endian!";function callRuntimeCallbacks(callbacks){while(callbacks.length>0){var callback=callbacks.shift();if(typeof callback=="function"){callback();continue}var func=callback.func;if(typeof func==="number"){if(callback.arg===undefined){Module["dynCall_v"](func);}else{Module["dynCall_vi"](func,callback.arg);}}else{func(callback.arg===undefined?null:callback.arg);}}}var __ATPRERUN__=[];var __ATINIT__=[];var __ATMAIN__=[];var __ATPOSTRUN__=[];var runtimeInitialized=false;var runtimeExited=false;function preRun(){if(Module["preRun"]){if(typeof Module["preRun"]=="function")Module["preRun"]=[Module["preRun"]];while(Module["preRun"].length){addOnPreRun(Module["preRun"].shift());}}callRuntimeCallbacks(__ATPRERUN__);}function ensureInitRuntime(){checkStackCookie();if(runtimeInitialized)return;runtimeInitialized=true;callRuntimeCallbacks(__ATINIT__);}function preMain(){checkStackCookie();callRuntimeCallbacks(__ATMAIN__);}function postRun(){checkStackCookie();if(Module["postRun"]){if(typeof Module["postRun"]=="function")Module["postRun"]=[Module["postRun"]];while(Module["postRun"].length){addOnPostRun(Module["postRun"].shift());}}callRuntimeCallbacks(__ATPOSTRUN__);}function addOnPreRun(cb){__ATPRERUN__.unshift(cb);}function addOnPostRun(cb){__ATPOSTRUN__.unshift(cb);}assert(Math["imul"]&&Math["fround"]&&Math["clz32"]&&Math["trunc"],"this is a legacy browser, build with LEGACY_VM_SUPPORT");var Math_abs=Math.abs;var Math_ceil=Math.ceil;var Math_floor=Math.floor;var Math_min=Math.min;var runDependencies=0;var runDependencyWatcher=null;var dependenciesFulfilled=null;var runDependencyTracking={};function addRunDependency(id){runDependencies++;if(Module["monitorRunDependencies"]){Module["monitorRunDependencies"](runDependencies);}if(id){assert(!runDependencyTracking[id]);runDependencyTracking[id]=1;if(runDependencyWatcher===null&&typeof setInterval!=="undefined"){runDependencyWatcher=setInterval((function(){if(ABORT){clearInterval(runDependencyWatcher);runDependencyWatcher=null;return}var shown=false;for(var dep in runDependencyTracking){if(!shown){shown=true;err("still waiting on run dependencies:");}err("dependency: "+dep);}if(shown){err("(end of list)");}}),1e4);}}else{err("warning: run dependency added without ID");}}function removeRunDependency(id){runDependencies--;if(Module["monitorRunDependencies"]){Module["monitorRunDependencies"](runDependencies);}if(id){assert(runDependencyTracking[id]);delete runDependencyTracking[id];}else{err("warning: run dependency removed without ID");}if(runDependencies==0){if(runDependencyWatcher!==null){clearInterval(runDependencyWatcher);runDependencyWatcher=null;}if(dependenciesFulfilled){var callback=dependenciesFulfilled;dependenciesFulfilled=null;callback();}}}Module["preloadedImages"]={};Module["preloadedAudios"]={};var FS={error:(function(){abort("Filesystem support (FS) was not included. The problem is that you are using files from JS, but files were not used from C/C++, so filesystem support was not auto-included. You can force-include filesystem support with  -s FORCE_FILESYSTEM=1");}),init:(function(){FS.error();}),createDataFile:(function(){FS.error();}),createPreloadedFile:(function(){FS.error();}),createLazyFile:(function(){FS.error();}),open:(function(){FS.error();}),mkdev:(function(){FS.error();}),registerDevice:(function(){FS.error();}),analyzePath:(function(){FS.error();}),loadFilesFromDB:(function(){FS.error();}),ErrnoError:function ErrnoError(){FS.error();}};Module["FS_createDataFile"]=FS.createDataFile;Module["FS_createPreloadedFile"]=FS.createPreloadedFile;var dataURIPrefix="data:application/octet-stream;base64,";function isDataURI(filename){return String.prototype.startsWith?filename.startsWith(dataURIPrefix):filename.indexOf(dataURIPrefix)===0}function integrateWasmJS(){var wasmTextFile="argon2.wast";var wasmBinaryFile="argon2.wasm";var asmjsCodeFile="argon2.temp.asm.js";if(!isDataURI(wasmTextFile)){wasmTextFile=locateFile(wasmTextFile);}if(!isDataURI(wasmBinaryFile)){wasmBinaryFile=locateFile(wasmBinaryFile);}if(!isDataURI(asmjsCodeFile)){asmjsCodeFile=locateFile(asmjsCodeFile);}var wasmPageSize=64*1024;var info={"global":null,"env":null,"asm2wasm":asm2wasmImports,"parent":Module};var exports=null;function mergeMemory(newBuffer){var oldBuffer=Module["buffer"];if(newBuffer.byteLength<oldBuffer.byteLength){err("the new buffer in mergeMemory is smaller than the previous one. in native wasm, we should grow memory here");}var oldView=new Int8Array(oldBuffer);var newView=new Int8Array(newBuffer);newView.set(oldView);updateGlobalBuffer(newBuffer);updateGlobalBufferViews();}function fixImports(imports){return imports}function getBinary(){try{if(Module["wasmBinary"]){return new Uint8Array(Module["wasmBinary"])}if(Module["readBinary"]){return Module["readBinary"](wasmBinaryFile)}else{throw"both async and sync fetching of the wasm failed"}}catch(err){abort(err);}}function getBinaryPromise(){if(!Module["wasmBinary"]&&(ENVIRONMENT_IS_WEB||ENVIRONMENT_IS_WORKER)&&typeof fetch==="function"){return fetch(wasmBinaryFile,{credentials:"same-origin"}).then((function(response){if(!response["ok"]){throw"failed to load wasm binary file at '"+wasmBinaryFile+"'"}return response["arrayBuffer"]()})).catch((function(){return getBinary()}))}return new Promise((function(resolve,reject){resolve(getBinary());}))}function doNativeWasm(global,env$$1,providedBuffer){if(typeof WebAssembly!=="object"){abort("No WebAssembly support found. Build with -s WASM=0 to target JavaScript instead.");err("no native wasm support detected");return false}if(!(Module["wasmMemory"]instanceof WebAssembly.Memory)){err("no native wasm Memory in use");return false}env$$1["memory"]=Module["wasmMemory"];info["global"]={"NaN":NaN,"Infinity":Infinity};info["global.Math"]=Math;info["env"]=env$$1;function receiveInstance(instance,module){exports=instance.exports;if(exports.memory)mergeMemory(exports.memory);Module["asm"]=exports;Module["usingWasm"]=true;removeRunDependency("wasm-instantiate");}addRunDependency("wasm-instantiate");if(Module["instantiateWasm"]){try{return Module["instantiateWasm"](info,receiveInstance)}catch(e){err("Module.instantiateWasm callback failed with error: "+e);return false}}var trueModule=Module;function receiveInstantiatedSource(output){assert(Module===trueModule,"the Module object should not be replaced during async compilation - perhaps the order of HTML elements is wrong?");trueModule=null;receiveInstance(output["instance"],output["module"]);}function instantiateArrayBuffer(receiver){getBinaryPromise().then((function(binary){return WebAssembly.instantiate(binary,info)})).then(receiver).catch((function(reason){err("failed to asynchronously prepare wasm: "+reason);abort(reason);}));}if(!Module["wasmBinary"]&&typeof WebAssembly.instantiateStreaming==="function"&&!isDataURI(wasmBinaryFile)&&typeof fetch==="function"){WebAssembly.instantiateStreaming(fetch(wasmBinaryFile,{credentials:"same-origin"}),info).then(receiveInstantiatedSource).catch((function(reason){err("wasm streaming compile failed: "+reason);err("falling back to ArrayBuffer instantiation");instantiateArrayBuffer(receiveInstantiatedSource);}));}else{instantiateArrayBuffer(receiveInstantiatedSource);}return{}}Module["asmPreload"]=Module["asm"];var asmjsReallocBuffer=Module["reallocBuffer"];var wasmReallocBuffer=(function(size){var PAGE_MULTIPLE=Module["usingWasm"]?WASM_PAGE_SIZE:ASMJS_PAGE_SIZE;size=alignUp(size,PAGE_MULTIPLE);var old=Module["buffer"];var oldSize=old.byteLength;if(Module["usingWasm"]){try{var result=Module["wasmMemory"].grow((size-oldSize)/wasmPageSize);if(result!==(-1|0)){return Module["buffer"]=Module["wasmMemory"].buffer}else{return null}}catch(e){console.error("Module.reallocBuffer: Attempted to grow from "+oldSize+" bytes to "+size+" bytes, but got error: "+e);return null}}});Module["reallocBuffer"]=(function(size){if(finalMethod==="asmjs"){return asmjsReallocBuffer(size)}else{return wasmReallocBuffer(size)}});var finalMethod="";Module["asm"]=(function(global,env$$1,providedBuffer){env$$1=fixImports(env$$1);if(!env$$1["table"]){var TABLE_SIZE=Module["wasmTableSize"];if(TABLE_SIZE===undefined)TABLE_SIZE=1024;var MAX_TABLE_SIZE=Module["wasmMaxTableSize"];if(typeof WebAssembly==="object"&&typeof WebAssembly.Table==="function"){if(MAX_TABLE_SIZE!==undefined){env$$1["table"]=new WebAssembly.Table({"initial":TABLE_SIZE,"maximum":MAX_TABLE_SIZE,"element":"anyfunc"});}else{env$$1["table"]=new WebAssembly.Table({"initial":TABLE_SIZE,element:"anyfunc"});}}else{env$$1["table"]=new Array(TABLE_SIZE);}Module["wasmTable"]=env$$1["table"];}if(!env$$1["memoryBase"]){env$$1["memoryBase"]=Module["STATIC_BASE"];}if(!env$$1["tableBase"]){env$$1["tableBase"]=0;}var exports;exports=doNativeWasm(global,env$$1,providedBuffer);assert(exports,"no binaryen method succeeded. consider enabling more options, like interpreting, if you want that: http://kripken.github.io/emscripten-site/docs/compiling/WebAssembly.html#binaryen-methods");return exports});}integrateWasmJS();STATIC_BASE=GLOBAL_BASE;STATICTOP=STATIC_BASE+3424;__ATINIT__.push();var STATIC_BUMP=3424;Module["STATIC_BASE"]=STATIC_BASE;Module["STATIC_BUMP"]=STATIC_BUMP;var tempDoublePtr=STATICTOP;STATICTOP+=16;assert(tempDoublePtr%8==0);function _emscripten_memcpy_big(dest,src,num){HEAPU8.set(HEAPU8.subarray(src,src+num),dest);return dest}function _pthread_join(){}function ___setErrNo(value){if(Module["___errno_location"])HEAP32[Module["___errno_location"]()>>2]=value;else err("failed to set errno from JS");return value}DYNAMICTOP_PTR=staticAlloc(4);STACK_BASE=STACKTOP=alignMemory(STATICTOP);STACK_MAX=STACK_BASE+TOTAL_STACK;DYNAMIC_BASE=alignMemory(STACK_MAX);HEAP32[DYNAMICTOP_PTR>>2]=DYNAMIC_BASE;staticSealed=true;assert(DYNAMIC_BASE<TOTAL_MEMORY,"TOTAL_MEMORY not big enough for stack");function intArrayFromString(stringy,dontAddNull,length){var len=length>0?length:lengthBytesUTF8(stringy)+1;var u8array=new Array(len);var numBytesWritten=stringToUTF8Array(stringy,u8array,0,u8array.length);if(dontAddNull)u8array.length=numBytesWritten;return u8array}Module["wasmTableSize"]=0;Module["wasmMaxTableSize"]=0;Module.asmGlobalArg={};Module.asmLibraryArg={"enlargeMemory":enlargeMemory,"getTotalMemory":getTotalMemory,"abortOnCannotGrowMemory":abortOnCannotGrowMemory,"abortStackOverflow":abortStackOverflow,"___setErrNo":___setErrNo,"_emscripten_memcpy_big":_emscripten_memcpy_big,"_pthread_join":_pthread_join,"DYNAMICTOP_PTR":DYNAMICTOP_PTR,"STACKTOP":STACKTOP,"STACK_MAX":STACK_MAX};var asm=Module["asm"](Module.asmGlobalArg,Module.asmLibraryArg,buffer);var real__argon2_error_message=asm["_argon2_error_message"];asm["_argon2_error_message"]=(function(){assert(runtimeInitialized,"you need to wait for the runtime to be ready (e.g. wait for main() to be called)");assert(!runtimeExited,"the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)");return real__argon2_error_message.apply(null,arguments)});var real__argon2_hash=asm["_argon2_hash"];asm["_argon2_hash"]=(function(){assert(runtimeInitialized,"you need to wait for the runtime to be ready (e.g. wait for main() to be called)");assert(!runtimeExited,"the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)");return real__argon2_hash.apply(null,arguments)});var real__free=asm["_free"];asm["_free"]=(function(){assert(runtimeInitialized,"you need to wait for the runtime to be ready (e.g. wait for main() to be called)");assert(!runtimeExited,"the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)");return real__free.apply(null,arguments)});var real__malloc=asm["_malloc"];asm["_malloc"]=(function(){assert(runtimeInitialized,"you need to wait for the runtime to be ready (e.g. wait for main() to be called)");assert(!runtimeExited,"the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)");return real__malloc.apply(null,arguments)});var real__sbrk=asm["_sbrk"];asm["_sbrk"]=(function(){assert(runtimeInitialized,"you need to wait for the runtime to be ready (e.g. wait for main() to be called)");assert(!runtimeExited,"the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)");return real__sbrk.apply(null,arguments)});var real_establishStackSpace=asm["establishStackSpace"];asm["establishStackSpace"]=(function(){assert(runtimeInitialized,"you need to wait for the runtime to be ready (e.g. wait for main() to be called)");assert(!runtimeExited,"the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)");return real_establishStackSpace.apply(null,arguments)});var real_getTempRet0=asm["getTempRet0"];asm["getTempRet0"]=(function(){assert(runtimeInitialized,"you need to wait for the runtime to be ready (e.g. wait for main() to be called)");assert(!runtimeExited,"the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)");return real_getTempRet0.apply(null,arguments)});var real_setTempRet0=asm["setTempRet0"];asm["setTempRet0"]=(function(){assert(runtimeInitialized,"you need to wait for the runtime to be ready (e.g. wait for main() to be called)");assert(!runtimeExited,"the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)");return real_setTempRet0.apply(null,arguments)});var real_setThrew=asm["setThrew"];asm["setThrew"]=(function(){assert(runtimeInitialized,"you need to wait for the runtime to be ready (e.g. wait for main() to be called)");assert(!runtimeExited,"the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)");return real_setThrew.apply(null,arguments)});var real_stackAlloc=asm["stackAlloc"];asm["stackAlloc"]=(function(){assert(runtimeInitialized,"you need to wait for the runtime to be ready (e.g. wait for main() to be called)");assert(!runtimeExited,"the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)");return real_stackAlloc.apply(null,arguments)});var real_stackRestore=asm["stackRestore"];asm["stackRestore"]=(function(){assert(runtimeInitialized,"you need to wait for the runtime to be ready (e.g. wait for main() to be called)");assert(!runtimeExited,"the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)");return real_stackRestore.apply(null,arguments)});var real_stackSave=asm["stackSave"];asm["stackSave"]=(function(){assert(runtimeInitialized,"you need to wait for the runtime to be ready (e.g. wait for main() to be called)");assert(!runtimeExited,"the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)");return real_stackSave.apply(null,arguments)});Module["asm"]=asm;var _argon2_error_message=Module["_argon2_error_message"]=(function(){assert(runtimeInitialized,"you need to wait for the runtime to be ready (e.g. wait for main() to be called)");assert(!runtimeExited,"the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)");return Module["asm"]["_argon2_error_message"].apply(null,arguments)});var _argon2_hash=Module["_argon2_hash"]=(function(){assert(runtimeInitialized,"you need to wait for the runtime to be ready (e.g. wait for main() to be called)");assert(!runtimeExited,"the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)");return Module["asm"]["_argon2_hash"].apply(null,arguments)});var _free=Module["_free"]=(function(){assert(runtimeInitialized,"you need to wait for the runtime to be ready (e.g. wait for main() to be called)");assert(!runtimeExited,"the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)");return Module["asm"]["_free"].apply(null,arguments)});var _malloc=Module["_malloc"]=(function(){assert(runtimeInitialized,"you need to wait for the runtime to be ready (e.g. wait for main() to be called)");assert(!runtimeExited,"the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)");return Module["asm"]["_malloc"].apply(null,arguments)});var _sbrk=Module["_sbrk"]=(function(){assert(runtimeInitialized,"you need to wait for the runtime to be ready (e.g. wait for main() to be called)");assert(!runtimeExited,"the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)");return Module["asm"]["_sbrk"].apply(null,arguments)});var establishStackSpace=Module["establishStackSpace"]=(function(){assert(runtimeInitialized,"you need to wait for the runtime to be ready (e.g. wait for main() to be called)");assert(!runtimeExited,"the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)");return Module["asm"]["establishStackSpace"].apply(null,arguments)});var getTempRet0=Module["getTempRet0"]=(function(){assert(runtimeInitialized,"you need to wait for the runtime to be ready (e.g. wait for main() to be called)");assert(!runtimeExited,"the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)");return Module["asm"]["getTempRet0"].apply(null,arguments)});var setTempRet0=Module["setTempRet0"]=(function(){assert(runtimeInitialized,"you need to wait for the runtime to be ready (e.g. wait for main() to be called)");assert(!runtimeExited,"the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)");return Module["asm"]["setTempRet0"].apply(null,arguments)});var setThrew=Module["setThrew"]=(function(){assert(runtimeInitialized,"you need to wait for the runtime to be ready (e.g. wait for main() to be called)");assert(!runtimeExited,"the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)");return Module["asm"]["setThrew"].apply(null,arguments)});var stackAlloc=Module["stackAlloc"]=(function(){assert(runtimeInitialized,"you need to wait for the runtime to be ready (e.g. wait for main() to be called)");assert(!runtimeExited,"the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)");return Module["asm"]["stackAlloc"].apply(null,arguments)});var stackRestore=Module["stackRestore"]=(function(){assert(runtimeInitialized,"you need to wait for the runtime to be ready (e.g. wait for main() to be called)");assert(!runtimeExited,"the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)");return Module["asm"]["stackRestore"].apply(null,arguments)});var stackSave=Module["stackSave"]=(function(){assert(runtimeInitialized,"you need to wait for the runtime to be ready (e.g. wait for main() to be called)");assert(!runtimeExited,"the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)");return Module["asm"]["stackSave"].apply(null,arguments)});Module["asm"]=asm;Module["intArrayFromString"]=intArrayFromString;if(!Module["intArrayToString"])Module["intArrayToString"]=(function(){abort("'intArrayToString' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["ccall"])Module["ccall"]=(function(){abort("'ccall' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["cwrap"])Module["cwrap"]=(function(){abort("'cwrap' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["setValue"])Module["setValue"]=(function(){abort("'setValue' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["getValue"])Module["getValue"]=(function(){abort("'getValue' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});Module["allocate"]=allocate;if(!Module["getMemory"])Module["getMemory"]=(function(){abort("'getMemory' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ). Alternatively, forcing filesystem support (-s FORCE_FILESYSTEM=1) can export this for you");});Module["Pointer_stringify"]=Pointer_stringify;if(!Module["AsciiToString"])Module["AsciiToString"]=(function(){abort("'AsciiToString' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["stringToAscii"])Module["stringToAscii"]=(function(){abort("'stringToAscii' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["UTF8ArrayToString"])Module["UTF8ArrayToString"]=(function(){abort("'UTF8ArrayToString' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["UTF8ToString"])Module["UTF8ToString"]=(function(){abort("'UTF8ToString' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["stringToUTF8Array"])Module["stringToUTF8Array"]=(function(){abort("'stringToUTF8Array' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["stringToUTF8"])Module["stringToUTF8"]=(function(){abort("'stringToUTF8' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["lengthBytesUTF8"])Module["lengthBytesUTF8"]=(function(){abort("'lengthBytesUTF8' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["UTF16ToString"])Module["UTF16ToString"]=(function(){abort("'UTF16ToString' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["stringToUTF16"])Module["stringToUTF16"]=(function(){abort("'stringToUTF16' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["lengthBytesUTF16"])Module["lengthBytesUTF16"]=(function(){abort("'lengthBytesUTF16' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["UTF32ToString"])Module["UTF32ToString"]=(function(){abort("'UTF32ToString' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["stringToUTF32"])Module["stringToUTF32"]=(function(){abort("'stringToUTF32' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["lengthBytesUTF32"])Module["lengthBytesUTF32"]=(function(){abort("'lengthBytesUTF32' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["allocateUTF8"])Module["allocateUTF8"]=(function(){abort("'allocateUTF8' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["stackTrace"])Module["stackTrace"]=(function(){abort("'stackTrace' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["addOnPreRun"])Module["addOnPreRun"]=(function(){abort("'addOnPreRun' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["addOnInit"])Module["addOnInit"]=(function(){abort("'addOnInit' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["addOnPreMain"])Module["addOnPreMain"]=(function(){abort("'addOnPreMain' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["addOnExit"])Module["addOnExit"]=(function(){abort("'addOnExit' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["addOnPostRun"])Module["addOnPostRun"]=(function(){abort("'addOnPostRun' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["writeStringToMemory"])Module["writeStringToMemory"]=(function(){abort("'writeStringToMemory' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["writeArrayToMemory"])Module["writeArrayToMemory"]=(function(){abort("'writeArrayToMemory' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["writeAsciiToMemory"])Module["writeAsciiToMemory"]=(function(){abort("'writeAsciiToMemory' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["addRunDependency"])Module["addRunDependency"]=(function(){abort("'addRunDependency' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ). Alternatively, forcing filesystem support (-s FORCE_FILESYSTEM=1) can export this for you");});if(!Module["removeRunDependency"])Module["removeRunDependency"]=(function(){abort("'removeRunDependency' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ). Alternatively, forcing filesystem support (-s FORCE_FILESYSTEM=1) can export this for you");});if(!Module["ENV"])Module["ENV"]=(function(){abort("'ENV' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["FS"])Module["FS"]=(function(){abort("'FS' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["FS_createFolder"])Module["FS_createFolder"]=(function(){abort("'FS_createFolder' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ). Alternatively, forcing filesystem support (-s FORCE_FILESYSTEM=1) can export this for you");});if(!Module["FS_createPath"])Module["FS_createPath"]=(function(){abort("'FS_createPath' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ). Alternatively, forcing filesystem support (-s FORCE_FILESYSTEM=1) can export this for you");});if(!Module["FS_createDataFile"])Module["FS_createDataFile"]=(function(){abort("'FS_createDataFile' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ). Alternatively, forcing filesystem support (-s FORCE_FILESYSTEM=1) can export this for you");});if(!Module["FS_createPreloadedFile"])Module["FS_createPreloadedFile"]=(function(){abort("'FS_createPreloadedFile' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ). Alternatively, forcing filesystem support (-s FORCE_FILESYSTEM=1) can export this for you");});if(!Module["FS_createLazyFile"])Module["FS_createLazyFile"]=(function(){abort("'FS_createLazyFile' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ). Alternatively, forcing filesystem support (-s FORCE_FILESYSTEM=1) can export this for you");});if(!Module["FS_createLink"])Module["FS_createLink"]=(function(){abort("'FS_createLink' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ). Alternatively, forcing filesystem support (-s FORCE_FILESYSTEM=1) can export this for you");});if(!Module["FS_createDevice"])Module["FS_createDevice"]=(function(){abort("'FS_createDevice' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ). Alternatively, forcing filesystem support (-s FORCE_FILESYSTEM=1) can export this for you");});if(!Module["FS_unlink"])Module["FS_unlink"]=(function(){abort("'FS_unlink' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ). Alternatively, forcing filesystem support (-s FORCE_FILESYSTEM=1) can export this for you");});if(!Module["GL"])Module["GL"]=(function(){abort("'GL' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["staticAlloc"])Module["staticAlloc"]=(function(){abort("'staticAlloc' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["dynamicAlloc"])Module["dynamicAlloc"]=(function(){abort("'dynamicAlloc' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["warnOnce"])Module["warnOnce"]=(function(){abort("'warnOnce' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["loadDynamicLibrary"])Module["loadDynamicLibrary"]=(function(){abort("'loadDynamicLibrary' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["loadWebAssemblyModule"])Module["loadWebAssemblyModule"]=(function(){abort("'loadWebAssemblyModule' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["getLEB"])Module["getLEB"]=(function(){abort("'getLEB' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["getFunctionTables"])Module["getFunctionTables"]=(function(){abort("'getFunctionTables' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["alignFunctionTables"])Module["alignFunctionTables"]=(function(){abort("'alignFunctionTables' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["registerFunctions"])Module["registerFunctions"]=(function(){abort("'registerFunctions' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["addFunction"])Module["addFunction"]=(function(){abort("'addFunction' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["removeFunction"])Module["removeFunction"]=(function(){abort("'removeFunction' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["getFuncWrapper"])Module["getFuncWrapper"]=(function(){abort("'getFuncWrapper' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["prettyPrint"])Module["prettyPrint"]=(function(){abort("'prettyPrint' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["makeBigInt"])Module["makeBigInt"]=(function(){abort("'makeBigInt' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["dynCall"])Module["dynCall"]=(function(){abort("'dynCall' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["getCompilerSetting"])Module["getCompilerSetting"]=(function(){abort("'getCompilerSetting' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["stackSave"])Module["stackSave"]=(function(){abort("'stackSave' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["stackRestore"])Module["stackRestore"]=(function(){abort("'stackRestore' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["stackAlloc"])Module["stackAlloc"]=(function(){abort("'stackAlloc' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["establishStackSpace"])Module["establishStackSpace"]=(function(){abort("'establishStackSpace' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["print"])Module["print"]=(function(){abort("'print' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});if(!Module["printErr"])Module["printErr"]=(function(){abort("'printErr' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");});Module["ALLOC_NORMAL"]=ALLOC_NORMAL;if(!Module["ALLOC_STACK"])Object.defineProperty(Module,"ALLOC_STACK",{get:(function(){abort("'ALLOC_STACK' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");})});if(!Module["ALLOC_STATIC"])Object.defineProperty(Module,"ALLOC_STATIC",{get:(function(){abort("'ALLOC_STATIC' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");})});if(!Module["ALLOC_DYNAMIC"])Object.defineProperty(Module,"ALLOC_DYNAMIC",{get:(function(){abort("'ALLOC_DYNAMIC' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");})});if(!Module["ALLOC_NONE"])Object.defineProperty(Module,"ALLOC_NONE",{get:(function(){abort("'ALLOC_NONE' was not exported. add it to EXTRA_EXPORTED_RUNTIME_METHODS (see the FAQ)");})});Module["then"]=(function(func){if(Module["calledRun"]){func(Module);}else{var old=Module["onRuntimeInitialized"];Module["onRuntimeInitialized"]=(function(){if(old)old();func(Module);});}return Module});function ExitStatus(status){this.name="ExitStatus";this.message="Program terminated with exit("+status+")";this.status=status;}ExitStatus.prototype=new Error;ExitStatus.prototype.constructor=ExitStatus;dependenciesFulfilled=function runCaller(){if(!Module["calledRun"])run();if(!Module["calledRun"])dependenciesFulfilled=runCaller;};function run(args){args=args||Module["arguments"];if(runDependencies>0){return}writeStackCookie();preRun();if(runDependencies>0)return;if(Module["calledRun"])return;function doRun(){if(Module["calledRun"])return;Module["calledRun"]=true;if(ABORT)return;ensureInitRuntime();preMain();if(Module["onRuntimeInitialized"])Module["onRuntimeInitialized"]();assert(!Module["_main"],'compiled without a main, but one is present. if you added it from JS, use Module["onRuntimeInitialized"]');postRun();}if(Module["setStatus"]){Module["setStatus"]("Running...");setTimeout((function(){setTimeout((function(){Module["setStatus"]("");}),1);doRun();}),1);}else{doRun();}checkStackCookie();}Module["run"]=run;var abortDecorators=[];function abort(what){if(Module["onAbort"]){Module["onAbort"](what);}if(what!==undefined){out(what);err(what);what=JSON.stringify(what);}else{what="";}ABORT=true;var extra="";var output="abort("+what+") at "+stackTrace()+extra;if(abortDecorators){abortDecorators.forEach((function(decorator){output=decorator(output,what);}));}throw output}Module["abort"]=abort;if(Module["preInit"]){if(typeof Module["preInit"]=="function")Module["preInit"]=[Module["preInit"]];while(Module["preInit"].length>0){Module["preInit"].pop()();}}Module["noExitRuntime"]=true;run();
+
+
+
+
+
+  return Module;
+}
+);
+})();
+module.exports = Module;
+});
+
+'use strict';
+
+// copied from https://github.com/beatgammit/base64-js
+
+var byteLength_1 = byteLength$1;
+var toByteArray_1 = toByteArray$1;
+var fromByteArray_1 = fromByteArray$1;
+
+var lookup$1 = [];
+var revLookup$1 = [];
+var Arr$1 = typeof Uint8Array !== 'undefined' ? Uint8Array : Array;
+
+var code = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+for (var i = 0, len = code.length; i < len; ++i) {
+  lookup$1[i] = code[i];
+  revLookup$1[code.charCodeAt(i)] = i;
+}
+
+// Support decoding URL-safe base64 strings, as Node.js does.
+// See: https://en.wikipedia.org/wiki/Base64#URL_applications
+revLookup$1['-'.charCodeAt(0)] = 62;
+revLookup$1['_'.charCodeAt(0)] = 63;
+
+function getLens (b64) {
+  var len = b64.length;
+
+  if (len % 4 > 0) {
+    throw new Error('Invalid string. Length must be a multiple of 4')
+  }
+
+  // Trim off extra bytes after placeholder bytes are found
+  // See: https://github.com/beatgammit/base64-js/issues/42
+  var validLen = b64.indexOf('=');
+  if (validLen === -1) validLen = len;
+
+  var placeHoldersLen = validLen === len
+    ? 0
+    : 4 - (validLen % 4);
+
+  return [validLen, placeHoldersLen]
+}
+
+// base64 is 4/3 + up to two characters of the original data
+function byteLength$1 (b64) {
+  var lens = getLens(b64);
+  var validLen = lens[0];
+  var placeHoldersLen = lens[1];
+  return ((validLen + placeHoldersLen) * 3 / 4) - placeHoldersLen
+}
+
+function _byteLength (b64, validLen, placeHoldersLen) {
+  return ((validLen + placeHoldersLen) * 3 / 4) - placeHoldersLen
+}
+
+function toByteArray$1 (b64) {
+  var tmp;
+  var lens = getLens(b64);
+  var validLen = lens[0];
+  var placeHoldersLen = lens[1];
+
+  var arr = new Arr$1(_byteLength(b64, validLen, placeHoldersLen));
+
+  var curByte = 0;
+
+  // if there are placeholders, only get up to the last complete 4 chars
+  var len = placeHoldersLen > 0
+    ? validLen - 4
+    : validLen;
+
+  for (var i = 0; i < len; i += 4) {
+    tmp =
+      (revLookup$1[b64.charCodeAt(i)] << 18) |
+      (revLookup$1[b64.charCodeAt(i + 1)] << 12) |
+      (revLookup$1[b64.charCodeAt(i + 2)] << 6) |
+      revLookup$1[b64.charCodeAt(i + 3)];
+    arr[curByte++] = (tmp >> 16) & 0xFF;
+    arr[curByte++] = (tmp >> 8) & 0xFF;
+    arr[curByte++] = tmp & 0xFF;
+  }
+
+  if (placeHoldersLen === 2) {
+    tmp =
+      (revLookup$1[b64.charCodeAt(i)] << 2) |
+      (revLookup$1[b64.charCodeAt(i + 1)] >> 4);
+    arr[curByte++] = tmp & 0xFF;
+  }
+
+  if (placeHoldersLen === 1) {
+    tmp =
+      (revLookup$1[b64.charCodeAt(i)] << 10) |
+      (revLookup$1[b64.charCodeAt(i + 1)] << 4) |
+      (revLookup$1[b64.charCodeAt(i + 2)] >> 2);
+    arr[curByte++] = (tmp >> 8) & 0xFF;
+    arr[curByte++] = tmp & 0xFF;
+  }
+
+  return arr
+}
+
+function tripletToBase64$1 (num) {
+  return lookup$1[num >> 18 & 0x3F] +
+    lookup$1[num >> 12 & 0x3F] +
+    lookup$1[num >> 6 & 0x3F] +
+    lookup$1[num & 0x3F]
+}
+
+function encodeChunk$1 (uint8, start, end) {
+  var tmp;
+  var output = [];
+  for (var i = start; i < end; i += 3) {
+    tmp =
+      ((uint8[i] << 16) & 0xFF0000) +
+      ((uint8[i + 1] << 8) & 0xFF00) +
+      (uint8[i + 2] & 0xFF);
+    output.push(tripletToBase64$1(tmp));
+  }
+  return output.join('')
+}
+
+function fromByteArray$1 (uint8) {
+  var tmp;
+  var len = uint8.length;
+  var extraBytes = len % 3; // if we have 1 byte left, pad 2 bytes
+  var parts = [];
+  var maxChunkLength = 16383; // must be multiple of 3
+
+  // go through the array every three bytes, we'll deal with trailing stuff later
+  for (var i = 0, len2 = len - extraBytes; i < len2; i += maxChunkLength) {
+    parts.push(encodeChunk$1(
+      uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)
+    ));
+  }
+
+  // pad the end with zeros, but make sure to not forget the extra bytes
+  if (extraBytes === 1) {
+    tmp = uint8[len - 1];
+    parts.push(
+      lookup$1[tmp >> 2] +
+      lookup$1[(tmp << 4) & 0x3F] +
+      '=='
+    );
+  } else if (extraBytes === 2) {
+    tmp = (uint8[len - 2] << 8) + uint8[len - 1];
+    parts.push(
+      lookup$1[tmp >> 10] +
+      lookup$1[(tmp >> 4) & 0x3F] +
+      lookup$1[(tmp << 2) & 0x3F] +
+      '='
+    );
+  }
+
+  return parts.join('')
+}
+
+var base64 = {
+	byteLength: byteLength_1,
+	toByteArray: toByteArray_1,
+	fromByteArray: fromByteArray_1
+};
+
+let wasmBinaryBase64 = "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IQMgAiAASyACQf////8HSXEEf0GYGigCACIIBEAgAyAGTSADIAhLcgRAQQAhAgwFCwsgAhANIgMgAUYNBSADIQEMAgVBAAsLIQIMAQsgCSACSyACQf////8HSSABQX9HcXFFBEAgAUF/RgRAQQAhAgwCBQwECwALIAQgAmtBwBooAgAiA2pBACADa3EiA0H/////B08NAkEAIAJrIQQgAxANQX9GBH8gBBANGkEABSADIAJqIQIMAwshAgtBnBpBnBooAgBBBHI2AgALIAVB/////wdJBEAgBRANIQFBABANIgMgAWsiBCAAQShqSyEFIAQgAiAFGyECIAFBf0YgBUEBc3IgASADSSABQX9HIANBf0dxcUEBc3JFDQELDAELQZAaQZAaKAIAIAJqIgM2AgAgA0GUGigCAEsEQEGUGiADNgIACwJAQfgWKAIAIgUEQEGgGiEDAkACQANAIAEgAygCACIEIAMoAgQiBmpGDQEgAygCCCIDDQALDAELIANBBGohCCADKAIMQQhxRQRAIAEgBUsgBCAFTXEEQCAIIAYgAmo2AgAgBUEAIAVBCGoiAWtBB3FBACABQQdxGyIDaiEBQewWKAIAIAJqIgQgA2shAkH4FiABNgIAQewWIAI2AgAgASACQQFyNgIEIAUgBGpBKDYCBEH8FkHIGigCADYCAAwECwsLIAFB8BYoAgBJBEBB8BYgATYCAAsgASACaiEEQaAaIQMCQAJAA0AgAygCACAERg0BIAMoAggiAw0ACwwBCyADKAIMQQhxRQRAIAMgATYCACADQQRqIgMgAygCACACajYCACABQQAgAUEIaiIBa0EHcUEAIAFBB3EbaiIJIABqIQYgBEEAIARBCGoiAWtBB3FBACABQQdxG2oiAiAJayAAayEDIAkgAEEDcjYCBAJAIAUgAkYEQEHsFkHsFigCACADaiIANgIAQfgWIAY2AgAgBiAAQQFyNgIEBUH0FigCACACRgRAQegWQegWKAIAIANqIgA2AgBB9BYgBjYCACAGIABBAXI2AgQgBiAAaiAANgIADAILIAIoAgQiAEEDcUEBRgRAIABBeHEhByAAQQN2IQUCQCAAQYACSQRAIAIoAgwiACACKAIIIgFGBEBB4BZB4BYoAgBBASAFdEF/c3E2AgAFIAEgADYCDCAAIAE2AggLBSACKAIYIQgCQCAC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BAAAAAoAAAAFAAAACgAAAAIAAAAIAAAABAAAAAcAAAAGAAAAAQAAAAUAAAAPAAAACwAAAAkAAAAOAAAAAwAAAAwAAAANAEHEDQubCQEAAAACAAAAAwAAAAQAAAAFAAAABgAAAAcAAAAIAAAACQAAAAoAAAALAAAADAAAAA0AAAAOAAAADwAAAA4AAAAKAAAABAAAAAgAAAAJAAAADwAAAA0AAAAGAAAAAQAAAAwAAAAAAAAAAgAAAAsAAAAHAAAABQAAAAMAAABhcmdvbjJkAEFyZ29uMmQAYXJnb24yaQBBcmdvbjJpAGFyZ29uMmlkAEFyZ29uMmlkAGFyZ29uMnUAQXJnb24ydQBVbmtub3duIGVycm9yIGNvZGUAVGhlIHBhc3N3b3JkIGRvZXMgbm90IG1hdGNoIHRoZSBzdXBwbGllZCBoYXNoAFNvbWUgb2YgZW5jb2RlZCBwYXJhbWV0ZXJzIGFyZSB0b28gbG9uZyBvciB0b28gc2hvcnQAVGhyZWFkaW5nIGZhaWx1cmUARGVjb2RpbmcgZmFpbGVkAEVuY29kaW5nIGZhaWxlZABNaXNzaW5nIGFyZ3VtZW50cwBUb28gbWFueSB0aHJlYWRzAE5vdCBlbm91Z2ggdGhyZWFkcwBPdXRwdXQgcG9pbnRlciBtaXNtYXRjaABUaGVyZSBpcyBubyBzdWNoIHZlcnNpb24gb2YgQXJnb24yAEFyZ29uMl9Db250ZXh0IGNvbnRleHQgaXMgTlVMTABUaGUgYWxsb2NhdGUgbWVtb3J5IGNhbGxiYWNrIGlzIE5VTEwAVGhlIGZyZWUgbWVtb3J5IGNhbGxiYWNrIGlzIE5VTEwATWVtb3J5IGFsbG9jYXRpb24gZXJyb3IAQXNzb2NpYXRlZCBkYXRhIHBvaW50ZXIgaXMgTlVMTCwgYnV0IGFkIGxlbmd0aCBpcyBub3QgMABTZWNyZXQgcG9pbnRlciBpcyBOVUxMLCBidXQgc2VjcmV0IGxlbmd0aCBpcyBub3QgMABTYWx0IHBvaW50ZXIgaXMgTlVMTCwgYnV0IHNhbHQgbGVuZ3RoIGlzIG5vdCAwAFBhc3N3b3JkIHBvaW50ZXIgaXMgTlVMTCwgYnV0IHBhc3N3b3JkIGxlbmd0aCBpcyBub3QgMABUb28gbWFueSBsYW5lcwBUb28gZmV3IGxhbmVzAE1lbW9yeSBjb3N0IGlzIHRvbyBsYXJnZQBNZW1vcnkgY29zdCBpcyB0b28gc21hbGwAVGltZSBjb3N0IGlzIHRvbyBsYXJnZQBUaW1lIGNvc3QgaXMgdG9vIHNtYWxsAFNlY3JldCBpcyB0b28gbG9uZwBTZWNyZXQgaXMgdG9vIHNob3J0AEFzc29jaWF0ZWQgZGF0YSBpcyB0b28gbG9uZwBBc3NvY2lhdGVkIGRhdGEgaXMgdG9vIHNob3J0AFNhbHQgaXMgdG9vIGxvbmcAU2FsdCBpcyB0b28gc2hvcnQAUGFzc3dvcmQgaXMgdG9vIGxvbmcAUGFzc3dvcmQgaXMgdG9vIHNob3J0AE91dHB1dCBpcyB0b28gbG9uZwBPdXRwdXQgaXMgdG9vIHNob3J0AE91dHB1dCBwb2ludGVyIGlzIE5VTEwAT0sAMDEyMzQ1Njc4OQ==";
+
+var argon2_wasm = base64.toByteArray(wasmBinaryBase64);
+
+'use strict';
+
+if (!WebAssembly) {
+    throw new Error('WebAssembly not supported here.');
+}
+
+
+
+
+var Module = {
+    printErr: console.error,
+    setStatus: console.log,
+    wasmBinary: argon2_wasm
+    // TODO: set these to avoid using base64 everywhere?
+    // wasmBinaryFile: root + 'dist/argon2.wasm',
+    // locateFile: function(file) { return (args.distPath || '') + '/' + file; }
+};
+
+/**
+* Argon2 hash
+* @param {string} params.pass - password string
+* @param {string} params.salt - salt string
+* @param {float}  [params.time=1] - the number of iterations
+* @param {float}  [params.mem=1024] - used memory, in KiB
+* @param {float}  [params.hashLen=24] - desired hash length
+* @param {float}  [params.parallelism=1] - desired parallelism (will be computed in parallel only for PNaCl)
+* @param {number} [params.type=argon2.ArgonType.Argon2d] - hash type: argon2.ArgonType.Argon2d, .Argon2i, .Argon2id or .Argon2u
+* @param {number} [params.distPath=.] - asm.js script location, without trailing slash
+*
+* @return Promise
+*
+* @example
+*  argon2.hash({ pass: 'password', salt: 'somesalt' })
+*      .then(h => console.log(h.hash, h.hashHex, h.encoded))
+*      .catch(e => console.error(e.message, e.code))
+*/
+function argon2(args) {
+  if (Module._argon2_hash) {
+      return new Promise((resolve, reject) => {
+          try {
+              resolve(calcHash(args));
+          } catch(e) {
+              reject(e);
+          }
+      });
+  }
+
+  return new Promise((resolve, reject) => {
+      Module.onRuntimeInitialized = function() {
+          try {
+              resolve(calcHash(args));
+          } catch(e) {
+              reject(e);
+          }
+      };
+
+      emscriptenRunner(Module);
+  }).catch(err => {
+    console.log(err);
+  });
+}
+
+function calcHash(arg) {
+  if (!Module._argon2_hash) {
+      throw new Error('Error: _argon2_hash not available');
+  }
+  var t_cost = arg && arg.time || 10;
+  var m_cost = arg && arg.mem || 1024;
+  var parallelism = arg && arg.parallelism || 1;
+  var pwd = allocateArray(arg && arg.pass || 'password');
+  var pwdlen = arg && arg.pass ? arg.pass.length : 8;
+  var salt = allocateArray(arg && arg.salt || 'somesalt');
+  var saltlen = arg && arg.salt ? arg.salt.length : 8;
+  var hash = Module.allocate(new Array(arg && arg.hashLen || 32), 'i8', Module.ALLOC_NORMAL);
+  var hashlen = arg && arg.hashLen || 32;
+  var encoded = Module.allocate(new Array(512), 'i8', Module.ALLOC_NORMAL);
+  var encodedlen = 512;
+  var argon2_type = arg && arg.type || 0;
+  var version = 0x13;
+  var err;
+  try {
+      var res = Module._argon2_hash(t_cost, m_cost, parallelism, pwd, pwdlen, salt, saltlen,
+          hash, hashlen, encoded, encodedlen,
+          argon2_type, version);
+  } catch (e) {
+      err = e;
+  }
+  var result;
+  if (res === 0 && !err) {
+      var hashStr = '';
+      var hashArr = new Uint8Array(hashlen);
+      for (var i = 0; i < hashlen; i++) {
+          var byte = Module.HEAP8[hash + i];
+          hashArr[i] = byte;
+          hashStr += ('0' + (0xFF & byte).toString(16)).slice(-2);
+      }
+      var encodedStr = Module.Pointer_stringify(encoded);
+      result = { hash: hashArr, hashHex: hashStr, encoded: encodedStr };
+  } else {
+      try {
+          if (!err) {
+              err = Module.Pointer_stringify(Module._argon2_error_message(res));
+          }
+      } catch (e) {
+      }
+      result = { message: err, code: res };
+  }
+  try {
+      Module._free(pwd);
+      Module._free(salt);
+      Module._free(hash);
+      Module._free(encoded);
+  } catch (e) { }
+  if (err) {
+      throw result;
+  } else {
+      return result;
+  }
+}
+
+function allocateArray(strOrArr) {
+  var arr = strOrArr instanceof Uint8Array || strOrArr instanceof Array ? strOrArr
+      : Module.intArrayFromString(strOrArr);
+  return Module.allocate(arr, 'i8', Module.ALLOC_NORMAL);
+}
+
+var argon2Wasm = argon2;
+
+var empty$2 = {};
+
+
+var empty$3 = Object.freeze({
+	default: empty$2
+});
+
+var require$$0$2 = ( empty$3 && empty$2 ) || empty$3;
 
 var naclFast = createCommonjsModule(function (module) {
 (function(nacl) {
@@ -5296,7 +5930,7 @@ nacl.setPRNG = function(fn) {
     });
   } else if (typeof commonjsRequire !== 'undefined') {
     // Node.js.
-    crypto = require$$0$1;
+    crypto = require$$0$2;
     if (crypto && crypto.randomBytes) {
       nacl.setPRNG(function(x, n) {
         var i, v = crypto.randomBytes(n);
@@ -5873,229 +6507,6 @@ function unwrapListeners(arr) {
   }
   return ret;
 }
-
-// shim for using process in browser
-// based off https://github.com/defunctzombie/node-process/blob/master/browser.js
-
-function defaultSetTimout() {
-    throw new Error('setTimeout has not been defined');
-}
-function defaultClearTimeout () {
-    throw new Error('clearTimeout has not been defined');
-}
-var cachedSetTimeout = defaultSetTimout;
-var cachedClearTimeout = defaultClearTimeout;
-if (typeof global$1.setTimeout === 'function') {
-    cachedSetTimeout = setTimeout;
-}
-if (typeof global$1.clearTimeout === 'function') {
-    cachedClearTimeout = clearTimeout;
-}
-
-function runTimeout(fun) {
-    if (cachedSetTimeout === setTimeout) {
-        //normal enviroments in sane situations
-        return setTimeout(fun, 0);
-    }
-    // if setTimeout wasn't available but was latter defined
-    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
-        cachedSetTimeout = setTimeout;
-        return setTimeout(fun, 0);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedSetTimeout(fun, 0);
-    } catch(e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
-            return cachedSetTimeout.call(null, fun, 0);
-        } catch(e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
-            return cachedSetTimeout.call(this, fun, 0);
-        }
-    }
-
-
-}
-function runClearTimeout(marker) {
-    if (cachedClearTimeout === clearTimeout) {
-        //normal enviroments in sane situations
-        return clearTimeout(marker);
-    }
-    // if clearTimeout wasn't available but was latter defined
-    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
-        cachedClearTimeout = clearTimeout;
-        return clearTimeout(marker);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedClearTimeout(marker);
-    } catch (e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
-            return cachedClearTimeout.call(null, marker);
-        } catch (e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
-            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
-            return cachedClearTimeout.call(this, marker);
-        }
-    }
-
-
-
-}
-var queue = [];
-var draining = false;
-var currentQueue;
-var queueIndex = -1;
-
-function cleanUpNextTick() {
-    if (!draining || !currentQueue) {
-        return;
-    }
-    draining = false;
-    if (currentQueue.length) {
-        queue = currentQueue.concat(queue);
-    } else {
-        queueIndex = -1;
-    }
-    if (queue.length) {
-        drainQueue();
-    }
-}
-
-function drainQueue() {
-    if (draining) {
-        return;
-    }
-    var timeout = runTimeout(cleanUpNextTick);
-    draining = true;
-
-    var len = queue.length;
-    while(len) {
-        currentQueue = queue;
-        queue = [];
-        while (++queueIndex < len) {
-            if (currentQueue) {
-                currentQueue[queueIndex].run();
-            }
-        }
-        queueIndex = -1;
-        len = queue.length;
-    }
-    currentQueue = null;
-    draining = false;
-    runClearTimeout(timeout);
-}
-function nextTick(fun) {
-    var args = new Array(arguments.length - 1);
-    if (arguments.length > 1) {
-        for (var i = 1; i < arguments.length; i++) {
-            args[i - 1] = arguments[i];
-        }
-    }
-    queue.push(new Item(fun, args));
-    if (queue.length === 1 && !draining) {
-        runTimeout(drainQueue);
-    }
-}
-// v8 likes predictible objects
-function Item(fun, array) {
-    this.fun = fun;
-    this.array = array;
-}
-Item.prototype.run = function () {
-    this.fun.apply(null, this.array);
-};
-var title = 'browser';
-var platform = 'browser';
-var browser$2 = true;
-var env = {};
-var argv = [];
-var version = ''; // empty string to avoid regexp issues
-var versions = {};
-var release = {};
-var config = {};
-
-function noop() {}
-
-var on = noop;
-var addListener = noop;
-var once = noop;
-var off = noop;
-var removeListener = noop;
-var removeAllListeners = noop;
-var emit = noop;
-
-function binding(name) {
-    throw new Error('process.binding is not supported');
-}
-
-function cwd () { return '/' }
-function chdir (dir) {
-    throw new Error('process.chdir is not supported');
-}
-function umask() { return 0; }
-
-// from https://github.com/kumavis/browser-process-hrtime/blob/master/index.js
-var performance = global$1.performance || {};
-var performanceNow =
-  performance.now        ||
-  performance.mozNow     ||
-  performance.msNow      ||
-  performance.oNow       ||
-  performance.webkitNow  ||
-  function(){ return (new Date()).getTime() };
-
-// generate timestamp or delta
-// see http://nodejs.org/api/process.html#process_process_hrtime
-function hrtime(previousTimestamp){
-  var clocktime = performanceNow.call(performance)*1e-3;
-  var seconds = Math.floor(clocktime);
-  var nanoseconds = Math.floor((clocktime%1)*1e9);
-  if (previousTimestamp) {
-    seconds = seconds - previousTimestamp[0];
-    nanoseconds = nanoseconds - previousTimestamp[1];
-    if (nanoseconds<0) {
-      seconds--;
-      nanoseconds += 1e9;
-    }
-  }
-  return [seconds,nanoseconds]
-}
-
-var startTime = new Date();
-function uptime() {
-  var currentTime = new Date();
-  var dif = currentTime - startTime;
-  return dif / 1000;
-}
-
-var process = {
-  nextTick: nextTick,
-  title: title,
-  browser: browser$2,
-  env: env,
-  argv: argv,
-  version: version,
-  versions: versions,
-  on: on,
-  addListener: addListener,
-  once: once,
-  off: off,
-  removeListener: removeListener,
-  removeAllListeners: removeAllListeners,
-  emit: emit,
-  binding: binding,
-  cwd: cwd,
-  chdir: chdir,
-  umask: umask,
-  hrtime: hrtime,
-  platform: platform,
-  release: release,
-  config: config,
-  uptime: uptime
-};
 
 var inherits;
 if (typeof Object.create === 'function'){
@@ -8637,11 +9048,11 @@ var stream = Object.freeze({
 	Stream: Stream$1
 });
 
-var require$$1 = ( stream && Stream$1 ) || stream;
+var require$$1$1 = ( stream && Stream$1 ) || stream;
 
 'use strict';
 var Buffer$2 = safeBuffer.Buffer;
-var Transform = require$$1.Transform;
+var Transform = require$$1$1.Transform;
 
 
 function throwIfNotStringOrBuffer (val, prefix) {
@@ -9845,7 +10256,7 @@ exports.sha512 = sha512;
 });
 
 var Buffer$11 = safeBuffer.Buffer;
-var Transform$3 = require$$1.Transform;
+var Transform$3 = require$$1$1.Transform;
 var StringDecoder$1 = stringDecoder.StringDecoder;
 
 
@@ -9967,7 +10378,7 @@ Hash.prototype._final = function () {
   return this._hash.digest()
 };
 
-var browser = function createHash (alg) {
+var browser$1 = function createHash (alg) {
   alg = alg.toLowerCase();
   if (alg === 'md5') return new md5_js()
   if (alg === 'rmd160' || alg === 'ripemd160') return new ripemd160()
@@ -10130,8 +10541,8 @@ var base = function (checksumFn) {
 
 // SHA256(SHA256(buffer))
 function sha256x2 (buffer) {
-  var tmp = browser('sha256').update(buffer).digest();
-  return browser('sha256').update(tmp).digest()
+  var tmp = browser$1('sha256').update(buffer).digest();
+  return browser$1('sha256').update(tmp).digest()
 }
 
 var bs58check = base(sha256x2);
@@ -10251,8 +10662,8 @@ var browser$3 = function createHmac (alg, key) {
 };
 
 function hash160 (buffer) {
-  return browser('rmd160').update(
-    browser('sha256').update(buffer).digest()
+  return browser$1('rmd160').update(
+    browser$1('sha256').update(buffer).digest()
   ).digest()
 }
 
@@ -10315,7 +10726,7 @@ var bn = createCommonjsModule(function (module) {
 
   var Buffer;
   try {
-    Buffer = require$$0$1.Buffer;
+    Buffer = require$$0$2.Buffer;
   } catch (e) {
   }
 
@@ -14094,7 +14505,7 @@ if (typeof self === 'object') {
 } else {
   // Node.js or Web worker with no crypto support
   try {
-    var crypto$3 = require$$0$1;
+    var crypto$3 = require$$0$2;
     if (typeof crypto$3.randomBytes !== 'function')
       throw new Error('Not supported');
 
@@ -19183,14 +19594,14 @@ EDDSA.prototype.isPoint = function isPoint(val) {
   return val instanceof this.pointClass;
 };
 
-var require$$0$8 = ( _package$1 && _package ) || _package$1;
+var require$$0$9 = ( _package$1 && _package ) || _package$1;
 
 var elliptic_1 = createCommonjsModule(function (module, exports) {
 'use strict';
 
 var elliptic = exports;
 
-elliptic.version = require$$0$8.version;
+elliptic.version = require$$0$9.version;
 elliptic.utils = utils_1;
 elliptic.rand = brorand;
 elliptic.curve = curve_1;
@@ -20311,6 +20722,8 @@ var bip32 = {
   fromSeed
 };
 
+var bip32_4 = bip32.fromSeed;
+
 /**
  * Wraps Buffer.from(). Converts an array into a buffer.
  * @param  {array} arr
@@ -20456,7 +20869,7 @@ function () {
 
 
 var argon2u = function argon2u(entropy, seedSize) {
-  return argon2_1({
+  return argon2Wasm({
     pass: entropy,
     // string or Uint8Array
     salt: 'urbitkeygen',
@@ -20596,7 +21009,7 @@ function () {
   var _ref4 = _asyncToGenerator(
   /*#__PURE__*/
   regeneratorRuntime.mark(function _callee4(seed, password) {
-    var seedHash, _bip32$fromSeed, publicKey, privateKey, chainCode;
+    var seedHash, _fromSeed, publicKey, privateKey, chainCode;
 
     return regeneratorRuntime.wrap(function _callee4$(_context4) {
       while (1) {
@@ -20607,7 +21020,7 @@ function () {
 
           case 2:
             seedHash = _context4.sent;
-            _bip32$fromSeed = bip32.fromSeed(bufferFrom(seedHash)), publicKey = _bip32$fromSeed.publicKey, privateKey = _bip32$fromSeed.privateKey, chainCode = _bip32$fromSeed.chainCode;
+            _fromSeed = bip32_4(bufferFrom(seedHash)), publicKey = _fromSeed.publicKey, privateKey = _fromSeed.privateKey, chainCode = _fromSeed.chainCode;
             return _context4.abrupt("return", {
               public: buf2hex(publicKey),
               private: buf2hex(privateKey),
@@ -20681,18 +21094,18 @@ function () {
   var _ref5 = _asyncToGenerator(
   /*#__PURE__*/
   regeneratorRuntime.mark(function _callee5(config) {
-    var ticket, seedSize, ships, password, revisions, seed;
+    var ticket, seedSize, ships, password, revisions, boot, seed;
     return regeneratorRuntime.wrap(function _callee5$(_context5) {
       while (1) {
         switch (_context5.prev = _context5.next) {
           case 0:
-            ticket = config.ticket, seedSize = config.seedSize, ships = config.ships, password = config.password, revisions = config.revisions;
+            ticket = config.ticket, seedSize = config.seedSize, ships = config.ships, password = config.password, revisions = config.revisions, boot = config.boot;
             _context5.next = 3;
             return argon2u(ticket, seedSize).hash;
 
           case 3:
             seed = _context5.sent;
-            return _context5.abrupt("return", fullWalletFromSeed(bufferFrom(seed), ships, password, revisions));
+            return _context5.abrupt("return", fullWalletFromSeed(bufferFrom(seed), ships, password, revisions, boot));
 
           case 5:
           case "end":
@@ -20723,13 +21136,13 @@ function () {
   var _ref6 = _asyncToGenerator(
   /*#__PURE__*/
   regeneratorRuntime.mark(function _callee6(config) {
-    var ownerSeed, ships, password, revisions, _revisions, ownershipNode, managementNode, delegateNode, transferNodes, spawnNodes, networkSeeds, networkNodes, wallet;
+    var ownerSeed, ships, password, revisions, boot, _revisions, ownershipNode, managementNode, delegateNode, transferNodes, spawnNodes, networkSeeds, networkNodes, wallet;
 
     return regeneratorRuntime.wrap(function _callee6$(_context6) {
       while (1) {
         switch (_context6.prev = _context6.next) {
           case 0:
-            ownerSeed = config.ownerSeed, ships = config.ships, password = config.password, revisions = config.revisions; // Normalize revisions object
+            ownerSeed = config.ownerSeed, ships = config.ships, password = config.password, revisions = config.revisions, boot = config.boot; // Normalize revisions object
 
             _revisions = {
               transfer: get(revisions, 'transfer', 0),
@@ -20739,17 +21152,16 @@ function () {
               network: get(revisions, 'network', 0)
             };
             _context6.next = 4;
-            return childNodeFromSeed({
-              seed: ownerSeed,
-              type: 'owner',
-              revision: null,
-              ship: null,
-              password: password
-            });
+            return walletFromSeed(ownerSeed, password);
 
           case 4:
-            ownershipNode = _context6.sent;
-            _context6.next = 7;
+            _context6.t0 = _context6.sent;
+            _context6.t1 = ownerSeed;
+            ownershipNode = {
+              keys: _context6.t0,
+              seed: _context6.t1
+            };
+            _context6.next = 9;
             return childNodeFromSeed({
               seed: ownerSeed,
               type: 'manage',
@@ -20758,9 +21170,9 @@ function () {
               password: password
             });
 
-          case 7:
+          case 9:
             managementNode = _context6.sent;
-            _context6.next = 10;
+            _context6.next = 12;
             return childNodeFromSeed({
               seed: ownerSeed,
               type: 'delegate',
@@ -20769,9 +21181,9 @@ function () {
               password: password
             });
 
-          case 10:
+          case 12:
             delegateNode = _context6.sent;
-            _context6.next = 13;
+            _context6.next = 15;
             return Promise.all(ships.map(function (ship) {
               return childNodeFromSeed({
                 seed: ownerSeed,
@@ -20782,9 +21194,9 @@ function () {
               });
             }));
 
-          case 13:
+          case 15:
             transferNodes = _context6.sent;
-            _context6.next = 16;
+            _context6.next = 18;
             return Promise.all(ships.map(function (ship) {
               return childNodeFromSeed({
                 seed: ownerSeed,
@@ -20795,9 +21207,17 @@ function () {
               });
             }));
 
-          case 16:
+          case 18:
             spawnNodes = _context6.sent;
-            _context6.next = 19;
+            networkSeeds = null;
+            networkNodes = null;
+
+            if (!(boot === true)) {
+              _context6.next = 28;
+              break;
+            }
+
+            _context6.next = 24;
             return Promise.all(ships.map(function (ship) {
               return childSeedFromSeed({
                 seed: bufferFrom(managementNode.seed),
@@ -20808,9 +21228,9 @@ function () {
               });
             }));
 
-          case 19:
+          case 24:
             networkSeeds = _context6.sent;
-            _context6.next = 22;
+            _context6.next = 27;
             return Promise.all(networkSeeds.map(function (seed, index) {
               return {
                 seed: buf2hex(seed),
@@ -20823,8 +21243,11 @@ function () {
               };
             }));
 
-          case 22:
+          case 27:
             networkNodes = _context6.sent;
+
+          case 28:
+            ;
             wallet = {
               owner: ownershipNode,
               delegate: delegateNode,
@@ -20835,7 +21258,7 @@ function () {
             };
             return _context6.abrupt("return", wallet);
 
-          case 25:
+          case 31:
           case "end":
             return _context6.stop();
         }
@@ -20848,4 +21271,10 @@ function () {
   };
 }();
 
-export { argon2u, fullWalletFromTicket, fullWalletFromSeed, childNodeFromSeed, childSeedFromSeed, walletFromSeed, urbitKeysFromSeed };
+exports.argon2u = argon2u;
+exports.fullWalletFromTicket = fullWalletFromTicket;
+exports.fullWalletFromSeed = fullWalletFromSeed;
+exports.childNodeFromSeed = childNodeFromSeed;
+exports.childSeedFromSeed = childSeedFromSeed;
+exports.walletFromSeed = walletFromSeed;
+exports.urbitKeysFromSeed = urbitKeysFromSeed;

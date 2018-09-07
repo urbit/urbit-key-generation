@@ -16,7 +16,7 @@ gulp.task('default', function(cb) {
   return rollup({
     input: './src/index.js',
     cache: cache,
-    format: "es",
+    format: "cjs",
     plugins: [
       resolve({browser: true}),
       commonjs(),
