@@ -15,6 +15,9 @@
   ],
   "author": "Tlon",
   "license": "MIT",
+  "scripts": {
+    "build": "mkdir out && browserify src/index.js -s urbit-keygen > out/index.js"
+  },
   "bugs": {
     "url": "https://github.com/urbit/keygen-js/issues"
   },
