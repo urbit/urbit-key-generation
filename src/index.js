@@ -361,9 +361,5 @@ module.exports = {
   childSeedFromSeed,
   walletFromSeed,
   urbitKeysFromSeed,
-  _buf2hex,
-  _hash,
-  _argon2,
-  _defaultTo,
-  _get,
+  buf2hex
 }
