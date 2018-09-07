@@ -9,12 +9,6 @@ import {
   _buf2hex,
 } from '../src/index'
 
-// const _buf2hex = buffer => {
-//   return Array.from(new Uint8Array(buffer))
-//     .map(b => b.toString(16).padStart(2, '0'))
-//     .join('');
-// };
-
 test('argon2u', async () => {
   let res = await argon2u({
     entropy: 'password123',
