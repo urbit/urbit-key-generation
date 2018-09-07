@@ -251,9 +251,9 @@ const urbitKeysFromSeed = (seed, password) => {
  * @return {Promise => object} an object representing a full HD wallet.
  */
 const fullWalletFromTicket = async config => {
-  const { ticket, seedSize, ships, password, revisions } = config;
+  const { ticket, seedSize, ships, password, revisions, boot } = config;
   const seed = await argon2u(ticket, seedSize).hash;
-  return fullWalletFromSeed(bufferFrom(seed), ships, password, revisions);
+  return fullWalletFromSeed(bufferFrom(seed), ships, password, revisions, boot);
 }
 
 
@@ -268,7 +268,7 @@ const fullWalletFromTicket = async config => {
  * @return {Promise => object} an object representing a full HD wallet.
  */
 const fullWalletFromSeed = async config => {
-  const { ownerSeed, ships, password, revisions } = config;
+  const { ownerSeed, ships, password, revisions, boot } = config;
 
   // Normalize revisions object
   const _revisions = {
@@ -279,13 +279,10 @@ const fullWalletFromSeed = async config => {
     network: get(revisions, 'network', 0),
   };
 
-  const ownershipNode = await childNodeFromSeed({
+  const ownershipNode = {
+    keys: await walletFromSeed(ownerSeed, password),
     seed: ownerSeed,
-    type: 'owner',
-    revision: null,
-    ship: null,
-    password: password,
-  });
+  }
 
   const managementNode = await childNodeFromSeed({
     seed: ownerSeed,
@@ -319,23 +316,30 @@ const fullWalletFromSeed = async config => {
     password: password,
   })));
 
-  const networkSeeds = await Promise.all(ships.map(ship => childSeedFromSeed({
-    seed: bufferFrom(managementNode.seed),
-    type: 'network',
-    revision: _revisions.network,
-    ship: ship,
-    password: password,
-  })));
 
-  const networkNodes = await Promise.all(networkSeeds.map((seed, index) => ({
-    seed: buf2hex(seed),
-    keys: urbitKeysFromSeed(bufferFrom(seed), bufferFrom(defaultTo(password, ''))),
-    meta: {
+  let networkSeeds = [];
+  let networkNodes = [];
+
+  if (boot === true) {
+
+    networkSeeds = await Promise.all(ships.map(ship => childSeedFromSeed({
+      seed: bufferFrom(managementNode.seed),
       type: 'network',
       revision: _revisions.network,
-      ship: ships[index],
-    }
-  })));
+      ship: ship,
+      password: password,
+    })));
+
+    networkNodes = await Promise.all(networkSeeds.map((seed, index) => ({
+      seed: buf2hex(seed),
+      keys: urbitKeysFromSeed(bufferFrom(seed), bufferFrom(defaultTo(password, ''))),
+      meta: {
+        type: 'network',
+        revision: _revisions.network,
+        ship: ships[index],
+      }
+    })));
+  };
 
   const wallet = {
     owner: ownershipNode,
@@ -357,4 +361,9 @@ module.exports = {
   childSeedFromSeed,
   walletFromSeed,
   urbitKeysFromSeed,
+  _buf2hex,
+  _hash,
+  _argon2,
+  _defaultTo,
+  _get,
 }

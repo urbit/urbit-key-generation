@@ -1,6 +1,6 @@
 {
   "name": "urbit-keygen",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Wrapper functions for key generation according to the Urbit hierarchical wallet design.",
   "main": "dist/index.js",
   "scripts": {
@@ -28,10 +28,6 @@
     "tweetnacl": "^1.0.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.0.0",
-    "@babel/preset-env": "^7.0.0",
-    "babel-core": "^7.0.0-bridge.0",
-    "babel-jest": "^23.4.2",
     "jest": "^23.5.0",
     "regenerator-runtime": "^0.12.1"
   }
