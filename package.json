@@ -4,7 +4,8 @@
   "description": "Wrapper functions for key generation according to the Urbit hierarchical wallet design.",
   "main": "dist/index.js",
   "scripts": {
-    "test": "jest --coverage test"
+    "test": "jest --coverage test",
+    "build": "mkdir dist && browserify src/index.js -s urbit-keygen > dist/index.js"
   },
   "repository": {
     "type": "git",
@@ -15,9 +16,6 @@
   ],
   "author": "Tlon",
   "license": "MIT",
-  "scripts": {
-    "build": "mkdir dist && browserify src/index.js -s urbit-keygen > dist/index.js"
-  },
   "bugs": {
     "url": "https://github.com/urbit/keygen-js/issues"
   },
