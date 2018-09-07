@@ -2,7 +2,7 @@
   "name": "urbit-keygen",
   "version": "0.0.0",
   "description": "Wrapper functions for key generation according to the Urbit hierarchical wallet design.",
-  "main": "src/index.js",
+  "main": "out/bundle.js",
   "scripts": {
     "test": "jest --coverage test"
   },
