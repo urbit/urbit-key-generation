@@ -6,7 +6,7 @@ import {
   childSeedFromSeed,
   walletFromSeed,
   urbitKeysFromSeed,
-  buf2hex,
+  _buf2hex,
 } from '../src/index'
 
 test('argon2u', async () => {
@@ -23,14 +23,14 @@ test('child seed from seed', async () => {
     type: 'type',
     revision: 0
   });
-  expect(buf2hex(res)).toBe('b150354a72552c9efd');
+  expect(_buf2hex(res)).toBe('b150354a72552c9efd');
   //
   res = await childSeedFromSeed({
     seed: 'some seed!',
     type: 'type',
     revision: 0
   });
-  expect(buf2hex(res)).toBe('d613009d343cfc90b471');
+  expect(_buf2hex(res)).toBe('d613009d343cfc90b471');
   //
   res = await childSeedFromSeed({
     seed: 'some seed',
@@ -38,7 +38,7 @@ test('child seed from seed', async () => {
     revision: 0,
     ship: 2
   });
-  expect(buf2hex(res)).toBe('b50817d05c920fa6b3');
+  expect(_buf2hex(res)).toBe('b50817d05c920fa6b3');
   //
   let res2 = await childSeedFromSeed({
     seed: 'some seed',
@@ -56,7 +56,7 @@ test('child seed from seed', async () => {
     ship: 2,
     password: 'pass'
   });
-  expect(buf2hex(res)).toBe('8ccb09374028018690');
+  expect(_buf2hex(res)).toBe('8ccb09374028018690');
 });
 
 test('wallet from seed', async () => {

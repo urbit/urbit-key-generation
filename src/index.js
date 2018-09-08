@@ -353,6 +353,12 @@ const fullWalletFromSeed = async config => {
   return wallet;
 }
 
+const _buf2hex = buf2hex;
+const _hash = hash;
+const _argon2 = argon2;
+const _defaultTo = defaultTo;
+const _get = get;
+
 module.exports = {
   argon2u,
   fullWalletFromTicket,
@@ -361,5 +367,9 @@ module.exports = {
   childSeedFromSeed,
   walletFromSeed,
   urbitKeysFromSeed,
-  buf2hex
+  _buf2hex,
+  _hash,
+  _argon2,
+  _defaultTo,
+  _get,
 }
