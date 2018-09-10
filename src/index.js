@@ -1,7 +1,7 @@
-import crypto from 'isomorphic-webcrypto'
-import argon2 from 'argon2-wasm'
-import nacl from 'tweetnacl'
-import { fromSeed } from 'bip32'
+const crypto = require('isomorphic-webcrypto');
+const argon2 = require('argon2-wasm');
+const nacl = require('tweetnacl');
+const bip32 = require('bip32');
 
 /**
  * Wraps Buffer.from(). Converts an array into a buffer.
@@ -188,7 +188,7 @@ const walletFromSeed = async (seed, password) => {
   // we hash the seed with SHA-512 before doing BIP32 wallet generation,
   // because BIP32 doesn't support seeds of bit-lengths < 128 or > 512.
   const seedHash = await hash(seed, defaultTo(password, ''));
-  const { publicKey, privateKey, chainCode } = fromSeed(bufferFrom(seedHash));
+  const { publicKey, privateKey, chainCode } = bip32.fromSeed(bufferFrom(seedHash));
   return {
     public: buf2hex(publicKey),
     private: buf2hex(privateKey),
@@ -281,7 +281,7 @@ const fullWalletFromSeed = async config => {
 
   const ownershipNode = {
     keys: await walletFromSeed(ownerSeed, password),
-    seed: ownerSeed,
+    seed: buf2hex(ownerSeed),
   }
 
   const managementNode = await childNodeFromSeed({
@@ -353,16 +353,13 @@ const fullWalletFromSeed = async config => {
   return wallet;
 }
 
-
-// export helper functions for test
 const _buf2hex = buf2hex;
 const _hash = hash;
 const _argon2 = argon2;
 const _defaultTo = defaultTo;
 const _get = get;
 
-
-export {
+module.exports = {
   argon2u,
   fullWalletFromTicket,
   fullWalletFromSeed,

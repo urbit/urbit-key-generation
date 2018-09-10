@@ -1,11 +1,11 @@
 {
   "name": "urbit-keygen",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Wrapper functions for key generation according to the Urbit hierarchical wallet design.",
   "main": "dist/index.js",
   "scripts": {
-    "test": "jest test",
-    "build": "gulp"
+    "test": "jest --coverage test",
+    "build": "mkdir dist && browserify src/index.js -s urbit-keygen > dist/index.js"
   },
   "repository": {
     "type": "git",
@@ -21,8 +21,8 @@
   },
   "homepage": "https://github.com/urbit/keygen-js#readme",
   "dependencies": {
-    "argon2-wasm": "git+https://git@github.com/urbit/argon2-wasm.git",
-    "bip32": "github:bitcoinjs/bip32",
+    "argon2-wasm": "github:urbit/argon2-wasm.git#a7abad4",
+    "bip32": "^1.0.2",
     "isomorphic-webcrypto": "^1.6.0",
     "tweetnacl": "^1.0.0"
   },
@@ -31,18 +31,8 @@
     "@babel/preset-env": "^7.0.0-beta.34",
     "babel-core": "^7.0.0-bridge.0",
     "babel-jest": "^23.4.2",
-    "gulp": "github:gulpjs/gulp#4.0",
+    "browserify": "^16.2.2",
     "jest": "^23.5.0",
-    "regenerator-runtime": "^0.12.1",
-    "rollup-plugin-babel": "github:rollup/rollup-plugin-babel",
-    "rollup-plugin-commonjs": "^8.3.0",
-    "rollup-plugin-json": "^3.0.0",
-    "rollup-plugin-node-builtins": "^2.1.2",
-    "rollup-plugin-node-globals": "^1.2.1",
-    "rollup-plugin-node-resolve": "^3.4.0",
-    "rollup-plugin-replace": "^2.0.0",
-    "rollup-plugin-root-import": "^0.2.3",
-    "rollup-stream": "^1.24.1",
-    "vinyl-source-stream": "^2.0.0"
+    "regenerator-runtime": "^0.12.1"
   }
 }
