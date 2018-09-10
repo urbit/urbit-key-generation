@@ -281,7 +281,7 @@ const fullWalletFromSeed = async config => {
 
   const ownershipNode = {
     keys: await walletFromSeed(ownerSeed, password),
-    seed: ownerSeed,
+    seed: buf2hex(ownerSeed),
   }
 
   const managementNode = await childNodeFromSeed({
