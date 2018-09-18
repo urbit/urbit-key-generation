@@ -6,7 +6,9 @@ import {
   childSeedFromSeed,
   walletFromSeed,
   urbitKeysFromSeed,
+  shard,
   _buf2hex,
+  _combine
 } from '../src/index'
 
 test('argon2u', async () => {
@@ -172,4 +174,26 @@ test('full wallet from seed, boot', async () => {
     },
     seed: "dd0fa088041973131739a033dddc668ce692"
   }]);
+});
+
+test('sharded wallet from seed', async () => {
+  const config = {
+    ownerSeed: Buffer.from('some seed'),
+    ships: [1],
+    password: '',
+    revisions: {},
+    boot: false
+  };
+  const original = '736f6d652073656564';
+  let res = await fullWalletFromSeed(config);
+  let sharded = shard(3, 2, res).owner.seed;
+  let slice0 = sharded.slice(0, 2);
+  let slice1 = sharded.slice(1, 3);
+  let slice2 = sharded.slice(0, 1).concat(sharded.slice(2, 3));
+  let reconstructed = _combine(slice0);
+  expect(reconstructed).toEqual(original);
+  reconstructed = _combine(slice1);
+  expect(reconstructed).toEqual(original);
+  reconstructed = _combine(slice2);
+  expect(reconstructed).toEqual(original);
 });

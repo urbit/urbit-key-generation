@@ -2,6 +2,7 @@ const crypto = require('isomorphic-webcrypto');
 const argon2 = require('argon2-wasm');
 const nacl = require('tweetnacl');
 const bip32 = require('bip32');
+const secrets = require('secrets.js');
 
 /**
  * Wraps Buffer.from(). Converts an array into a buffer.
@@ -241,6 +242,26 @@ const urbitKeysFromSeed = (seed, password) => {
 
 
 /**
+ * Convert a full wallet into a sharded wallet.  Transforms the owner's seed
+ * into a number of shards, of which only a subset are required in order to
+ * reconstruct the original.
+ *
+ * Note that this mutates the original wallet.
+ * @param  {integer}  shardNum number of shards to create
+ * @param  {integer}  reconstructNum number of shards required to
+ *  reassemble the seed
+ * @param  {object}  wallet full HD wallet
+ * @return  {object} an object representing a sharded full HD wallet
+ */
+const shard = (shardNum, reconstructNum, wallet) => {
+  const sharded = secrets.share(wallet.owner.seed, shardNum, reconstructNum);
+  wallet.owner.seed = sharded;
+  return wallet;
+}
+
+
+
+/**
  * Derive all keys from the ticket.
  * @param  {string, Uint8Array, buffer}  ticket ticket, at least 16 bytes.
  * @param  {integer}  seedSize desired size of the generated seeds in bytes.
@@ -358,6 +379,7 @@ const _hash = hash;
 const _argon2 = argon2;
 const _defaultTo = defaultTo;
 const _get = get;
+const _combine = secrets.combine;
 
 module.exports = {
   argon2u,
@@ -367,9 +389,11 @@ module.exports = {
   childSeedFromSeed,
   walletFromSeed,
   urbitKeysFromSeed,
+  shard,
   _buf2hex,
   _hash,
   _argon2,
   _defaultTo,
   _get,
+  _combine
 }
