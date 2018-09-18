@@ -3,6 +3,7 @@ const argon2 = require('argon2-wasm');
 const nacl = require('tweetnacl');
 const bip32 = require('bip32');
 const secrets = require('secrets.js');
+const cloneDeep = require('lodash.clonedeep');
 
 /**
  * Wraps Buffer.from(). Converts an array into a buffer.
@@ -246,7 +247,6 @@ const urbitKeysFromSeed = (seed, password) => {
  * into a number of shards, of which only a subset are required in order to
  * reconstruct the original.
  *
- * Note that this mutates the original wallet.
  * @param  {integer}  shardNum number of shards to create
  * @param  {integer}  reconstructNum number of shards required to
  *  reassemble the seed
@@ -254,9 +254,10 @@ const urbitKeysFromSeed = (seed, password) => {
  * @return  {object} an object representing a sharded full HD wallet
  */
 const shard = (shardNum, reconstructNum, wallet) => {
-  const sharded = secrets.share(wallet.owner.seed, shardNum, reconstructNum);
-  wallet.owner.seed = sharded;
-  return wallet;
+  const walletCopy = cloneDeep(wallet)
+  const sharded = secrets.share(walletCopy.owner.seed, shardNum, reconstructNum);
+  walletCopy.owner.seed = sharded;
+  return walletCopy;
 }
 
 
