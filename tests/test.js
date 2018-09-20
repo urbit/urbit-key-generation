@@ -184,16 +184,37 @@ test('sharded wallet from seed', async () => {
     revisions: {},
     boot: false
   };
-  const original = '736f6d652073656564';
+  const original0 = '736f6d652073656564';
   let res = await fullWalletFromSeed(config);
   let sharded = shard(3, 2, res).owner.seed;
   let slice0 = sharded.slice(0, 2);
   let slice1 = sharded.slice(1, 3);
   let slice2 = sharded.slice(0, 1).concat(sharded.slice(2, 3));
   let reconstructed = _combine(slice0);
-  expect(reconstructed).toEqual(original);
+  expect(reconstructed).toEqual(original0);
   reconstructed = _combine(slice1);
-  expect(reconstructed).toEqual(original);
+  expect(reconstructed).toEqual(original0);
   reconstructed = _combine(slice2);
-  expect(reconstructed).toEqual(original);
+  expect(reconstructed).toEqual(original0);
+
+  const config1 = {
+    ownerSeed: Buffer.from('a way longer seed, even longer than before!'),
+    ships: [1, 10, 900000],
+    password: 'foo',
+    revisions: {},
+    boot: true
+  };
+  const original1 = '6120776179206c6f6e67657220736565642c206576656e206c6f6e676572207468616e206265666f726521';
+  res = await fullWalletFromSeed(config1);
+  sharded = shardWallet(res).owner.seed;
+  slice0 = sharded.slice(0, 2);
+  slice1 = sharded.slice(1, 3);
+  slice2 = sharded.slice(0, 1).concat(sharded.slice(2, 3));
+  reconstructed = _combine(slice0);
+  expect(reconstructed).toEqual(original1);
+  reconstructed = _combine(slice1);
+  expect(reconstructed).toEqual(original1);
+  reconstructed = _combine(slice2);
+  expect(reconstructed).toEqual(original1);
+
 });
