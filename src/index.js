@@ -265,8 +265,8 @@ const reduceByXor = (arrays) => {
 
 
 /**
- * Shard a hex-encoded string into three shards, such that any two shards can
- * be combined to recover it.
+ * Encode a hex string as three shards, such that any two shards can be
+ * combined to recover it.
  * @param  {string}  string hex-encoded string
  * @return {array of strings} resulting shards
  */
@@ -305,9 +305,9 @@ const shardBuffer = (buffer) => {
 
 
 /**
- * Combine shard buffers together to recover an original secret.
+ * Combine pieces of a sharded buffer together to recover the original buffer.
  * @param  {array of array of integers}  shards a collection of shards
- * @return {array} the unsharded secret
+ * @return {buffer} the unsharded buffer
  */
 const combineBuffer = (shards) => {
   const flattened = lodash.flatten(shards);
@@ -322,7 +322,7 @@ const combineBuffer = (shards) => {
  * Combine shards together to reconstruct a secret.
  * @param  {array of array of strings}  shards a collection of hex-encoded
  *  shards
- * @return {array} the reconstructed secret
+ * @return {string} the reconstructed secret
  */
 const combine = (shards) => {
   const buffers = shards.map(pair =>
