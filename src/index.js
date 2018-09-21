@@ -5,6 +5,16 @@ const bip32 = require('bip32');
 const lodash = require('lodash');
 
 /**
+ * Split a string at the provided index, returning both chunks.
+ * @param  {string}  string a string
+ * @param  {integer}  index the index to split at
+ * @return  {array of strings}  the split string
+ */
+const splitAt = (index, str) => [str.slice(0, index), str.slice(index)];
+
+
+
+/**
  * Wraps Buffer.from(). Converts an array into a buffer.
  * @param  {array} arr
  * @return {buffer}
@@ -274,7 +284,8 @@ const shard = (hex) => {
   const buffer = hex2buf(hex);
   const sharded = shardBuffer(buffer);
   return sharded.map(pair =>
-           pair.map(arr => buf2hex(bufferFrom(arr))));
+           lodash.reduce(pair, (acc, arr) =>
+             acc + buf2hex(bufferFrom(arr)), ''))
 }
 
 
@@ -325,7 +336,9 @@ const combineBuffer = (shards) => {
  * @return {string} the reconstructed secret
  */
 const combine = (shards) => {
-  const buffers = shards.map(pair =>
+  const splat = shards.map(shard =>
+    splitAt(shard.length / 2, shard));
+  const buffers = splat.map(pair =>
     pair.map(buf => Array.from(hex2buf(buf))));
   const combined = combineBuffer(buffers);
   return buf2hex(combined);
