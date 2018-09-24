@@ -160,7 +160,6 @@ const childSeedFromSeed = async config => {
 const childNodeFromSeed = async config => {
   const { seed, type, revision, ship, password } = config;
   const childSeed = await childSeedFromSeed({seed, type, revision, ship, password});
-  const childSeedBuffer = buf2hex(childSeed);
   return {
     meta: {
       type,
@@ -169,8 +168,8 @@ const childNodeFromSeed = async config => {
         ? ship
         : null
     },
-    seed: childSeedBuffer,
-    keys: await walletFromSeed(childSeedBuffer, password),
+    seed: buf2hex(childSeed),
+    keys: await walletFromSeed(childSeed, password),
   };
 };
 
