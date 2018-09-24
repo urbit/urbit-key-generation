@@ -2,8 +2,17 @@ const crypto = require('isomorphic-webcrypto');
 const argon2 = require('argon2-wasm');
 const nacl = require('tweetnacl');
 const bip32 = require('bip32');
-const secrets = require('secrets.js');
-const cloneDeep = require('lodash.clonedeep');
+const lodash = require('lodash');
+
+/**
+ * Split a string at the provided index, returning both chunks.
+ * @param  {string}  string a string
+ * @param  {integer}  index the index to split at
+ * @return  {array of strings}  the split string
+ */
+const splitAt = (index, str) => [str.slice(0, index), str.slice(index)];
+
+
 
 /**
  * Wraps Buffer.from(). Converts an array into a buffer.
@@ -85,6 +94,17 @@ const buf2hex = buffer => {
   return Array.from(new Uint8Array(buffer))
     .map(b => b.toString(16).padStart(2, '0'))
     .join('');
+};
+
+
+
+/**
+ * Converts a hexidecimal string to a buffer.
+ * @param  {string} a hex-encoded string
+ * @return {Buffer}
+ */
+const hex2buf = hex => {
+  return Buffer.from(hex, 'hex');
 };
 
 
@@ -243,19 +263,100 @@ const urbitKeysFromSeed = (seed, password) => {
 
 
 /**
+ * Reduce a collection of arrays by recursive applications of bytewise XOR.
+ * @param  {array of array of integers}  arrays an array of arrays
+ * @return {array} the resulting array
+ */
+const reduceByXor = (arrays) => {
+  return arrays.reduce((acc, arr) =>
+    lodash.zipWith(acc, arr, (x, y) => x ^ y));
+}
+
+
+
+/**
+ * Encode a hex string as three shards, such that any two shards can be
+ * combined to recover it.
+ * @param  {string}  string hex-encoded string
+ * @return {array of strings} resulting shards
+ */
+const shard = (hex) => {
+  const buffer = hex2buf(hex);
+  const sharded = shardBuffer(buffer);
+  return sharded.map(pair =>
+           lodash.reduce(pair, (acc, arr) =>
+             acc + buf2hex(bufferFrom(arr)), ''))
+}
+
+
+
+/**
+ * Produce three shards from a buffer such that any two of them can be used to
+ * reconstruct it.
+ * @param  {buffer}  buffer arbitrary buffer
+ * @return {array of array of integers} sharded buffer
+ */
+const shardBuffer = (buffer) => {
+  const r1 = crypto.getRandomValues(new Uint8Array(buffer.length));
+  const r2 = crypto.getRandomValues(new Uint8Array(buffer.length));
+
+  const k  = Array.from(buffer);
+  const k1 = Array.from(r1);
+  const k2 = Array.from(r2);
+
+  const k0 = reduceByXor([k, k1, k2]);
+
+  const shard0 = [k0, k1];
+  const shard1 = [k0, k2];
+  const shard2 = [k1, k2];
+
+  return [shard0, shard1, shard2];
+};
+
+
+
+/**
+ * Combine pieces of a sharded buffer together to recover the original buffer.
+ * @param  {array of array of integers}  shards a collection of shards
+ * @return {buffer} the unsharded buffer
+ */
+const combineBuffer = (shards) => {
+  const flattened = lodash.flatten(shards);
+  const uniques = lodash.uniqWith(flattened, lodash.isEqual);
+  const reduced = reduceByXor(uniques);
+  return bufferFrom(reduced);
+}
+
+
+
+/**
+ * Combine shards together to reconstruct a secret.
+ * @param  {array of array of strings}  shards a collection of hex-encoded
+ *  shards
+ * @return {string} the reconstructed secret
+ */
+const combine = (shards) => {
+  const splat = shards.map(shard =>
+    splitAt(shard.length / 2, shard));
+  const buffers = splat.map(pair =>
+    pair.map(buf => Array.from(hex2buf(buf))));
+  const combined = combineBuffer(buffers);
+  return buf2hex(combined);
+}
+
+
+
+/**
  * Convert a full wallet into a sharded wallet.  Transforms the owner's seed
  * into a number of shards, of which only a subset are required in order to
  * reconstruct the original.
  *
- * @param  {integer}  shardNum number of shards to create
- * @param  {integer}  reconstructNum number of shards required to
- *  reassemble the seed
  * @param  {object}  wallet full HD wallet
  * @return  {object} an object representing a sharded full HD wallet
  */
-const shard = (shardNum, reconstructNum, wallet) => {
-  const walletCopy = cloneDeep(wallet)
-  const sharded = secrets.share(walletCopy.owner.seed, shardNum, reconstructNum);
+const shardWallet = (wallet) => {
+  const walletCopy = lodash.cloneDeep(wallet);
+  const sharded = shard(walletCopy.owner.seed)
   walletCopy.owner.seed = sharded;
   return walletCopy;
 }
@@ -376,11 +477,15 @@ const fullWalletFromSeed = async config => {
 }
 
 const _buf2hex = buf2hex;
+const _hex2buf = hex2buf;
 const _hash = hash;
 const _argon2 = argon2;
 const _defaultTo = defaultTo;
 const _get = get;
-const _combine = secrets.combine;
+const _shardBuffer = shardBuffer;
+const _combineBuffer = combineBuffer;
+const _shard = shard;
+const _combine = combine;
 
 module.exports = {
   argon2u,
@@ -390,11 +495,15 @@ module.exports = {
   childSeedFromSeed,
   walletFromSeed,
   urbitKeysFromSeed,
-  shard,
+  shardWallet,
   _buf2hex,
+  _hex2buf,
   _hash,
   _argon2,
   _defaultTo,
   _get,
+  _shardBuffer,
+  _combineBuffer,
+  _shard,
   _combine
 }
