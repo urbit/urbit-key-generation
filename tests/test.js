@@ -137,14 +137,12 @@ test('full wallet from ticket, no boot', async () => {
 
   const config = {
     ticket: ticket,
-    seedSize: 16,
+    seedSize: seedSize,
     ships: [1],
     boot: false,
   };
 
   const seed = await argon2u(ticket, seedSize)
-  const hash = seed.hash
-
   const wallet = await fullWalletFromTicket(config);
 
   expect(wallet.owner.seed).toEqual(seed.hashHex);
