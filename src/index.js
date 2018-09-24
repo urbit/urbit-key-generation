@@ -251,8 +251,15 @@ const urbitKeysFromSeed = (seed, password) => {
  */
 const fullWalletFromTicket = async config => {
   const { ticket, seedSize, ships, password, revisions, boot } = config;
-  const seed = await argon2u(ticket, seedSize).hash;
-  return fullWalletFromSeed(bufferFrom(seed), ships, password, revisions, boot);
+  const seed = await argon2u(ticket, seedSize);
+  const seedConfig = {
+    ownerSeed: Buffer.from(seed.hash),
+    ships: ships,
+    password: password,
+    revisions: revisions,
+    boot: boot
+  };
+  return fullWalletFromSeed(seedConfig);
 }
 
 
