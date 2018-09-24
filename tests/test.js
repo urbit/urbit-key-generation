@@ -131,6 +131,25 @@ test('urbit keys from seed', async () => {
   });
 });
 
+test('full wallet from ticket, no boot', async () => {
+  const ticket = Buffer.from('my awesome urbit ticket, i am so lucky');
+  const seedSize = 16;
+
+  const config = {
+    ticket: ticket,
+    seedSize: 16,
+    ships: [1],
+    boot: false,
+  };
+
+  const seed = await argon2u(ticket, seedSize)
+  const hash = seed.hash
+
+  const wallet = await fullWalletFromTicket(config);
+
+  expect(wallet.owner.seed).toEqual(seed.hashHex);
+});
+
 test('full wallet from seed, no boot', async () => {
   const config = {
     ownerSeed: Buffer.from('some seed'),
