@@ -87,9 +87,9 @@ test('child node from seed', async () => {
   expect(res.meta).toEqual({type: 'type', revision: 0, ship: null});
   expect(res.seed).toBe('b150354a72552c9efd');
   expect(res.keys).toEqual({
-    public: '0343341b3182065677b7c2589e4c71d03b0359d1fb2b42a08a6304db12dff417e7',
-    private: 'f344aca1ac4f48a71efcc2555568767e642589a346c7ee8a1a4bab4df0b69386',
-    chain: '69a1bf8dc1651f883678e106ba86e07a48f21adb7b1f8ee4b21aa3f8da6784e7'
+    public: '03e68b2b5410be60afa3a28de9815c9357bfada54baf9aa75e8544cc98ac9b0a0b',
+    private: '2a3d0c6fcb30168546e4dc86e03ac09f6740f5e1f687a78efcd8a81b233b161f',
+    chain: 'cb7a53bce7d0329b3bede0c3acb39d05e0001acf53d9904492b00b3a575cb03a'
   });
   //
   res = await childNodeFromSeed({
@@ -102,9 +102,9 @@ test('child node from seed', async () => {
   expect(res.meta).toEqual({type: 'type', revision: 0, ship: 2});
   expect(res.seed).toBe('8ccb09374028018690');
   expect(res.keys).toEqual({
-    public: '032be1f970f46034cd811a3245d6688c74e22ae96e5020b7183bf471118b031ca2',
-    private: 'a5e3bdb9bed6322a0eb97cac8d5ee0aadd9a39b338e17a53bfd63d67321c0154',
-    chain: '37740b089f085cc7a04e1f4478c5f528e814f92f979b79c625b5c01272f3e44c'
+    public: '031d0aa7c921fe64db6bba7bfeca1ba522960602d18909976d349110856634d779',
+    private: 'cce1477c8039b14bf995f68ef640e3ead75dbdc762507dc63c61d1963d654d13',
+    chain: '5d20c3a604709b932dc7a6298f37bdc713d64e65f1756e17b4624be601baf379'
   });
 });
 
