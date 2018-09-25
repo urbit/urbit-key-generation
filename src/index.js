@@ -355,8 +355,8 @@ const combine = (shards) => {
  */
 const shardWallet = (wallet) => {
   const walletCopy = lodash.cloneDeep(wallet);
-  const sharded = shard(walletCopy.owner.seed)
-  walletCopy.owner.seed = sharded;
+  const sharded = shard(walletCopy.ticket)
+  walletCopy.ticket = sharded;
   return walletCopy;
 }
 

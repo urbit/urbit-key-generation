@@ -274,16 +274,19 @@ test('sharding internals: combine . shard ~ id', async () => {
 });
 
 test('sharded wallet from seed', async () => {
+  let ticket = Buffer.from('some ticket or other');
+
   const config0 = {
-    ownerSeed: Buffer.from('some seed'),
+    ticket: ticket,
+    seedSize: 16,
     ships: [1],
     password: '',
     revisions: {},
     boot: false
   };
-  const original0 = '736f6d652073656564';
-  let res = await fullWalletFromSeed(config0);
-  let sharded = shardWallet(res).owner.seed;
+  const original0 = '736f6d65207469636b6574206f72206f74686572';
+  let res = await fullWalletFromTicket(config0);
+  let sharded = shardWallet(res).ticket;
   let slice0 = sharded.slice(0, 2);
   let slice1 = sharded.slice(1, 3);
   let slice2 = sharded.slice(0, 1).concat(sharded.slice(2, 3));
@@ -294,16 +297,18 @@ test('sharded wallet from seed', async () => {
   reconstructed = _combine(slice2);
   expect(reconstructed).toEqual(original0);
 
+  ticket = Buffer.from('a way longer ticket, even longer than before')
   const config1 = {
-    ownerSeed: Buffer.from('a way longer seed, even longer than before!'),
+    ticket: ticket,
+    seedSize: 16,
     ships: [1, 10, 900000],
     password: 'foo',
     revisions: {},
     boot: true
   };
-  const original1 = '6120776179206c6f6e67657220736565642c206576656e206c6f6e676572207468616e206265666f726521';
-  res = await fullWalletFromSeed(config1);
-  sharded = shardWallet(res).owner.seed;
+  const original1 = '6120776179206c6f6e676572207469636b65742c206576656e206c6f6e676572207468616e206265666f7265';
+  res = await fullWalletFromTicket(config1);
+  sharded = shardWallet(res).ticket;
   slice0 = sharded.slice(0, 2);
   slice1 = sharded.slice(1, 3);
   slice2 = sharded.slice(0, 1).concat(sharded.slice(2, 3));
