@@ -251,30 +251,9 @@ const urbitKeysFromSeed = (seed, password) => {
  */
 const fullWalletFromTicket = async config => {
   const { ticket, seedSize, ships, password, revisions, boot } = config;
+
   const seed = await argon2u(ticket, seedSize);
-  const seedConfig = {
-    ownerSeed: Buffer.from(seed.hash),
-    ships: ships,
-    password: password,
-    revisions: revisions,
-    boot: boot
-  };
-  return fullWalletFromSeed(seedConfig);
-}
-
-
-
-/**
- * Derive all keys from a seed.
- * @param  {string, Uint8Array, buffer}  ownerSeed ticket, at least 16 bytes.
- * @param  {array of integers}  ships array of ship-numbers to generate keys for.
- * @param  {string}  password optional password to use during derivation.
- * @param  {object}  revisions optional revision per key purpose:
- * (transfer, spawn, voting, manage, network), defaults to all-zero
- * @return {Promise => object} an object representing a full HD wallet.
- */
-const fullWalletFromSeed = async config => {
-  const { ownerSeed, ships, password, revisions, boot } = config;
+  const ownerSeed = Buffer.from(seed.hash)
 
   // Normalize revisions object
   const _revisions = {
@@ -326,7 +305,7 @@ const fullWalletFromSeed = async config => {
   let networkSeeds = [];
   let networkNodes = [];
 
-  if (boot === true) {
+  if (boot) {
 
     networkSeeds = await Promise.all(ships.map(ship => childSeedFromSeed({
       seed: bufferFrom(managementNode.seed),
@@ -347,7 +326,10 @@ const fullWalletFromSeed = async config => {
     })));
   };
 
+  const displayTicket = buf2hex(ticket)
+
   const wallet = {
+    ticket: displayTicket,
     owner: ownershipNode,
     voting: votingNode,
     manage: managementNode,
@@ -368,7 +350,6 @@ const _get = get;
 module.exports = {
   argon2u,
   fullWalletFromTicket,
-  fullWalletFromSeed,
   childNodeFromSeed,
   childSeedFromSeed,
   walletFromSeed,

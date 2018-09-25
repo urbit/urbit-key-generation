@@ -1,7 +1,6 @@
 import {
   argon2u,
   fullWalletFromTicket,
-  fullWalletFromSeed,
   childNodeFromSeed,
   childSeedFromSeed,
   walletFromSeed,
@@ -146,40 +145,35 @@ test('full wallet from ticket, no boot', async () => {
   const wallet = await fullWalletFromTicket(config);
 
   expect(wallet.owner.seed).toEqual(seed.hashHex);
+  expect(wallet.network).toEqual([])
+
+  const hexTicket = _buf2hex(ticket)
+  expect(wallet.ticket).toEqual(hexTicket)
 });
 
-test('full wallet from seed, no boot', async () => {
-  const config = {
-    ownerSeed: Buffer.from('some seed'),
-    ships: [1],
-    password: '',
-    revisions: {},
-    boot: false,
-  };
+test('full wallet from ticket, boot', async () => {
+  const ticket = Buffer.from('my awesome urbit ticket, i am so lucky');
+  const seedSize = 16;
 
-  const res = await fullWalletFromSeed(config);
-  expect(res.network).toEqual([])
-});
-
-test('full wallet from seed, boot', async () => {
   const config = {
-    ownerSeed: Buffer.from('some seed'),
+    ticket: ticket,
+    seedSize: seedSize,
     ships: [1],
     password: '',
     revisions: {},
     boot: true,
   };
 
-  const res = await fullWalletFromSeed(config);
+  const res = await fullWalletFromTicket(config);
   expect(res.network).toEqual([{
     keys: {
       auth: {
-        private: "082a279f1a2c19dcf46565a7ccc4337d751a069f9119446429699de29a3d13fa",
-        public: "9fb1168ef88b8b9d2b10d40d864b0973998c93a592a5b8a13d070bdf09cc907c"
+        private: 'c519fb1687dc6d7db85feb50d92182a949d82a5b364d8524ecaf96466f81060f',
+        public: '0e6897618be422b7c318a5587203a79625a3fd587043c2bca2e9c15d9763ac07'
       },
       crypt: {
-        private: "544a22a7a9de737a1ed342cb1f03158314ecee7d364550daf27990cdacb9a7ea",
-        public: "d5acdfe406bbb22c1534350ded4c8dcfdd7b18900426ab45859e043ec7acba59"
+        private: '14c82b023664de0f4d03487c3701b129b37c1fd06bd2af15caf7167c953ce1e3',
+        public: '7a0be8acabf20ebee63f62595a2c38f0c6e1a69274532c3a125de1cc96479a75'
       }
     },
     meta: {
@@ -187,6 +181,9 @@ test('full wallet from seed, boot', async () => {
       ship: 1,
       type: "network"
     },
-    seed: "dd0fa088041973131739a033dddc668ce692"
+    seed: '80b602c7b70dafc88194ef3b6d156c7d0da3db121c523734c88fcc84d452d2ce'
   }]);
+
+  const hexTicket = _buf2hex(ticket)
+  expect(res.ticket).toEqual(hexTicket)
 });
