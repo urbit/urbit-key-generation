@@ -2,6 +2,17 @@ const crypto = require('isomorphic-webcrypto');
 const argon2 = require('argon2-wasm');
 const nacl = require('tweetnacl');
 const bip32 = require('bip32');
+const lodash = require('lodash');
+
+/**
+ * Split a string at the provided index, returning both chunks.
+ * @param  {string}  string a string
+ * @param  {integer}  index the index to split at
+ * @return  {array of strings}  the split string
+ */
+const splitAt = (index, str) => [str.slice(0, index), str.slice(index)];
+
+
 
 /**
  * Wraps Buffer.from(). Converts an array into a buffer.
@@ -88,6 +99,17 @@ const buf2hex = buffer => {
 
 
 /**
+ * Converts a hexidecimal string to a buffer.
+ * @param  {string} a hex-encoded string
+ * @return {Buffer}
+ */
+const hex2buf = hex => {
+  return Buffer.from(hex, 'hex');
+};
+
+
+
+/**
  * executes SHA-512 on any size input
  * @param  {array, arrayBuffer, buffer} args any number of arguments
  * @return {Promise => arrayBuffer} Promise that resolves to arrayBuffer
@@ -125,7 +147,7 @@ const argon2u = (entropy, seedSize) => argon2({
  * Derive a new seed from a seed. Uses a config with the following entries:
  * @param  {buffer}   seed seed to derive from.
  * @param  {string}   type the type of the seed we want to derive:
- * ("transfer", "spawn", "delegate", "manage", "network").
+ * ("transfer", "spawn", "voting", "manage", "network").
  * @param  {object}   revision the revision number of the seed we want to derive.
  * @param  {integer}  ship  optional ship number we want to derive the seed for.
  * @param  {string}   password  optional password to salt the seed with before
@@ -150,7 +172,7 @@ const childSeedFromSeed = async config => {
  * Derive a new node from a seed. Uses a config with the following entries:
  * @param  {buffer}   seed seed to derive from.
  * @param  {string}   type the type of the seed we want to derive:
- * ("transfer", "spawn", "delegate", "manage", "network").
+ * ("transfer", "spawn", "voting", "manage", "network").
  * @param  {object}   revision the revision number of the seed we want to derive.
  * @param  {integer}  ship  optional ship number we want to derive the seed for.
  * @param  {string}   password  optional password to salt the seed with before
@@ -240,47 +262,127 @@ const urbitKeysFromSeed = (seed, password) => {
 
 
 /**
+ * Reduce a collection of arrays by recursive applications of bytewise XOR.
+ * @param  {array of array of integers}  arrays an array of arrays
+ * @return {array} the resulting array
+ */
+const reduceByXor = (arrays) => {
+  return arrays.reduce((acc, arr) =>
+    lodash.zipWith(acc, arr, (x, y) => x ^ y));
+}
+
+
+
+/**
+ * Encode a hex string as three shards, such that any two shards can be
+ * combined to recover it.
+ * @param  {string}  string hex-encoded string
+ * @return {array of strings} resulting shards
+ */
+const shard = (hex) => {
+  const buffer = hex2buf(hex);
+  const sharded = shardBuffer(buffer);
+  return sharded.map(pair =>
+           lodash.reduce(pair, (acc, arr) =>
+             acc + buf2hex(bufferFrom(arr)), ''))
+}
+
+
+
+/**
+ * Produce three shards from a buffer such that any two of them can be used to
+ * reconstruct it.
+ * @param  {buffer}  buffer arbitrary buffer
+ * @return {array of array of integers} sharded buffer
+ */
+const shardBuffer = (buffer) => {
+  const r1 = crypto.getRandomValues(new Uint8Array(buffer.length));
+  const r2 = crypto.getRandomValues(new Uint8Array(buffer.length));
+
+  const k  = Array.from(buffer);
+  const k1 = Array.from(r1);
+  const k2 = Array.from(r2);
+
+  const k0 = reduceByXor([k, k1, k2]);
+
+  const shard0 = [k0, k1];
+  const shard1 = [k0, k2];
+  const shard2 = [k1, k2];
+
+  return [shard0, shard1, shard2];
+};
+
+
+
+/**
+ * Combine pieces of a sharded buffer together to recover the original buffer.
+ * @param  {array of array of integers}  shards a collection of shards
+ * @return {buffer} the unsharded buffer
+ */
+const combineBuffer = (shards) => {
+  const flattened = lodash.flatten(shards);
+  const uniques = lodash.uniqWith(flattened, lodash.isEqual);
+  const reduced = reduceByXor(uniques);
+  return bufferFrom(reduced);
+}
+
+
+
+/**
+ * Combine shards together to reconstruct a secret.
+ * @param  {array of array of strings}  shards a collection of hex-encoded
+ *  shards
+ * @return {string} the reconstructed secret
+ */
+const combine = (shards) => {
+  const splat = shards.map(shard =>
+    splitAt(shard.length / 2, shard));
+  const buffers = splat.map(pair =>
+    pair.map(buf => Array.from(hex2buf(buf))));
+  const combined = combineBuffer(buffers);
+  return buf2hex(combined);
+}
+
+
+
+/**
+ * Convert a full wallet into a sharded wallet.  Transforms the owner's seed
+ * into a number of shards, of which only a subset are required in order to
+ * reconstruct the original.
+ *
+ * @param  {object}  wallet full HD wallet
+ * @return  {object} an object representing a sharded full HD wallet
+ */
+const shardWallet = (wallet) => {
+  const walletCopy = lodash.cloneDeep(wallet);
+  const sharded = shard(walletCopy.ticket)
+  walletCopy.ticket = sharded;
+  return walletCopy;
+}
+
+
+
+/**
  * Derive all keys from the ticket.
  * @param  {string, Uint8Array, buffer}  ticket ticket, at least 16 bytes.
  * @param  {integer}  seedSize desired size of the generated seeds in bytes.
  * @param  {array of integers}  ships array of ship-numbers to generate keys for.
  * @param  {string}  password optional password to use during derivation.
  * @param  {object}  revisions optional revision per key purpose:
- * (transfer, spawn, delegate, manage, network), defaults to all-zero
+ * (transfer, spawn, voting, manage, network), defaults to all-zero
  * @return {Promise => object} an object representing a full HD wallet.
  */
 const fullWalletFromTicket = async config => {
   const { ticket, seedSize, ships, password, revisions, boot } = config;
+
   const seed = await argon2u(ticket, seedSize);
-  const seedConfig = {
-    ownerSeed: Buffer.from(seed.hash),
-    ships: ships,
-    password: password,
-    revisions: revisions,
-    boot: boot
-  };
-  return fullWalletFromSeed(seedConfig);
-}
-
-
-
-/**
- * Derive all keys from a seed.
- * @param  {string, Uint8Array, buffer}  ownerSeed ticket, at least 16 bytes.
- * @param  {array of integers}  ships array of ship-numbers to generate keys for.
- * @param  {string}  password optional password to use during derivation.
- * @param  {object}  revisions optional revision per key purpose:
- * (transfer, spawn, delegate, manage, network), defaults to all-zero
- * @return {Promise => object} an object representing a full HD wallet.
- */
-const fullWalletFromSeed = async config => {
-  const { ownerSeed, ships, password, revisions, boot } = config;
+  const ownerSeed = Buffer.from(seed.hash)
 
   // Normalize revisions object
   const _revisions = {
     transfer: get(revisions, 'transfer', 0),
     spawn: get(revisions, 'spawn', 0),
-    delegate: get(revisions, 'delegate', 0),
+    voting: get(revisions, 'voting', 0),
     manage: get(revisions, 'manage', 0),
     network: get(revisions, 'network', 0),
   };
@@ -298,10 +400,10 @@ const fullWalletFromSeed = async config => {
     password: password,
   });
 
-  const delegateNode = await childNodeFromSeed({
+  const votingNode = await childNodeFromSeed({
     seed: ownerSeed,
-    type: 'delegate',
-    revision: _revisions.delegate,
+    type: 'voting',
+    revision: _revisions.voting,
     ship: null,
     password: password,
   });
@@ -326,7 +428,7 @@ const fullWalletFromSeed = async config => {
   let networkSeeds = [];
   let networkNodes = [];
 
-  if (boot === true) {
+  if (boot) {
 
     networkSeeds = await Promise.all(ships.map(ship => childSeedFromSeed({
       seed: bufferFrom(managementNode.seed),
@@ -347,9 +449,12 @@ const fullWalletFromSeed = async config => {
     })));
   };
 
+  const displayTicket = buf2hex(ticket)
+
   const wallet = {
+    ticket: displayTicket,
     owner: ownershipNode,
-    delegate: delegateNode,
+    voting: votingNode,
     manage: managementNode,
     network: networkNodes,
     transfer: transferNodes,
@@ -360,22 +465,32 @@ const fullWalletFromSeed = async config => {
 }
 
 const _buf2hex = buf2hex;
+const _hex2buf = hex2buf;
 const _hash = hash;
 const _argon2 = argon2;
 const _defaultTo = defaultTo;
 const _get = get;
+const _shardBuffer = shardBuffer;
+const _combineBuffer = combineBuffer;
+const _shard = shard;
+const _combine = combine;
 
 module.exports = {
   argon2u,
   fullWalletFromTicket,
-  fullWalletFromSeed,
   childNodeFromSeed,
   childSeedFromSeed,
   walletFromSeed,
   urbitKeysFromSeed,
+  shardWallet,
   _buf2hex,
+  _hex2buf,
   _hash,
   _argon2,
   _defaultTo,
   _get,
+  _shardBuffer,
+  _combineBuffer,
+  _shard,
+  _combine
 }

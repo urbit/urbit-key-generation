@@ -1,12 +1,18 @@
 import {
   argon2u,
   fullWalletFromTicket,
-  fullWalletFromSeed,
   childNodeFromSeed,
   childSeedFromSeed,
   walletFromSeed,
   urbitKeysFromSeed,
+  shardWallet,
+  combine,
   _buf2hex,
+  _hex2buf,
+  _shard,
+  _combine,
+  _shardBuffer,
+  _combineBuffer
 } from '../src/index'
 
 test('argon2u', async () => {
@@ -87,9 +93,9 @@ test('child node from seed', async () => {
   expect(res.meta).toEqual({type: 'type', revision: 0, ship: null});
   expect(res.seed).toBe('b150354a72552c9efd');
   expect(res.keys).toEqual({
-    public: '0343341b3182065677b7c2589e4c71d03b0359d1fb2b42a08a6304db12dff417e7',
-    private: 'f344aca1ac4f48a71efcc2555568767e642589a346c7ee8a1a4bab4df0b69386',
-    chain: '69a1bf8dc1651f883678e106ba86e07a48f21adb7b1f8ee4b21aa3f8da6784e7'
+    public: '03e68b2b5410be60afa3a28de9815c9357bfada54baf9aa75e8544cc98ac9b0a0b',
+    private: '2a3d0c6fcb30168546e4dc86e03ac09f6740f5e1f687a78efcd8a81b233b161f',
+    chain: 'cb7a53bce7d0329b3bede0c3acb39d05e0001acf53d9904492b00b3a575cb03a'
   });
   //
   res = await childNodeFromSeed({
@@ -102,9 +108,9 @@ test('child node from seed', async () => {
   expect(res.meta).toEqual({type: 'type', revision: 0, ship: 2});
   expect(res.seed).toBe('8ccb09374028018690');
   expect(res.keys).toEqual({
-    public: '032be1f970f46034cd811a3245d6688c74e22ae96e5020b7183bf471118b031ca2',
-    private: 'a5e3bdb9bed6322a0eb97cac8d5ee0aadd9a39b338e17a53bfd63d67321c0154',
-    chain: '37740b089f085cc7a04e1f4478c5f528e814f92f979b79c625b5c01272f3e44c'
+    public: '031d0aa7c921fe64db6bba7bfeca1ba522960602d18909976d349110856634d779',
+    private: 'cce1477c8039b14bf995f68ef640e3ead75dbdc762507dc63c61d1963d654d13',
+    chain: '5d20c3a604709b932dc7a6298f37bdc713d64e65f1756e17b4624be601baf379'
   });
 });
 
@@ -146,40 +152,35 @@ test('full wallet from ticket, no boot', async () => {
   const wallet = await fullWalletFromTicket(config);
 
   expect(wallet.owner.seed).toEqual(seed.hashHex);
+  expect(wallet.network).toEqual([])
+
+  const hexTicket = _buf2hex(ticket)
+  expect(wallet.ticket).toEqual(hexTicket)
 });
 
-test('full wallet from seed, no boot', async () => {
-  const config = {
-    ownerSeed: Buffer.from('some seed'),
-    ships: [1],
-    password: '',
-    revisions: {},
-    boot: false,
-  };
+test('full wallet from ticket, boot', async () => {
+  const ticket = Buffer.from('my awesome urbit ticket, i am so lucky');
+  const seedSize = 16;
 
-  const res = await fullWalletFromSeed(config);
-  expect(res.network).toEqual([])
-});
-
-test('full wallet from seed, boot', async () => {
   const config = {
-    ownerSeed: Buffer.from('some seed'),
+    ticket: ticket,
+    seedSize: seedSize,
     ships: [1],
     password: '',
     revisions: {},
     boot: true,
   };
 
-  const res = await fullWalletFromSeed(config);
+  const res = await fullWalletFromTicket(config);
   expect(res.network).toEqual([{
     keys: {
       auth: {
-        private: "082a279f1a2c19dcf46565a7ccc4337d751a069f9119446429699de29a3d13fa",
-        public: "9fb1168ef88b8b9d2b10d40d864b0973998c93a592a5b8a13d070bdf09cc907c"
+        private: 'c519fb1687dc6d7db85feb50d92182a949d82a5b364d8524ecaf96466f81060f',
+        public: '0e6897618be422b7c318a5587203a79625a3fd587043c2bca2e9c15d9763ac07'
       },
       crypt: {
-        private: "544a22a7a9de737a1ed342cb1f03158314ecee7d364550daf27990cdacb9a7ea",
-        public: "d5acdfe406bbb22c1534350ded4c8dcfdd7b18900426ab45859e043ec7acba59"
+        private: '14c82b023664de0f4d03487c3701b129b37c1fd06bd2af15caf7167c953ce1e3',
+        public: '7a0be8acabf20ebee63f62595a2c38f0c6e1a69274532c3a125de1cc96479a75'
       }
     },
     meta: {
@@ -187,6 +188,135 @@ test('full wallet from seed, boot', async () => {
       ship: 1,
       type: "network"
     },
-    seed: "dd0fa088041973131739a033dddc668ce692"
+    seed: '80b602c7b70dafc88194ef3b6d156c7d0da3db121c523734c88fcc84d452d2ce'
   }]);
+
+  const hexTicket = _buf2hex(ticket)
+  expect(res.ticket).toEqual(hexTicket)
 });
+
+test('sharding internals: buf2hex and hex2buf are inverses', async () => {
+  const hex0 = 'dd0fa088041973131739a033dddc668ce692';
+  const buf0 = _hex2buf(hex0);
+  const inv0 = _buf2hex(buf0);
+  expect(inv0).toEqual(hex0);
+
+  const hex1 = '7468697320697320612074c3a97374';
+  const buf1 = _hex2buf(hex1);
+  const inv1 = _buf2hex(buf1);
+  expect(inv1).toEqual(hex1);
+
+  const buf2 = Buffer.from([54, 65, 105, 225, 146, 251, 171, 131,
+                            56, 4, 132, 194, 99, 111, 78, 171]);
+  const hex2 = _buf2hex(buf2);
+  const inv2 = _hex2buf(hex2);
+  expect(buf2).toEqual(inv2);
+});
+
+test('sharding internals: combineBuffer . shardBuffer ~ id', async () => {
+  const arr0 = [54, 65, 105, 225, 146, 251, 171, 131,
+                56, 4, 132, 194, 99, 111, 78, 171];
+
+  const buf0 = Buffer.from(arr0);
+  const shards0 = _shardBuffer(buf0);
+  const combined0 = _combineBuffer(shards0);
+
+  expect(combined0).toEqual(buf0);
+
+  const arr1 = [ 8, 42, 39, 159, 26, 44, 25, 220, 244, 101, 101, 167, 204, 196,
+                 51, 125, 117, 26, 6, 159, 145, 25, 68, 100, 41, 105, 157, 226,
+                 154, 61, 19, 250 ];
+
+  const buf1 = Buffer.from(arr1);
+  const shards1 = _shardBuffer(buf1);
+  const combined1 = _combineBuffer(shards1);
+
+  expect(combined1).toEqual(buf1);
+});
+
+test('sharding internals: combine . shard ~ id', async () => {
+  const original0 = '736f6d652073656564';
+  let shards = _shard(original0);
+  let slice0 = shards.slice(0, 2);
+  let slice1 = shards.slice(1, 3);
+  let slice2 = shards.slice(0, 1).concat(shards.slice(2, 3));
+  let reconstructed = _combine(slice0)
+  expect(reconstructed).toEqual(original0);
+  reconstructed = _combine(slice1);
+  expect(reconstructed).toEqual(original0);
+  reconstructed = _combine(slice2);
+  expect(reconstructed).toEqual(original0);
+
+  const original1 = '544a22a7a9de737a1ed342cb1f03158314ecee7d364550daf27990cdacb9a7ea';
+  shards = _shard(original1);
+  slice0 = shards.slice(0, 2);
+  slice1 = shards.slice(1, 3);
+  slice2 = shards.slice(0, 1).concat(shards.slice(2, 3));
+  reconstructed = _combine(slice0)
+  expect(reconstructed).toEqual(original1);
+  reconstructed = _combine(slice1);
+  expect(reconstructed).toEqual(original1);
+  reconstructed = _combine(slice2);
+  expect(reconstructed).toEqual(original1);
+
+  const original2 = '02bb80a59fd51ed853285f3b7738b4542f619a52819a04680e5f36c4d76547eec9'
+  shards = _shard(original2);
+  slice0 = shards.slice(0, 2);
+  slice1 = shards.slice(1, 3);
+  slice2 = shards.slice(0, 1).concat(shards.slice(2, 3));
+  reconstructed = _combine(slice0)
+  expect(reconstructed).toEqual(original2);
+  reconstructed = _combine(slice1);
+  expect(reconstructed).toEqual(original2);
+  reconstructed = _combine(slice2);
+  expect(reconstructed).toEqual(original2);
+
+});
+
+test('sharded wallet from seed', async () => {
+  let ticket = Buffer.from('some ticket or other');
+
+  const config0 = {
+    ticket: ticket,
+    seedSize: 16,
+    ships: [1],
+    password: '',
+    revisions: {},
+    boot: false
+  };
+  const original0 = '736f6d65207469636b6574206f72206f74686572';
+  let res = await fullWalletFromTicket(config0);
+  let sharded = shardWallet(res).ticket;
+  let slice0 = sharded.slice(0, 2);
+  let slice1 = sharded.slice(1, 3);
+  let slice2 = sharded.slice(0, 1).concat(sharded.slice(2, 3));
+  let reconstructed = _combine(slice0);
+  expect(reconstructed).toEqual(original0);
+  reconstructed = _combine(slice1);
+  expect(reconstructed).toEqual(original0);
+  reconstructed = _combine(slice2);
+  expect(reconstructed).toEqual(original0);
+
+  ticket = Buffer.from('a way longer ticket, even longer than before')
+  const config1 = {
+    ticket: ticket,
+    seedSize: 16,
+    ships: [1, 10, 900000],
+    password: 'foo',
+    revisions: {},
+    boot: true
+  };
+  const original1 = '6120776179206c6f6e676572207469636b65742c206576656e206c6f6e676572207468616e206265666f7265';
+  res = await fullWalletFromTicket(config1);
+  sharded = shardWallet(res).ticket;
+  slice0 = sharded.slice(0, 2);
+  slice1 = sharded.slice(1, 3);
+  slice2 = sharded.slice(0, 1).concat(sharded.slice(2, 3));
+  reconstructed = _combine(slice0);
+  expect(reconstructed).toEqual(original1);
+  reconstructed = _combine(slice1);
+  expect(reconstructed).toEqual(original1);
+  reconstructed = _combine(slice2);
+  expect(reconstructed).toEqual(original1);
+});
+
