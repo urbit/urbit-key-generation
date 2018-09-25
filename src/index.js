@@ -125,7 +125,7 @@ const argon2u = (entropy, seedSize) => argon2({
  * Derive a new seed from a seed. Uses a config with the following entries:
  * @param  {buffer}   seed seed to derive from.
  * @param  {string}   type the type of the seed we want to derive:
- * ("transfer", "spawn", "delegate", "manage", "network").
+ * ("transfer", "spawn", "voting", "manage", "network").
  * @param  {object}   revision the revision number of the seed we want to derive.
  * @param  {integer}  ship  optional ship number we want to derive the seed for.
  * @param  {string}   password  optional password to salt the seed with before
@@ -150,7 +150,7 @@ const childSeedFromSeed = async config => {
  * Derive a new node from a seed. Uses a config with the following entries:
  * @param  {buffer}   seed seed to derive from.
  * @param  {string}   type the type of the seed we want to derive:
- * ("transfer", "spawn", "delegate", "manage", "network").
+ * ("transfer", "spawn", "voting", "manage", "network").
  * @param  {object}   revision the revision number of the seed we want to derive.
  * @param  {integer}  ship  optional ship number we want to derive the seed for.
  * @param  {string}   password  optional password to salt the seed with before
@@ -246,7 +246,7 @@ const urbitKeysFromSeed = (seed, password) => {
  * @param  {array of integers}  ships array of ship-numbers to generate keys for.
  * @param  {string}  password optional password to use during derivation.
  * @param  {object}  revisions optional revision per key purpose:
- * (transfer, spawn, delegate, manage, network), defaults to all-zero
+ * (transfer, spawn, voting, manage, network), defaults to all-zero
  * @return {Promise => object} an object representing a full HD wallet.
  */
 const fullWalletFromTicket = async config => {
@@ -270,7 +270,7 @@ const fullWalletFromTicket = async config => {
  * @param  {array of integers}  ships array of ship-numbers to generate keys for.
  * @param  {string}  password optional password to use during derivation.
  * @param  {object}  revisions optional revision per key purpose:
- * (transfer, spawn, delegate, manage, network), defaults to all-zero
+ * (transfer, spawn, voting, manage, network), defaults to all-zero
  * @return {Promise => object} an object representing a full HD wallet.
  */
 const fullWalletFromSeed = async config => {
@@ -280,7 +280,7 @@ const fullWalletFromSeed = async config => {
   const _revisions = {
     transfer: get(revisions, 'transfer', 0),
     spawn: get(revisions, 'spawn', 0),
-    delegate: get(revisions, 'delegate', 0),
+    voting: get(revisions, 'voting', 0),
     manage: get(revisions, 'manage', 0),
     network: get(revisions, 'network', 0),
   };
@@ -298,10 +298,10 @@ const fullWalletFromSeed = async config => {
     password: password,
   });
 
-  const delegateNode = await childNodeFromSeed({
+  const votingNode = await childNodeFromSeed({
     seed: ownerSeed,
-    type: 'delegate',
-    revision: _revisions.delegate,
+    type: 'voting',
+    revision: _revisions.voting,
     ship: null,
     password: password,
   });
@@ -349,7 +349,7 @@ const fullWalletFromSeed = async config => {
 
   const wallet = {
     owner: ownershipNode,
-    delegate: delegateNode,
+    voting: votingNode,
     manage: managementNode,
     network: networkNodes,
     transfer: transferNodes,
