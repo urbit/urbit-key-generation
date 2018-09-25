@@ -5,7 +5,14 @@ import {
   childSeedFromSeed,
   walletFromSeed,
   urbitKeysFromSeed,
+  shardWallet,
+  combine,
   _buf2hex,
+  _hex2buf,
+  _shard,
+  _combine,
+  _shardBuffer,
+  _combineBuffer
 } from '../src/index'
 
 test('argon2u', async () => {
@@ -187,3 +194,124 @@ test('full wallet from ticket, boot', async () => {
   const hexTicket = _buf2hex(ticket)
   expect(res.ticket).toEqual(hexTicket)
 });
+
+test('sharding internals: buf2hex and hex2buf are inverses', async () => {
+  const hex0 = 'dd0fa088041973131739a033dddc668ce692';
+  const buf0 = _hex2buf(hex0);
+  const inv0 = _buf2hex(buf0);
+  expect(inv0).toEqual(hex0);
+
+  const hex1 = '7468697320697320612074c3a97374';
+  const buf1 = _hex2buf(hex1);
+  const inv1 = _buf2hex(buf1);
+  expect(inv1).toEqual(hex1);
+
+  const buf2 = Buffer.from([54, 65, 105, 225, 146, 251, 171, 131,
+                            56, 4, 132, 194, 99, 111, 78, 171]);
+  const hex2 = _buf2hex(buf2);
+  const inv2 = _hex2buf(hex2);
+  expect(buf2).toEqual(inv2);
+});
+
+test('sharding internals: combineBuffer . shardBuffer ~ id', async () => {
+  const arr0 = [54, 65, 105, 225, 146, 251, 171, 131,
+                56, 4, 132, 194, 99, 111, 78, 171];
+
+  const buf0 = Buffer.from(arr0);
+  const shards0 = _shardBuffer(buf0);
+  const combined0 = _combineBuffer(shards0);
+
+  expect(combined0).toEqual(buf0);
+
+  const arr1 = [ 8, 42, 39, 159, 26, 44, 25, 220, 244, 101, 101, 167, 204, 196,
+                 51, 125, 117, 26, 6, 159, 145, 25, 68, 100, 41, 105, 157, 226,
+                 154, 61, 19, 250 ];
+
+  const buf1 = Buffer.from(arr1);
+  const shards1 = _shardBuffer(buf1);
+  const combined1 = _combineBuffer(shards1);
+
+  expect(combined1).toEqual(buf1);
+});
+
+test('sharding internals: combine . shard ~ id', async () => {
+  const original0 = '736f6d652073656564';
+  let shards = _shard(original0);
+  let slice0 = shards.slice(0, 2);
+  let slice1 = shards.slice(1, 3);
+  let slice2 = shards.slice(0, 1).concat(shards.slice(2, 3));
+  let reconstructed = _combine(slice0)
+  expect(reconstructed).toEqual(original0);
+  reconstructed = _combine(slice1);
+  expect(reconstructed).toEqual(original0);
+  reconstructed = _combine(slice2);
+  expect(reconstructed).toEqual(original0);
+
+  const original1 = '544a22a7a9de737a1ed342cb1f03158314ecee7d364550daf27990cdacb9a7ea';
+  shards = _shard(original1);
+  slice0 = shards.slice(0, 2);
+  slice1 = shards.slice(1, 3);
+  slice2 = shards.slice(0, 1).concat(shards.slice(2, 3));
+  reconstructed = _combine(slice0)
+  expect(reconstructed).toEqual(original1);
+  reconstructed = _combine(slice1);
+  expect(reconstructed).toEqual(original1);
+  reconstructed = _combine(slice2);
+  expect(reconstructed).toEqual(original1);
+
+  const original2 = '02bb80a59fd51ed853285f3b7738b4542f619a52819a04680e5f36c4d76547eec9'
+  shards = _shard(original2);
+  slice0 = shards.slice(0, 2);
+  slice1 = shards.slice(1, 3);
+  slice2 = shards.slice(0, 1).concat(shards.slice(2, 3));
+  reconstructed = _combine(slice0)
+  expect(reconstructed).toEqual(original2);
+  reconstructed = _combine(slice1);
+  expect(reconstructed).toEqual(original2);
+  reconstructed = _combine(slice2);
+  expect(reconstructed).toEqual(original2);
+
+});
+
+test('sharded wallet from seed', async () => {
+  const config0 = {
+    ownerSeed: Buffer.from('some seed'),
+    ships: [1],
+    password: '',
+    revisions: {},
+    boot: false
+  };
+  const original0 = '736f6d652073656564';
+  let res = await fullWalletFromSeed(config0);
+  let sharded = shardWallet(res).owner.seed;
+  let slice0 = sharded.slice(0, 2);
+  let slice1 = sharded.slice(1, 3);
+  let slice2 = sharded.slice(0, 1).concat(sharded.slice(2, 3));
+  let reconstructed = _combine(slice0);
+  expect(reconstructed).toEqual(original0);
+  reconstructed = _combine(slice1);
+  expect(reconstructed).toEqual(original0);
+  reconstructed = _combine(slice2);
+  expect(reconstructed).toEqual(original0);
+
+  const config1 = {
+    ownerSeed: Buffer.from('a way longer seed, even longer than before!'),
+    ships: [1, 10, 900000],
+    password: 'foo',
+    revisions: {},
+    boot: true
+  };
+  const original1 = '6120776179206c6f6e67657220736565642c206576656e206c6f6e676572207468616e206265666f726521';
+  res = await fullWalletFromSeed(config1);
+  sharded = shardWallet(res).owner.seed;
+  slice0 = sharded.slice(0, 2);
+  slice1 = sharded.slice(1, 3);
+  slice2 = sharded.slice(0, 1).concat(sharded.slice(2, 3));
+  reconstructed = _combine(slice0);
+  expect(reconstructed).toEqual(original1);
+  reconstructed = _combine(slice1);
+  expect(reconstructed).toEqual(original1);
+  reconstructed = _combine(slice2);
+  expect(reconstructed).toEqual(original1);
+});
+
