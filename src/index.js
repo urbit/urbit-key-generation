@@ -24,33 +24,6 @@ const splitAt = (index, str) => [str.slice(0, index), str.slice(index)];
 
 
 /**
- * Wraps Buffer.from(). Converts an array into a buffer.
- * @param  {array} arr
- * @return {buffer}
- */
-const bufferFrom = arr => Buffer.from(arr);
-
-
-
-/**
- * Wraps Buffer.concat(). Merges buffers into one buffer.
- * @param  {array of buffers} arr
- * @return {buffer}
- */
-const bufferConcat = arr => Buffer.concat(arr);
-
-
-
-/**
- * Wraps array.reverse
- * @param  {array} arr
- * @return {array}
- */
-const reverse = arr => arr.reverse();
-
-
-
-/**
  * if any is undefined, return d. Otherwise return any
  * @param  {any} a value to check if defined
  * @param  {any} d   value to swap in if undefined.
@@ -125,7 +98,7 @@ const hex2buf = hex => {
  */
 const hash = async (...args) => {
   // map args into buffers and concat into one buffer
-  const buffer = bufferConcat(args.map(a => bufferFrom(a)));
+  const buffer = Buffer.concat(args.map(a => Buffer.from(a)));
   // generate a SHA-512 hash from input buffer
   return crypto.subtle.digest({ name: 'SHA-512' }, buffer);
 };
@@ -218,7 +191,7 @@ const walletFromSeed = async (seed, password) => {
   // we hash the seed with SHA-512 before doing BIP32 wallet generation,
   // because BIP32 doesn't support seeds of bit-lengths < 128 or > 512.
   const seedHash = await hash(seed, defaultTo(password, ''));
-  const { publicKey, privateKey, chainCode } = bip32.fromSeed(bufferFrom(seedHash));
+  const { publicKey, privateKey, chainCode } = bip32.fromSeed(Buffer.from(seedHash));
   return {
     public: buf2hex(publicKey),
     private: buf2hex(privateKey),
@@ -248,22 +221,22 @@ const naclHash = seed => {
  * @return {object} urbitKeys, derived according to ++pit:nu:crub:crypto.
  */
 const urbitKeysFromSeed = (seed, password) => {
-  const h = naclHash(bufferConcat([seed, password]));
+  const h = naclHash(Buffer.concat([seed, password]));
 
   const c = h.slice(32);
   const a = h.slice(0, 32);
 
-  const crypt = nacl.sign.keyPair.fromSeed(bufferFrom(c));
-  const auth = nacl.sign.keyPair.fromSeed(bufferFrom(a));
+  const crypt = nacl.sign.keyPair.fromSeed(Buffer.from(c));
+  const auth = nacl.sign.keyPair.fromSeed(Buffer.from(a));
 
   return {
     crypt: {
-      private: buf2hex(reverse(c)),
-      public: buf2hex(reverse(crypt.publicKey)),
+      private: buf2hex(c.reverse()),
+      public: buf2hex(crypt.publicKey.reverse()),
     },
     auth: {
-      private: buf2hex(reverse(a)),
-      public: buf2hex(reverse(auth.publicKey)),
+      private: buf2hex(a.reverse()),
+      public: buf2hex(auth.publicKey.reverse()),
     }
   };
 };
@@ -293,7 +266,7 @@ const shard = (hex) => {
   const sharded = shardBuffer(buffer);
   return sharded.map(pair =>
            lodash.reduce(pair, (acc, arr) =>
-             acc + buf2hex(bufferFrom(arr)), ''))
+             acc + buf2hex(Buffer.from(arr)), ''))
 }
 
 
@@ -332,7 +305,7 @@ const combineBuffer = (shards) => {
   const flattened = lodash.flatten(shards);
   const uniques = lodash.uniqWith(flattened, lodash.isEqual);
   const reduced = reduceByXor(uniques);
-  return bufferFrom(reduced);
+  return Buffer.from(reduced);
 }
 
 
@@ -450,7 +423,7 @@ const fullWalletFromTicket = async config => {
   if (boot) {
 
     networkSeeds = await Promise.all(ships.map(ship => childSeedFromSeed({
-      seed: bufferFrom(manageSeeds[ship]),
+      seed: Buffer.from(manageSeeds[ship]),
       type: 'network',
       revision: _revisions.network,
       ship: ship,
@@ -459,7 +432,7 @@ const fullWalletFromTicket = async config => {
 
     networkNodes = await Promise.all(networkSeeds.map((seed, index) => ({
       seed: buf2hex(seed),
-      keys: urbitKeysFromSeed(bufferFrom(seed), bufferFrom(defaultTo(password, ''))),
+      keys: urbitKeysFromSeed(Buffer.from(seed), Buffer.from(defaultTo(password, ''))),
       meta: {
         type: 'network',
         revision: _revisions.network,
