@@ -7,6 +7,7 @@ import {
   urbitKeysFromSeed,
   shardWallet,
   combine,
+  _get,
   _buf2hex,
   _hex2buf,
   _shard,
@@ -14,6 +15,14 @@ import {
   _shardBuffer,
   _combineBuffer
 } from '../src/index'
+
+//TODO test with ticket with and without leading zero bytes, should be different
+
+test('get', async () => {
+  let obj = { exists: true };
+  expect(_get(obj, 'exists', 42)).toBe(true);
+  expect(_get(obj, 'missing', 42)).toBe(42);
+});
 
 test('argon2u', async () => {
   let res = await argon2u({
