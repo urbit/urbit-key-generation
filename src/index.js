@@ -9,7 +9,7 @@ const lodash = require('lodash');
  * @param  {integer}  ship
  * @return  {bool}  true if galaxy, false otherwise
  */
-const isGalaxy = (ship) => Number.isInteger(ship) && ship >= 0 && ship < 256;
+const isGalaxy = ship => Number.isInteger(ship) && ship >= 0 && ship < 256;
 
 
 
@@ -288,7 +288,7 @@ const reduceByXor = (arrays) => {
  * @param  {string}  string hex-encoded string
  * @return {array of strings} resulting shards
  */
-const shard = (hex) => {
+const shard = hex => {
   const buffer = hex2buf(hex);
   const sharded = shardBuffer(buffer);
   return sharded.map(pair =>
@@ -304,7 +304,7 @@ const shard = (hex) => {
  * @param  {buffer}  buffer arbitrary buffer
  * @return {array of array of integers} sharded buffer
  */
-const shardBuffer = (buffer) => {
+const shardBuffer = buffer => {
   const r1 = crypto.getRandomValues(new Uint8Array(buffer.length));
   const r2 = crypto.getRandomValues(new Uint8Array(buffer.length));
 
@@ -328,7 +328,7 @@ const shardBuffer = (buffer) => {
  * @param  {array of array of integers}  shards a collection of shards
  * @return {buffer} the unsharded buffer
  */
-const combineBuffer = (shards) => {
+const combineBuffer = shards => {
   const flattened = lodash.flatten(shards);
   const uniques = lodash.uniqWith(flattened, lodash.isEqual);
   const reduced = reduceByXor(uniques);
@@ -343,7 +343,7 @@ const combineBuffer = (shards) => {
  *  shards
  * @return {string} the reconstructed secret
  */
-const combine = (shards) => {
+const combine = shards => {
   const splat = shards.map(shard =>
     splitAt(shard.length / 2, shard));
   const buffers = splat.map(pair =>
@@ -362,7 +362,7 @@ const combine = (shards) => {
  * @param  {object}  wallet full HD wallet
  * @return  {object} an object representing a sharded full HD wallet
  */
-const shardWallet = (wallet) => {
+const shardWallet = wallet => {
   const walletCopy = lodash.cloneDeep(wallet);
   const sharded = shard(walletCopy.ticket)
   walletCopy.ticket = sharded;
@@ -409,18 +409,13 @@ const fullWalletFromTicket = async config => {
     password: password,
   });
 
-  const votingNodes = lodash.filter(
-    await Promise.all(ships.map(ship =>
-      isGalaxy(ship)
-        ? childNodeFromSeed({
-            seed: ownerSeed,
-            type: 'voting',
-            revision: _revisions.voting,
-            ship: ship,
-            password: password,
-          })
-        : null
-    )));
+  const votingNodes = await Promise.all(ships.filter(ship => isGalaxy(ship)).map(ship => childNodeFromSeed({
+      seed: ownerSeed,
+      type: 'voting',
+      revision: _revisions.voting,
+      ship: ship,
+      password: password,
+    })));
 
   const transferNodes = await Promise.all(ships.map(ship => childNodeFromSeed({
     seed: ownerSeed,
@@ -442,7 +437,7 @@ const fullWalletFromTicket = async config => {
   let networkSeeds = [];
   let networkNodes = [];
 
-  if (boot) {
+  if (boot === true) {
 
     networkSeeds = await Promise.all(ships.map(ship => childSeedFromSeed({
       seed: bufferFrom(managementNode.seed),
