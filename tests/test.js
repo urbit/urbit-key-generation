@@ -320,3 +320,19 @@ test('sharded wallet from seed', async () => {
   expect(reconstructed).toEqual(original1);
 });
 
+test('wallets do not contain voting seeds for non-voting ships', async () => {
+  const ticket = Buffer.from('some ticket or other');
+  const config0 = {
+    ticket: ticket,
+    seedSize: 16,
+    ships: [1, 1000, 2, 2000000, 3],
+    password: '',
+    revisions: {},
+    boot: true
+  };
+
+  const wallet0 = await fullWalletFromTicket(config0);
+  expect(wallet0.voting.length).toEqual(3);
+  expect(wallet0.spawn.length).toEqual(5);
+});
+

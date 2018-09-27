@@ -5,6 +5,15 @@ const bip32 = require('bip32');
 const lodash = require('lodash');
 
 /**
+ * Check if a ship is a galaxy.
+ * @param  {integer}  ship
+ * @return  {bool}  true if galaxy, false otherwise
+ */
+const isGalaxy = (ship) => Number.isInteger(ship) && ship >= 0 && ship < 256;
+
+
+
+/**
  * Split a string at the provided index, returning both chunks.
  * @param  {string}  string a string
  * @param  {integer}  index the index to split at
@@ -400,13 +409,18 @@ const fullWalletFromTicket = async config => {
     password: password,
   });
 
-  const votingNode = await childNodeFromSeed({
-    seed: ownerSeed,
-    type: 'voting',
-    revision: _revisions.voting,
-    ship: null,
-    password: password,
-  });
+  const votingNodes = lodash.filter(
+    await Promise.all(ships.map(ship =>
+      isGalaxy(ship)
+        ? childNodeFromSeed({
+            seed: ownerSeed,
+            type: 'voting',
+            revision: _revisions.voting,
+            ship: ship,
+            password: password,
+          })
+        : null
+    )));
 
   const transferNodes = await Promise.all(ships.map(ship => childNodeFromSeed({
     seed: ownerSeed,
@@ -454,7 +468,7 @@ const fullWalletFromTicket = async config => {
   const wallet = {
     ticket: displayTicket,
     owner: ownershipNode,
-    voting: votingNode,
+    voting: votingNodes,
     manage: managementNode,
     network: networkNodes,
     transfer: transferNodes,
