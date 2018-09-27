@@ -93,7 +93,7 @@ const hex2buf = hex => {
 
 /**
  * executes SHA-512 on any size input
- * @param  {Array, ArrayBuffer, Buffer} args any number of arguments
+ * @param  {Array, ArrayBuffer, Buffer, string} args any number of arguments
  * @return {Promise => ArrayBuffer} Promise that resolves to arrayBuffer
  */
 const hash = async (...args) => {
@@ -107,8 +107,8 @@ const hash = async (...args) => {
 
 /**
  * Runs argon2wasm to return a seed of desired bytes
- * @param  {string, Uint8Array} entropy ticket bytes as string or Uint8Array
- * or Buffer, at least 16 bytes
+ * @param  {Uint8Array, Buffer, string} entropy ticket bytes as string or
+ * Uint8Array or Buffer, at least 16 bytes
  * @param  {int} seedSize desired size of the generated seeds in bytes
  * @return {Promise => ArrayBuffer} Promise that resolves to arrayBuffer
  */
@@ -155,7 +155,7 @@ const childSeedFromSeed = async config => {
  * @param  {Buffer}   seed seed to derive from.
  * @param  {string}   type the type of the seed we want to derive:
  * ("transfer", "spawn", "voting", "manage", "network").
- * @param  {object}   revision the revision number of the seed we want to derive.
+ * @param  {integer}  revision the revision number of the seed we want to derive.
  * @param  {integer}  ship  optional ship number we want to derive the seed for.
  * @param  {string}   password  optional password to salt the seed with before
  * deriving.
@@ -184,8 +184,8 @@ const childNodeFromSeed = async config => {
  * @param  {Buffer}  seed     seed to derive from.
  * @param  {string}  password optional password to salt the seed with before
  * deriving.
- * @return {Promise => object} a wallet derived according to BIP32 from the SHA-512 hash of
- *  the seed+password.
+ * @return {Promise => object} a wallet derived according to BIP32 from the
+ *  SHA-512 hash of the seed+password.
  */
 const walletFromSeed = async (seed, password) => {
   // we hash the seed with SHA-512 before doing BIP32 wallet generation,
