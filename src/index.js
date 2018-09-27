@@ -401,13 +401,18 @@ const fullWalletFromTicket = async config => {
     seed: buf2hex(ownerSeed),
   }
 
-  const managementNode = await childNodeFromSeed({
-    seed: ownerSeed,
-    type: 'manage',
-    revision: _revisions.manage,
-    ship: null,
-    password: password,
-  });
+  let manageSeeds = {};
+  const manageNodes = await Promise.all(ships.map(async ship => {
+    let res = await childNodeFromSeed({
+      seed: ownerSeed,
+      type: 'manage',
+      revision: _revisions.manage,
+      ship: ship,
+      password: password,
+    });
+    manageSeeds[ship] = res.seed;
+    return res;
+  }));
 
   const votingNodes = lodash.filter(
     await Promise.all(ships.map(ship =>
@@ -445,7 +450,7 @@ const fullWalletFromTicket = async config => {
   if (boot) {
 
     networkSeeds = await Promise.all(ships.map(ship => childSeedFromSeed({
-      seed: bufferFrom(managementNode.seed),
+      seed: bufferFrom(manageSeeds[ship]),
       type: 'network',
       revision: _revisions.network,
       ship: ship,
@@ -468,8 +473,8 @@ const fullWalletFromTicket = async config => {
   const wallet = {
     ticket: displayTicket,
     owner: ownershipNode,
+    manage: manageNodes,
     voting: votingNodes,
-    manage: managementNode,
     network: networkNodes,
     transfer: transferNodes,
     spawn: spawnNodes,
