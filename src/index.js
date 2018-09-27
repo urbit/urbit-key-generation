@@ -69,7 +69,7 @@ const isNumber = a => typeof a === 'number' && isFinite(a);
 
 /**
  * Converts a buffer to hexidecimal string
- * @param  {buffer} buffer
+ * @param  {Buffer} buffer
  * @return {string}
  */
 const buf2hex = buffer => {
@@ -93,8 +93,8 @@ const hex2buf = hex => {
 
 /**
  * executes SHA-512 on any size input
- * @param  {array, arrayBuffer, buffer} args any number of arguments
- * @return {Promise => arrayBuffer} Promise that resolves to arrayBuffer
+ * @param  {Array, ArrayBuffer, Buffer} args any number of arguments
+ * @return {Promise => ArrayBuffer} Promise that resolves to arrayBuffer
  */
 const hash = async (...args) => {
   // map args into buffers and concat into one buffer
@@ -110,7 +110,7 @@ const hash = async (...args) => {
  * @param  {string, Uint8Array} entropy ticket bytes as string or Uint8Array
  * or Buffer, at least 16 bytes
  * @param  {int} seedSize desired size of the generated seeds in bytes
- * @return {Promise => arrayBuffer} Promise that resolves to arrayBuffer
+ * @return {Promise => ArrayBuffer} Promise that resolves to arrayBuffer
  */
 const argon2u = (entropy, seedSize) => argon2({
   pass: entropy, // string or Uint8Array
@@ -127,14 +127,14 @@ const argon2u = (entropy, seedSize) => argon2({
 
 /**
  * Derive a new seed from a seed. Uses a config with the following entries:
- * @param  {buffer}   seed seed to derive from.
+ * @param  {Buffer}   seed seed to derive from.
  * @param  {string}   type the type of the seed we want to derive:
  * ("transfer", "spawn", "voting", "manage", "network").
  * @param  {object}   revision the revision number of the seed we want to derive.
  * @param  {integer}  ship  optional ship number we want to derive the seed for.
  * @param  {string}   password  optional password to salt the seed with before
  * deriving.
- * @return {buffer} a new seed
+ * @return {Buffer} a new seed
  */
 const childSeedFromSeed = async config => {
   const { seed, type, revision, ship, password } = config;
@@ -152,14 +152,14 @@ const childSeedFromSeed = async config => {
 
 /**
  * Derive a new node from a seed. Uses a config with the following entries:
- * @param  {buffer}   seed seed to derive from.
+ * @param  {Buffer}   seed seed to derive from.
  * @param  {string}   type the type of the seed we want to derive:
  * ("transfer", "spawn", "voting", "manage", "network").
  * @param  {object}   revision the revision number of the seed we want to derive.
  * @param  {integer}  ship  optional ship number we want to derive the seed for.
  * @param  {string}   password  optional password to salt the seed with before
  * deriving.
- * @return {buffer} a new node
+ * @return {Buffer} a new node
  */
 const childNodeFromSeed = async config => {
   const { seed, type, revision, ship, password } = config;
@@ -181,7 +181,7 @@ const childNodeFromSeed = async config => {
 
 /**
  * Derive a BIP32 master node from a seed.
- * @param  {buffer}  seed     seed to derive from.
+ * @param  {Buffer}  seed     seed to derive from.
  * @param  {string}  password optional password to salt the seed with before
  * deriving.
  * @return {Promise => object} a wallet derived according to BIP32 from the SHA-512 hash of
@@ -204,7 +204,7 @@ const walletFromSeed = async (seed, password) => {
 /**
  * Wraps nacl.lowlvel.crypto_hash
  * @param  {Uint8Array} seed
- * @return {array}
+ * @return {Array}
  */
 const naclHash = seed => {
   let newHash = []
@@ -216,7 +216,7 @@ const naclHash = seed => {
 
 /**
  * Derive Urbit network keypairs from a seed. Matches ++pit:nu:crub:crypto
- * @param  {buffer} seed     seed to derive from
+ * @param  {Buffer} seed     seed to derive from
  * @param  {string} password optional password to salt the seed before deriving
  * @return {object} urbitKeys, derived according to ++pit:nu:crub:crypto.
  */
@@ -245,8 +245,8 @@ const urbitKeysFromSeed = (seed, password) => {
 
 /**
  * Reduce a collection of arrays by recursive applications of bytewise XOR.
- * @param  {array of array of integers}  arrays an array of arrays
- * @return {array} the resulting array
+ * @param  {Array of Array of integers}  arrays an array of arrays
+ * @return {Array} the resulting array
  */
 const reduceByXor = (arrays) => {
   return arrays.reduce((acc, arr) =>
@@ -259,7 +259,7 @@ const reduceByXor = (arrays) => {
  * Encode a hex string as three shards, such that any two shards can be
  * combined to recover it.
  * @param  {string}  string hex-encoded string
- * @return {array of strings} resulting shards
+ * @return {Array of strings} resulting shards
  */
 const shard = (hex) => {
   const buffer = hex2buf(hex);
@@ -274,8 +274,8 @@ const shard = (hex) => {
 /**
  * Produce three shards from a buffer such that any two of them can be used to
  * reconstruct it.
- * @param  {buffer}  buffer arbitrary buffer
- * @return {array of array of integers} sharded buffer
+ * @param  {Buffer}  buffer arbitrary buffer
+ * @return {Array of Array of integers} sharded buffer
  */
 const shardBuffer = (buffer) => {
   const r1 = crypto.getRandomValues(new Uint8Array(buffer.length));
@@ -298,8 +298,8 @@ const shardBuffer = (buffer) => {
 
 /**
  * Combine pieces of a sharded buffer together to recover the original buffer.
- * @param  {array of array of integers}  shards a collection of shards
- * @return {buffer} the unsharded buffer
+ * @param  {Array of Array of integers}  shards a collection of shards
+ * @return {Buffer} the unsharded buffer
  */
 const combineBuffer = (shards) => {
   const flattened = lodash.flatten(shards);
@@ -312,7 +312,7 @@ const combineBuffer = (shards) => {
 
 /**
  * Combine shards together to reconstruct a secret.
- * @param  {array of array of strings}  shards a collection of hex-encoded
+ * @param  {Array of Array of strings}  shards a collection of hex-encoded
  *  shards
  * @return {string} the reconstructed secret
  */
@@ -346,9 +346,9 @@ const shardWallet = (wallet) => {
 
 /**
  * Derive all keys from the ticket.
- * @param  {string, Uint8Array, buffer}  ticket ticket, at least 16 bytes.
+ * @param  {string, Uint8Array, Buffer}  ticket ticket, at least 16 bytes.
  * @param  {integer}  seedSize desired size of the generated seeds in bytes.
- * @param  {array of integers}  ships array of ship-numbers to generate keys for.
+ * @param  {Array of integers}  ships array of ship-numbers to generate keys for.
  * @param  {string}  password optional password to use during derivation.
  * @param  {object}  revisions optional revision per key purpose:
  * (transfer, spawn, voting, manage, network), defaults to all-zero
