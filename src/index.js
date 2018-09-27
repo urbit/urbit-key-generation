@@ -145,7 +145,7 @@ const childSeedFromSeed = async config => {
 
   const childSeed = await hash(seed, salt, defaultTo(password, ''));
 
-  return childSeed.slice(0, seed.length || seed.byteLength);
+  return childSeed.slice(0, seed.byteLength || seed.length);
 };
 
 
