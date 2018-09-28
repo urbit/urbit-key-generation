@@ -374,15 +374,14 @@ const fullWalletFromTicket = async config => {
     seed: buf2hex(ownerSeed),
   }
 
-  const manageNodes = await Promise.all(ships.map(async ship => {
-     return await childNodeFromSeed({
+  const manageNodes = await Promise.all(ships.map(ship =>
+     childNodeFromSeed({
        seed: ownerSeed,
        type: 'manage',
        revision: _revisions.manage,
        ship: ship,
        password: password,
-    });
-  }));
+    })));
 
   const manageSeeds = lodash.mapValues(lodash.keyBy(manageNodes, 'meta.ship'), 'seed');
 
