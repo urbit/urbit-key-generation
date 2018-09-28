@@ -7,6 +7,7 @@ import {
   urbitKeysFromSeed,
   shardWallet,
   combine,
+  _get,
   _buf2hex,
   _hex2buf,
   _shard,
@@ -14,6 +15,14 @@ import {
   _shardBuffer,
   _combineBuffer
 } from '../src/index'
+
+//TODO test with ticket with and without leading zero bytes, should be different
+
+test('get', async () => {
+  let obj = { exists: true };
+  expect(_get(obj, 'exists', 42)).toBe(true);
+  expect(_get(obj, 'missing', 42)).toBe(42);
+});
 
 test('argon2u', async () => {
   let res = await argon2u({
@@ -175,12 +184,12 @@ test('full wallet from ticket, boot', async () => {
   expect(res.network).toEqual([{
     keys: {
       auth: {
-        private: 'c519fb1687dc6d7db85feb50d92182a949d82a5b364d8524ecaf96466f81060f',
-        public: '0e6897618be422b7c318a5587203a79625a3fd587043c2bca2e9c15d9763ac07'
+        private: 'f061eb24088d7d3fb723e055ad191637cd407a5fb4e196fe959b8eec9e5b02e0',
+        public: 'c0a933fcdb6155ec25e9b134ca6d75ca81a7b7c893d332ef481ad314d2d73057'
       },
       crypt: {
-        private: '14c82b023664de0f4d03487c3701b129b37c1fd06bd2af15caf7167c953ce1e3',
-        public: '7a0be8acabf20ebee63f62595a2c38f0c6e1a69274532c3a125de1cc96479a75'
+        private: '89ec503c45d8bbdf2cfda044b93afda330a69c4ed1bfb86ff7160c7d77a538b3',
+        public: 'f55987b398c6095a188cc891252d7f03cb008bc22269646a27460bd3105929cd'
       }
     },
     meta: {
@@ -188,7 +197,7 @@ test('full wallet from ticket, boot', async () => {
       ship: 1,
       type: "network"
     },
-    seed: '80b602c7b70dafc88194ef3b6d156c7d0da3db121c523734c88fcc84d452d2ce'
+    seed: 'f3563d185002e3f6be212b84d93851269af6fab923b6a26b1a39ea6da696a335'
   }]);
 
   const hexTicket = _buf2hex(ticket)
@@ -335,4 +344,3 @@ test('wallets do not contain voting seeds for non-voting ships', async () => {
   expect(wallet0.voting.length).toEqual(3);
   expect(wallet0.spawn.length).toEqual(5);
 });
-
