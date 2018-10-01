@@ -75,7 +75,7 @@ test('child seed from seed', async () => {
 });
 
 test('wallet from seed', async () => {
-  let res = await walletFromSeed('some seed');
+  let res = await walletFromSeed(Buffer.from('some seed'));
   expect(res).toEqual({
     public: '02bb80a59fd51ed853285f3b7738b4542f619a52819a04680e5f36c4d76547eec9',
     private: '733fce1a6a6dc99641590a454532298423c2c65f0df30ca070698d92df55196e',
@@ -150,28 +150,39 @@ test('full wallet from ticket, no boot', async () => {
   const ticket = Buffer.from('my awesome urbit ticket, i am so lucky');
   const seedSize = 16;
 
-  const config = {
+  const config0 = {
     ticket: ticket,
     seedSize: seedSize,
     ships: [1],
     boot: false,
   };
 
-  const seed = await argon2u(ticket, seedSize)
-  const wallet = await fullWalletFromTicket(config);
+  // Boot optional
+  const config1 = {
+    ticket: ticket,
+    seedSize: seedSize,
+    ships: [1],
+  };
 
-  expect(wallet.owner.seed).toEqual(seed.hashHex);
-  expect(wallet.network).toEqual([])
+  const seed = await argon2u(ticket, seedSize);
 
-  const hexTicket = _buf2hex(ticket)
-  expect(wallet.ticket).toEqual(hexTicket)
+  const wallet0 = await fullWalletFromTicket(config0);
+  const wallet1 = await fullWalletFromTicket(config1);
+
+  expect(wallet0).toEqual(wallet1);
+
+  expect(wallet0.owner.seed).toEqual(seed.hashHex);
+  expect(wallet0.network).toEqual([]);
+
+  const hexTicket = _buf2hex(ticket);
+  expect(wallet0.ticket).toEqual(hexTicket);
 });
 
 test('full wallet from ticket, boot', async () => {
   const ticket = Buffer.from('my awesome urbit ticket, i am so lucky');
   const seedSize = 16;
 
-  const config = {
+  const config0 = {
     ticket: ticket,
     seedSize: seedSize,
     ships: [1],
@@ -180,8 +191,8 @@ test('full wallet from ticket, boot', async () => {
     boot: true,
   };
 
-  const res = await fullWalletFromTicket(config);
-  expect(res.network).toEqual([{
+  const res0 = await fullWalletFromTicket(config0);
+  expect(res0.network).toEqual([{
     keys: {
       auth: {
         private: 'f061eb24088d7d3fb723e055ad191637cd407a5fb4e196fe959b8eec9e5b02e0',
@@ -200,9 +211,76 @@ test('full wallet from ticket, boot', async () => {
     seed: 'f3563d185002e3f6be212b84d93851269af6fab923b6a26b1a39ea6da696a335'
   }]);
 
+  const config1 = {
+    ticket: ticket,
+    seedSize: seedSize,
+    ships: [1, 100, 70000],
+    password: '',
+    revisions: {transfer: 1, manage: 0, network: 0},
+    boot: true,
+  };
+
+  const res1 = await fullWalletFromTicket(config1);
+  expect(res1.network).toEqual([{
+    keys: {
+      auth: {
+        private: 'f061eb24088d7d3fb723e055ad191637cd407a5fb4e196fe959b8eec9e5b02e0',
+        public: 'c0a933fcdb6155ec25e9b134ca6d75ca81a7b7c893d332ef481ad314d2d73057'
+      },
+      crypt: {
+        private: '89ec503c45d8bbdf2cfda044b93afda330a69c4ed1bfb86ff7160c7d77a538b3',
+        public: 'f55987b398c6095a188cc891252d7f03cb008bc22269646a27460bd3105929cd'
+      }
+    },
+    meta: {
+      revision: 0,
+      ship: 1,
+      type: "network"
+    },
+    seed: 'f3563d185002e3f6be212b84d93851269af6fab923b6a26b1a39ea6da696a335'
+  },
+  {
+    keys: {
+      auth: {
+        private: '7541dfa9499407e5de17ead8624950d83160d55cafc6c9709c699afb614a8f31', 
+        public: 'a8582cc1ffa328354970892aa937e1ffe20ae240bd4c15e7d27c0fe7213ef2ca'
+      },
+      crypt: {
+        private: 'da7cc92d030e7dee013ed9098c2c84906f89f612485abb99d040378b53f8cfd2', 
+        public: 'f95f45bf01c0f410a128701f49961f8a0cf7e1d6042065b9858d5223443f1576'
+      }
+    }, 
+    meta: {
+      revision: 0,
+      ship: 100,
+      type: "network"
+    }, 
+    seed: 'eaa677b71c5626f816a88a259b7b4c48c6c39cadd1238bf1ddc6819b003335ab'
+  }, 
+  {
+    keys: {
+      auth: {
+        private: 'f386b37e68cc2d9628dc2a97e1550e100adc7b28196640691e6e276292272164', 
+        public: '71df0f6a9c003ea0a4a773d88dfbbddb727ba899a06e33967ed61920877bcbd6'
+      }, 
+      crypt: {
+        private: 'facf5b72829796f6f6e661716e13e2fef5b9e20e568b16254d49d8cd4fcba0e3', 
+        public: 'cf7f27c2576682e759f25deb199fa36d71ef5655cedcb8b8972e9aa60b16cc9c'
+      }
+    },
+    meta: {
+      revision: 0,
+      ship: 70000,
+      type: "network"
+    },
+    seed: '697b429f4e30ecd7a962c5fa8b9b0cc1697deb9fe3cdcd03788e3c7ac8acfeda'
+  }]);
+
   const hexTicket = _buf2hex(ticket)
-  expect(res.ticket).toEqual(hexTicket)
+  expect(res0.ticket).toEqual(hexTicket)
+  expect(res1.ticket).toEqual(hexTicket)
 });
+
 
 test('sharding internals: buf2hex and hex2buf are inverses', async () => {
   const hex0 = 'dd0fa088041973131739a033dddc668ce692';

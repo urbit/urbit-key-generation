@@ -159,7 +159,7 @@ const childSeedFromSeed = async config => {
  * @param  {integer}  ship  optional ship number we want to derive the seed for.
  * @param  {string}   password  optional password to salt the seed with before
  * deriving.
- * @return {Buffer} a new node
+ * @return {object} a new node
  */
 const childNodeFromSeed = async config => {
   const { seed, type, revision, ship, password } = config;
@@ -181,10 +181,10 @@ const childNodeFromSeed = async config => {
 
 /**
  * Derive a BIP32 master node from a seed.
- * @param  {Buffer}  seed     seed to derive from.
- * @param  {string}  password optional password to salt the seed with before
+ * @param  {string, Buffer}  seed     seed to derive from.
+ * @param  {string}          password optional password to salt the seed with before
  * deriving.
- * @return {Promise => object} a wallet derived according to BIP32 from the
+ * @return {object} a wallet derived according to BIP32 from the
  *  SHA-512 hash of the seed+password.
  */
 const walletFromSeed = async (seed, password) => {
@@ -352,6 +352,7 @@ const shardWallet = wallet => {
  * @param  {string}  password optional password to use during derivation.
  * @param  {object}  revisions optional revision per key purpose:
  * (transfer, spawn, voting, manage, network), defaults to all-zero
+ * @param  {Boolean}  boot optional generate networking keys for this wallet
  * @return {Promise => object} an object representing a full HD wallet.
  */
 const fullWalletFromTicket = async config => {
