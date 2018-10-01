@@ -15,8 +15,8 @@ const isGalaxy = ship => Number.isInteger(ship) && ship >= 0 && ship < 256;
 
 /**
  * Split a string at the provided index, returning both chunks.
- * @param  {string}  string a string
  * @param  {integer}  index the index to split at
+ * @param  {string}  string a string
  * @return  {array of strings}  the split string
  */
 const splitAt = (index, str) => [str.slice(0, index), str.slice(index)];
@@ -134,7 +134,7 @@ const argon2u = (entropy, seedSize) => argon2({
  * @param  {integer}  ship  optional ship number we want to derive the seed for.
  * @param  {string}   password  optional password to salt the seed with before
  * deriving.
- * @return {Buffer} a new seed
+ * @return {Promise => Buffer} a new seed
  */
 const childSeedFromSeed = async config => {
   const { seed, type, revision, ship, password } = config;
@@ -159,7 +159,7 @@ const childSeedFromSeed = async config => {
  * @param  {integer}  ship  optional ship number we want to derive the seed for.
  * @param  {string}   password  optional password to salt the seed with before
  * deriving.
- * @return {Buffer} a new node
+ * @return {Promise => Object} a new node
  */
 const childNodeFromSeed = async config => {
   const { seed, type, revision, ship, password } = config;
@@ -181,10 +181,10 @@ const childNodeFromSeed = async config => {
 
 /**
  * Derive a BIP32 master node from a seed.
- * @param  {Buffer}  seed     seed to derive from.
- * @param  {string}  password optional password to salt the seed with before
+ * @param  {string, Buffer}  seed     seed to derive from.
+ * @param  {string}          password optional password to salt the seed with before
  * deriving.
- * @return {Promise => object} a wallet derived according to BIP32 from the
+ * @return {Promise => Object} a wallet derived according to BIP32 from the
  *  SHA-512 hash of the seed+password.
  */
 const walletFromSeed = async (seed, password) => {
@@ -352,6 +352,7 @@ const shardWallet = wallet => {
  * @param  {string}  password optional password to use during derivation.
  * @param  {object}  revisions optional revision per key purpose:
  * (transfer, spawn, voting, manage, network), defaults to all-zero
+ * @param  {Boolean}  boot optional generate networking keys for this wallet
  * @return {Promise => object} an object representing a full HD wallet.
  */
 const fullWalletFromTicket = async config => {
