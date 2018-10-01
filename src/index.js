@@ -112,10 +112,10 @@ const hash = async (...args) => {
  * @param  {int} seedSize desired size of the generated seeds in bytes
  * @return {Promise => ArrayBuffer} Promise that resolves to arrayBuffer
  */
-const argon2u = (entropy, seedSize) => argon2({
+const argon2u = (entropy, seedSize) => argon2.hash({
   pass: entropy, // string or Uint8Array
   salt: 'urbitkeygen',
-  type: 10, // argon2.ArgonType.Argon2u,
+  type: argon2.types.Argon2u,
   hashLen: seedSize,
   // distPath: 'node_modules/argon2-wasm/dist',
   parallelism: 4,
