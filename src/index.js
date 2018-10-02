@@ -426,7 +426,7 @@ const fullWalletFromTicket = async config => {
 
     networkNodes = await Promise.all(networkSeeds.map((seed, index) => ({
       seed: buf2hex(seed),
-      keys: urbitKeysFromSeed(hex2buf(seed), Buffer.from(defaultTo(password, ''))),
+      keys: urbitKeysFromSeed(Buffer.from(seed), Buffer.from(defaultTo(password, ''))),
       meta: {
         type: 'network',
         revision: _revisions.network,
