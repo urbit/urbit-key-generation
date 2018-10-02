@@ -417,7 +417,7 @@ const fullWalletFromTicket = async config => {
   if (boot === true) {
 
     networkSeeds = await Promise.all(ships.map(ship => childSeedFromSeed({
-      seed: Buffer.from(manageSeeds[ship]),
+      seed: hex2buf(manageSeeds[ship]),
       type: 'network',
       revision: _revisions.network,
       ship: ship,
@@ -426,7 +426,7 @@ const fullWalletFromTicket = async config => {
 
     networkNodes = await Promise.all(networkSeeds.map((seed, index) => ({
       seed: buf2hex(seed),
-      keys: urbitKeysFromSeed(Buffer.from(seed), Buffer.from(defaultTo(password, ''))),
+      keys: urbitKeysFromSeed(hex2buf(seed), Buffer.from(defaultTo(password, ''))),
       meta: {
         type: 'network',
         revision: _revisions.network,

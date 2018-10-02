@@ -195,12 +195,12 @@ test('full wallet from ticket, boot', async () => {
   expect(res0.network).toEqual([{
     keys: {
       auth: {
-        private: 'f061eb24088d7d3fb723e055ad191637cd407a5fb4e196fe959b8eec9e5b02e0',
-        public: 'c0a933fcdb6155ec25e9b134ca6d75ca81a7b7c893d332ef481ad314d2d73057'
+        private: "c8b88bd26d4a2310277c8e0473e94bb813c23cc47e9dae728ccd1549ae64425f",
+        public: "2bd88cae15a049585bf67bc14238eeef06afb59f3e17869e413fa2754ad29093"
       },
       crypt: {
-        private: '89ec503c45d8bbdf2cfda044b93afda330a69c4ed1bfb86ff7160c7d77a538b3',
-        public: 'f55987b398c6095a188cc891252d7f03cb008bc22269646a27460bd3105929cd'
+        private: "1587ee10ba9a17f605739986ca7a4c9383298548e22ebaac33e6fb01d32c11cd",
+        public: "091af08284ed82ec68f7cb060dc516aa7b9333b666bfa7732c26b82bfdc60905"
       }
     },
     meta: {
@@ -208,7 +208,7 @@ test('full wallet from ticket, boot', async () => {
       ship: 1,
       type: "network"
     },
-    seed: 'f3563d185002e3f6be212b84d93851269af6fab923b6a26b1a39ea6da696a335'
+    seed: "0b2171e5ca278f6251d7cc71d977d358"
   }]);
 
   const config1 = {
@@ -224,12 +224,12 @@ test('full wallet from ticket, boot', async () => {
   expect(res1.network).toEqual([{
     keys: {
       auth: {
-        private: 'f061eb24088d7d3fb723e055ad191637cd407a5fb4e196fe959b8eec9e5b02e0',
-        public: 'c0a933fcdb6155ec25e9b134ca6d75ca81a7b7c893d332ef481ad314d2d73057'
+        private: "c8b88bd26d4a2310277c8e0473e94bb813c23cc47e9dae728ccd1549ae64425f",
+        public: "2bd88cae15a049585bf67bc14238eeef06afb59f3e17869e413fa2754ad29093"
       },
       crypt: {
-        private: '89ec503c45d8bbdf2cfda044b93afda330a69c4ed1bfb86ff7160c7d77a538b3',
-        public: 'f55987b398c6095a188cc891252d7f03cb008bc22269646a27460bd3105929cd'
+        private: "1587ee10ba9a17f605739986ca7a4c9383298548e22ebaac33e6fb01d32c11cd",
+        public: "091af08284ed82ec68f7cb060dc516aa7b9333b666bfa7732c26b82bfdc60905"
       }
     },
     meta: {
@@ -237,35 +237,35 @@ test('full wallet from ticket, boot', async () => {
       ship: 1,
       type: "network"
     },
-    seed: 'f3563d185002e3f6be212b84d93851269af6fab923b6a26b1a39ea6da696a335'
+    seed: "0b2171e5ca278f6251d7cc71d977d358",
   },
   {
     keys: {
       auth: {
-        private: '7541dfa9499407e5de17ead8624950d83160d55cafc6c9709c699afb614a8f31', 
-        public: 'a8582cc1ffa328354970892aa937e1ffe20ae240bd4c15e7d27c0fe7213ef2ca'
+        private: "6324768771185303e04f9016b2353724153e56b713201d6a540daadce02d2fbe",
+        public: "4ecfafa19ab4cfeeff0f246bf6a2139d50ea9974d22830e55c2e138d254c0811"
       },
       crypt: {
-        private: 'da7cc92d030e7dee013ed9098c2c84906f89f612485abb99d040378b53f8cfd2', 
-        public: 'f95f45bf01c0f410a128701f49961f8a0cf7e1d6042065b9858d5223443f1576'
+        private: "bada59e5f63239f26e796419ad820ddb4d8b4b516588b4635018ace40c9b52b1",
+        public: "1b723c5ebb142ef59528c3f79c1ab46c11a40e9e03c00518c333c5de3f457ba8"
       }
-    }, 
+    },
     meta: {
       revision: 0,
       ship: 100,
       type: "network"
-    }, 
-    seed: 'eaa677b71c5626f816a88a259b7b4c48c6c39cadd1238bf1ddc6819b003335ab'
-  }, 
+    },
+    seed: "a6e6fb88e92bd222ad6bb007850ad10f",
+  },
   {
     keys: {
       auth: {
-        private: 'f386b37e68cc2d9628dc2a97e1550e100adc7b28196640691e6e276292272164', 
-        public: '71df0f6a9c003ea0a4a773d88dfbbddb727ba899a06e33967ed61920877bcbd6'
-      }, 
+        private: "05c7c4343ae25cdbbc0b720644a76aa9b15ccc8bcce60a19e5012e49df727785",
+        public: "ae4d96328866bd63225fd5658fd341cb80abb5e546d1fe562f661697cab6da9b"
+      },
       crypt: {
-        private: 'facf5b72829796f6f6e661716e13e2fef5b9e20e568b16254d49d8cd4fcba0e3', 
-        public: 'cf7f27c2576682e759f25deb199fa36d71ef5655cedcb8b8972e9aa60b16cc9c'
+        private: "a08e8c1c9b0ad6fd887ac7cbbe95780f7f946ea99b5eb80e7a4b0b95ddd09f96",
+        public: "0314a59d4ee8772a8764a1d9e0844e1d24f39d384d87ac58ab33d88d585e6ac8"
       }
     },
     meta: {
@@ -273,7 +273,7 @@ test('full wallet from ticket, boot', async () => {
       ship: 70000,
       type: "network"
     },
-    seed: '697b429f4e30ecd7a962c5fa8b9b0cc1697deb9fe3cdcd03788e3c7ac8acfeda'
+    seed: "99d69220db6a812168ada183f1ff8eaf",
   }]);
 
   const hexTicket = _buf2hex(ticket)
