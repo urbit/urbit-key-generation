@@ -217,7 +217,7 @@ const naclHash = seed => {
 /**
  * Derive Urbit network keypairs from a seed. Matches ++pit:nu:crub:crypto
  * @param  {Buffer} seed     seed to derive from
- * @param  {string} password optional password to salt the seed before deriving
+ * @param  {Buffer} password optional password to salt the seed before deriving
  * @return {object} urbitKeys, derived according to ++pit:nu:crub:crypto.
  */
 const urbitKeysFromSeed = (seed, password) => {
@@ -417,7 +417,7 @@ const fullWalletFromTicket = async config => {
   if (boot === true) {
 
     networkSeeds = await Promise.all(ships.map(ship => childSeedFromSeed({
-      seed: Buffer.from(manageSeeds[ship]),
+      seed: hex2buf(manageSeeds[ship]),
       type: 'network',
       revision: _revisions.network,
       ship: ship,
