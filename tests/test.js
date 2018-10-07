@@ -10,11 +10,15 @@ import {
   _get,
   _buf2hex,
   _hex2buf,
-  _shard,
-  _combine,
+  _shardHex,
+  _combineHex,
+  _shardPatq,
+  _combinePatq,
   _shardBuffer,
   _combineBuffer
 } from '../src/index'
+
+import * as ob from 'ob-js'
 
 //TODO test with ticket with and without leading zero bytes, should be different
 
@@ -175,7 +179,7 @@ test('full wallet from ticket, no boot', async () => {
   expect(wallet0.network).toEqual([]);
 
   const hexTicket = _buf2hex(ticket);
-  expect(wallet0.ticket).toEqual(hexTicket);
+  expect(ob.patq2hex(wallet0.ticket)).toEqual(hexTicket);
 });
 
 test('full wallet from ticket, boot', async () => {
@@ -277,8 +281,8 @@ test('full wallet from ticket, boot', async () => {
   }]);
 
   const hexTicket = _buf2hex(ticket)
-  expect(res0.ticket).toEqual(hexTicket)
-  expect(res1.ticket).toEqual(hexTicket)
+  expect(ob.patq2hex(res0.ticket)).toEqual(hexTicket)
+  expect(ob.patq2hex(res1.ticket)).toEqual(hexTicket)
 });
 
 
@@ -321,41 +325,80 @@ test('sharding internals: combineBuffer . shardBuffer ~ id', async () => {
   expect(combined1).toEqual(buf1);
 });
 
-test('sharding internals: combine . shard ~ id', async () => {
+test('sharding internals: combineHex . shardHex ~ id', async () => {
   const original0 = '736f6d652073656564';
-  let shards = _shard(original0);
+  let shards = _shardHex(original0);
   let slice0 = shards.slice(0, 2);
   let slice1 = shards.slice(1, 3);
   let slice2 = shards.slice(0, 1).concat(shards.slice(2, 3));
-  let reconstructed = _combine(slice0)
+  let reconstructed = _combineHex(slice0)
   expect(reconstructed).toEqual(original0);
-  reconstructed = _combine(slice1);
+  reconstructed = _combineHex(slice1);
   expect(reconstructed).toEqual(original0);
-  reconstructed = _combine(slice2);
+  reconstructed = _combineHex(slice2);
   expect(reconstructed).toEqual(original0);
 
   const original1 = '544a22a7a9de737a1ed342cb1f03158314ecee7d364550daf27990cdacb9a7ea';
-  shards = _shard(original1);
+  shards = _shardHex(original1);
   slice0 = shards.slice(0, 2);
   slice1 = shards.slice(1, 3);
   slice2 = shards.slice(0, 1).concat(shards.slice(2, 3));
-  reconstructed = _combine(slice0)
+  reconstructed = _combineHex(slice0)
   expect(reconstructed).toEqual(original1);
-  reconstructed = _combine(slice1);
+  reconstructed = _combineHex(slice1);
   expect(reconstructed).toEqual(original1);
-  reconstructed = _combine(slice2);
+  reconstructed = _combineHex(slice2);
   expect(reconstructed).toEqual(original1);
 
   const original2 = '02bb80a59fd51ed853285f3b7738b4542f619a52819a04680e5f36c4d76547eec9'
-  shards = _shard(original2);
+  shards = _shardHex(original2);
   slice0 = shards.slice(0, 2);
   slice1 = shards.slice(1, 3);
   slice2 = shards.slice(0, 1).concat(shards.slice(2, 3));
-  reconstructed = _combine(slice0)
+  reconstructed = _combineHex(slice0)
   expect(reconstructed).toEqual(original2);
-  reconstructed = _combine(slice1);
+  reconstructed = _combineHex(slice1);
   expect(reconstructed).toEqual(original2);
-  reconstructed = _combine(slice2);
+  reconstructed = _combineHex(slice2);
+  expect(reconstructed).toEqual(original2);
+
+});
+
+test('sharding internals: combinePatq . shardPatq ~ id', async () => {
+  const original0 = '~set-ligtug-watlun-salwet-watsyr';
+  let shards = _shardPatq(original0);
+  let slice0 = shards.slice(0, 2);
+  let slice1 = shards.slice(1, 3);
+  let slice2 = shards.slice(0, 1).concat(shards.slice(2, 3));
+  let reconstructed = _combinePatq(slice0)
+  expect(reconstructed).toEqual(original0);
+  reconstructed = _combinePatq(slice1);
+  expect(reconstructed).toEqual(original0);
+  reconstructed = _combinePatq(slice2);
+  expect(reconstructed).toEqual(original0);
+
+  const original1 = '~tolsup-lacrym-firryl-salnux-silrud-daplec-mirwes-lidrum-fogfed-bacwyt-winpet-ritler-pittud-billyd-batmel-ricdem';
+  shards = _shardPatq(original1);
+  slice0 = shards.slice(0, 2);
+  slice1 = shards.slice(1, 3);
+  slice2 = shards.slice(0, 1).concat(shards.slice(2, 3));
+  reconstructed = _combinePatq(slice0)
+  expect(reconstructed).toEqual(original1);
+  reconstructed = _combinePatq(slice1);
+  expect(reconstructed).toEqual(original1);
+  reconstructed = _combinePatq(slice2);
+  expect(reconstructed).toEqual(original1);
+
+  const original2 = '~bud-doslyt-pinmer-fopsyd-noltev-tabsym-widsur-biclur-tolfeb-nortus-motdus-tilsev-picwyl-sipwyd-mitdes-watsyn-bacrup';
+  shards = _shardPatq(original2);
+  slice0 = shards.slice(0, 2);
+  slice1 = shards.slice(1, 3);
+  slice2 = shards.slice(0, 1).concat(shards.slice(2, 3));
+  reconstructed = _combinePatq(slice0)
+  expect(reconstructed).toEqual(original2);
+  reconstructed = _combinePatq(slice1);
+  expect(reconstructed).toEqual(original2);
+  reconstructed = _combinePatq(slice2);
   expect(reconstructed).toEqual(original2);
 
 });
@@ -371,17 +414,17 @@ test('sharded wallet from seed', async () => {
     revisions: {},
     boot: false
   };
-  const original0 = '736f6d65207469636b6574206f72206f74686572';
+  const original0 = '~salpel-taswet-holdut-davwex-balwet-divlun-ligmeb-holpel-divmes-watmeb';
   let res = await fullWalletFromTicket(config0);
   let sharded = shardWallet(res).ticket;
   let slice0 = sharded.slice(0, 2);
   let slice1 = sharded.slice(1, 3);
   let slice2 = sharded.slice(0, 1).concat(sharded.slice(2, 3));
-  let reconstructed = _combine(slice0);
+  let reconstructed = _combinePatq(slice0);
   expect(reconstructed).toEqual(original0);
-  reconstructed = _combine(slice1);
+  reconstructed = _combinePatq(slice1);
   expect(reconstructed).toEqual(original0);
-  reconstructed = _combine(slice2);
+  reconstructed = _combinePatq(slice2);
   expect(reconstructed).toEqual(original0);
 
   ticket = Buffer.from('a way longer ticket, even longer than before')
@@ -393,17 +436,17 @@ test('sharded wallet from seed', async () => {
     revisions: {},
     boot: true
   };
-  const original1 = '6120776179206c6f6e676572207469636b65742c206576656e206c6f6e676572207468616e206265666f7265';
+  const original1 = '~norlun-sidruc-tarlun-timpel-malmyn-watmeb-holdut-davwex-balwet-divwen-holwet-tanwet-mallun-timpel-malmyn-watmeb-holdut-picruc-mallun-botwet-dolpel-padwet';
   res = await fullWalletFromTicket(config1);
   sharded = shardWallet(res).ticket;
   slice0 = sharded.slice(0, 2);
   slice1 = sharded.slice(1, 3);
   slice2 = sharded.slice(0, 1).concat(sharded.slice(2, 3));
-  reconstructed = _combine(slice0);
+  reconstructed = _combinePatq(slice0);
   expect(reconstructed).toEqual(original1);
-  reconstructed = _combine(slice1);
+  reconstructed = _combinePatq(slice1);
   expect(reconstructed).toEqual(original1);
-  reconstructed = _combine(slice2);
+  reconstructed = _combinePatq(slice2);
   expect(reconstructed).toEqual(original1);
 });
 

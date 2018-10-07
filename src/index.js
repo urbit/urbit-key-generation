@@ -3,6 +3,7 @@ const argon2 = require('argon2-wasm');
 const nacl = require('tweetnacl');
 const bip32 = require('bip32');
 const lodash = require('lodash');
+const ob = require('ob-js');
 
 /**
  * Check if a ship is a galaxy.
@@ -261,12 +262,25 @@ const reduceByXor = (arrays) => {
  * @param  {string}  string hex-encoded string
  * @return {Array of strings} resulting shards
  */
-const shard = hex => {
+const shardHex = hex => {
   const buffer = hex2buf(hex);
   const sharded = shardBuffer(buffer);
   return sharded.map(pair =>
            lodash.reduce(pair, (acc, arr) =>
              acc + buf2hex(Buffer.from(arr)), ''))
+}
+
+
+
+/**
+ * Encode a @q-encoded string as three shards, such that any two shards can be
+ * combined to recover it.
+ * @param  {string}  string @q-encoded string
+ * @return {Array of strings} resulting shards
+ */
+const shardPatq = patq => {
+  const hexed = shardHex(ob.patq2hex(patq))
+  return hexed.map(ob.hex2patq)
 }
 
 
@@ -311,18 +325,32 @@ const combineBuffer = shards => {
 
 
 /**
- * Combine shards together to reconstruct a secret.
+ * Combine hex-encoded shards together to reconstruct a secret.
  * @param  {Array of Array of strings}  shards a collection of hex-encoded
  *  shards
  * @return {string} the reconstructed secret
  */
-const combine = shards => {
+const combineHex = shards => {
   const splat = shards.map(shard =>
     splitAt(shard.length / 2, shard));
   const buffers = splat.map(pair =>
     pair.map(buf => Array.from(hex2buf(buf))));
   const combined = combineBuffer(buffers);
   return buf2hex(combined);
+}
+
+
+
+/**
+ * Combine @q-encoded shards together to reconstruct a secret.
+ * @param  {Array of Array of strings}  shards a collection of @q-encoded
+ *  shards
+ * @return {string} the reconstructed secret
+ */
+const combinePatq = shards => {
+  const hexed = shards.map(shard => ob.patq2hex(shard))
+  const combined = combineHex(hexed)
+  return ob.hex2patq(combined)
 }
 
 
@@ -337,7 +365,7 @@ const combine = shards => {
  */
 const shardWallet = wallet => {
   const walletCopy = lodash.cloneDeep(wallet);
-  const sharded = shard(walletCopy.ticket)
+  const sharded = shardPatq(walletCopy.ticket)
   walletCopy.ticket = sharded;
   return walletCopy;
 }
@@ -435,7 +463,7 @@ const fullWalletFromTicket = async config => {
     })));
   };
 
-  const displayTicket = buf2hex(ticket)
+  const displayTicket = ob.hex2patq(ticket)
 
   const wallet = {
     ticket: displayTicket,
@@ -458,8 +486,10 @@ const _defaultTo = defaultTo;
 const _get = get;
 const _shardBuffer = shardBuffer;
 const _combineBuffer = combineBuffer;
-const _shard = shard;
-const _combine = combine;
+const _shardHex = shardHex;
+const _combineHex = combineHex;
+const _shardPatq = shardPatq;
+const _combinePatq = combinePatq;
 
 module.exports = {
   argon2u,
@@ -477,6 +507,8 @@ module.exports = {
   _get,
   _shardBuffer,
   _combineBuffer,
-  _shard,
-  _combine
+  _shardHex,
+  _combineHex,
+  _shardPatq,
+  _combinePatq
 }
