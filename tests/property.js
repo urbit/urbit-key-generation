@@ -53,7 +53,6 @@ describe('sharding', () => {
     let rel = gen => jsc.forall(gen, buf =>
       _.isEqual(_combineBuffer(_shardBuffer(buf)), buf))
 
-    jsc.assert(rel(bufferN(2)), { tests: 250 })
     jsc.assert(rel(bufferN(16)), { tests: 250 })
     jsc.assert(rel(bufferN(32)), { tests: 250 })
     jsc.assert(rel(bufferN(48)), { tests: 250 })
@@ -63,7 +62,6 @@ describe('sharding', () => {
     let rel = gen =>
       jsc.forall(gen, hex => _combineHex(_shardHex(hex)) === hex)
 
-    jsc.assert(rel(hexStringN(4)), { tests: 250 })
     jsc.assert(rel(hexStringN(32)), { tests: 250 })
     jsc.assert(rel(hexStringN(64)), { tests: 250 })
     jsc.assert(rel(hexStringN(96)), { tests: 250 })
@@ -73,7 +71,6 @@ describe('sharding', () => {
     let rel = gen =>
       jsc.forall(gen, pq => _combinePatq(_shardPatq(pq)) === pq)
 
-    jsc.assert(rel(patq(4), { tests: 250 }))
     jsc.assert(rel(patq(32), { tests: 250 }))
     jsc.assert(rel(patq(64), { tests: 250 }))
     jsc.assert(rel(patq(96), { tests: 250 }))

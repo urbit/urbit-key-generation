@@ -259,7 +259,9 @@ const reduceByXor = (arrays) => {
 /**
  * Encode a hex string as three shards, such that any two shards can be
  * combined to recover it.
- * @param  {string}  string hex-encoded string, at least two bytes long
+ *
+ * You should only shard high-bitlength strings, e.g. 128-bit and above.
+ * @param  {string}  string hex-encoded string
  * @return {Array of strings} resulting shards
  */
 const shardHex = hex => {
@@ -275,7 +277,9 @@ const shardHex = hex => {
 /**
  * Encode a @q-encoded string as three shards, such that any two shards can be
  * combined to recover it.
- * @param  {string}  string @q-encoded string, at least two bytes long
+ *
+ * You should only shard high-bitlength strings, e.g. 128-bit and above.
+ * @param  {string}  string @q-encoded string
  * @return {Array of strings} resulting shards
  */
 const shardPatq = patq => {
@@ -288,7 +292,7 @@ const shardPatq = patq => {
 /**
  * Produce three shards from a buffer such that any two of them can be used to
  * reconstruct it.
- * @param  {Buffer}  buffer arbitrary buffer, at least two bytes long
+ * @param  {Buffer}  buffer arbitrary buffer
  * @return {Array of Array of integers} sharded buffer
  */
 const shardBuffer = buffer => {
