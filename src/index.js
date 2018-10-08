@@ -266,8 +266,8 @@ const shardHex = hex => {
   const buffer = hex2buf(hex);
   const sharded = shardBuffer(buffer);
   return sharded.map(pair =>
-           lodash.reduce(pair, (acc, arr) =>
-             acc + buf2hex(Buffer.from(arr)), ''))
+    lodash.reduce(pair, (acc, arr) =>
+      acc + buf2hex(Buffer.from(arr)), ''))
 }
 
 

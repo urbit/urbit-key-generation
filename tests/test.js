@@ -365,7 +365,7 @@ test('sharding internals: combineHex . shardHex ~ id', async () => {
 });
 
 test('sharding internals: combinePatq . shardPatq ~ id', async () => {
-  const original0 = '~set-ligtug-watlun-salwet-watsyr';
+  const original0 = '~dozset-ligtug-watlun-salwet-watsyr';
   let shards = _shardPatq(original0);
   let slice0 = shards.slice(0, 2);
   let slice1 = shards.slice(1, 3);
@@ -389,7 +389,7 @@ test('sharding internals: combinePatq . shardPatq ~ id', async () => {
   reconstructed = _combinePatq(slice2);
   expect(reconstructed).toEqual(original1);
 
-  const original2 = '~bud-doslyt-pinmer-fopsyd-noltev-tabsym-widsur-biclur-tolfeb-nortus-motdus-tilsev-picwyl-sipwyd-mitdes-watsyn-bacrup';
+  const original2 = '~dozbud-doslyt-pinmer-fopsyd-noltev-tabsym-widsur-biclur-tolfeb-nortus-motdus-tilsev-picwyl-sipwyd-mitdes-watsyn-bacrup';
   shards = _shardPatq(original2);
   slice0 = shards.slice(0, 2);
   slice1 = shards.slice(1, 3);
