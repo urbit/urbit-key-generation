@@ -374,7 +374,7 @@ const shardWallet = wallet => {
 
 /**
  * Derive all keys from the ticket.
- * @param  {string, Uint8Array, Buffer}  ticket ticket, at least 16 bytes.
+ * @param  {string}  ticket a @q-encoded ticket, at least 16 bytes.
  * @param  {integer}  seedSize desired size of the generated seeds in bytes.
  * @param  {Array of integers}  ships array of ship-numbers to generate keys for.
  * @param  {string}  password optional password to use during derivation.
@@ -386,7 +386,8 @@ const shardWallet = wallet => {
 const fullWalletFromTicket = async config => {
   const { ticket, seedSize, ships, password, revisions, boot } = config;
 
-  const seed = await argon2u(ticket, seedSize);
+  const buf = Buffer.from(ob.patq2hex(ticket), 'hex')
+  const seed = await argon2u(buf, seedSize);
   const ownerSeed = Buffer.from(seed.hash)
 
   // Normalize revisions object
@@ -463,10 +464,8 @@ const fullWalletFromTicket = async config => {
     })));
   };
 
-  const displayTicket = ob.hex2patq(ticket)
-
   const wallet = {
-    ticket: displayTicket,
+    ticket: ticket,
     owner: ownershipNode,
     manage: manageNodes,
     voting: votingNodes,
