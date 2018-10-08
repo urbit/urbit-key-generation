@@ -14,21 +14,34 @@ const {
   _combinePatq
   } = require('../src')
 
+const arrayMinBytes = n => jsc.tuple(new Array(n).fill(jsc.uint8))
+
+const hexString = jsc.string.smap(
+  str => Buffer.from(str).toString('hex'),
+  hex => Buffer.from(hex, 'hex').toString()
+)
+
+const hexStringN = n => arrayMinBytes(n).smap(
+  arr => Buffer.from(arr).toString('hex'),
+  hex => Array.from(Buffer.from(hex, 'hex'))
+)
+
+const buffer = jsc.array(jsc.uint8).smap(
+  arr => Buffer.from(arr),
+  buf => Array.from(buf)
+)
+
+const bufferN = n => arrayMinBytes(n).smap(
+  arr => Buffer.from(arr),
+  buf => Array.from(buf)
+)
+
+const patq = n => hexStringN(n).smap(ob.hex2patq, ob.patq2hex)
+
 describe('sharding', () => {
-  let hexString = jsc.string.smap(
-    str => Buffer.from(str).toString('hex'),
-    hex => Buffer.from(hex, 'hex').toString()
-  )
-
-  let buffer = jsc.string.smap(
-    x => Buffer.from(x),
-    x => x.toString
-  )
-
-  let patq = hexString.smap(ob.hex2patq, ob.patq2hex)
-
   it('hex2buf and buf2hex are inverses', () => {
-    let iso0 = jsc.forall(hexString, hex => _buf2hex(_hex2buf(hex)) === hex)
+    let iso0 = jsc.forall(hexString, hex =>
+      _buf2hex(_hex2buf(hex)) === hex)
     let iso1 = jsc.forall(buffer, buf =>
       _.isEqual(_hex2buf(_buf2hex(buf)), buf))
 
@@ -37,22 +50,33 @@ describe('sharding', () => {
   })
 
   it('combineBuffer . shardBuffer ~ id', () => {
-    let rel = jsc.forall(buffer, buf =>
+    let rel = gen => jsc.forall(gen, buf =>
       _.isEqual(_combineBuffer(_shardBuffer(buf)), buf))
 
-    jsc.assert(rel)
+    jsc.assert(rel(bufferN(2)), { tests: 250 })
+    jsc.assert(rel(bufferN(16)), { tests: 250 })
+    jsc.assert(rel(bufferN(32)), { tests: 250 })
+    jsc.assert(rel(bufferN(48)), { tests: 250 })
   })
 
   it('combineHex . shardHex ~ id', () => {
-    let rel = jsc.forall(hexString, hex => _combineHex(_shardHex(hex)) === hex)
+    let rel = gen =>
+      jsc.forall(gen, hex => _combineHex(_shardHex(hex)) === hex)
 
-    jsc.assert(rel)
+    jsc.assert(rel(hexStringN(4)), { tests: 250 })
+    jsc.assert(rel(hexStringN(32)), { tests: 250 })
+    jsc.assert(rel(hexStringN(64)), { tests: 250 })
+    jsc.assert(rel(hexStringN(96)), { tests: 250 })
   })
 
   it('combinePatq . shardPatq ~ id', () => {
-    let rel = jsc.forall(patq, pq => _combinePatq(_shardPatq(pq)) === pq)
+    let rel = gen =>
+      jsc.forall(gen, pq => _combinePatq(_shardPatq(pq)) === pq)
 
-    jsc.assert(rel)
+    jsc.assert(rel(patq(4), { tests: 250 }))
+    jsc.assert(rel(patq(32), { tests: 250 }))
+    jsc.assert(rel(patq(64), { tests: 250 }))
+    jsc.assert(rel(patq(96), { tests: 250 }))
   })
 })
 
