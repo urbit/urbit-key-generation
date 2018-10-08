@@ -18,7 +18,7 @@ import {
   _combineBuffer
 } from '../src/index'
 
-import * as ob from 'ob-js'
+import * as ob from 'urbit-ob'
 
 //TODO test with ticket with and without leading zero bytes, should be different
 

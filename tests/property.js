@@ -1,7 +1,7 @@
 const expect =  require('chai').expect
 const jsc = require('jsverify')
 const _ = require('lodash')
-const ob = require('ob-js')
+const ob = require('urbit-ob')
 
 const {
   _buf2hex,

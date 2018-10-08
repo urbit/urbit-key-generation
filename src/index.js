@@ -3,7 +3,7 @@ const argon2 = require('argon2-wasm');
 const nacl = require('tweetnacl');
 const bip32 = require('bip32');
 const lodash = require('lodash');
-const ob = require('ob-js');
+const ob = require('urbit-ob');
 
 /**
  * Check if a ship is a galaxy.
