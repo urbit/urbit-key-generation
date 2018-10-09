@@ -10,11 +10,15 @@ import {
   _get,
   _buf2hex,
   _hex2buf,
-  _shard,
-  _combine,
+  _shardHex,
+  _combineHex,
+  _shardPatq,
+  _combinePatq,
   _shardBuffer,
   _combineBuffer
 } from '../src/index'
+
+import * as ob from 'urbit-ob'
 
 //TODO test with ticket with and without leading zero bytes, should be different
 
@@ -147,7 +151,7 @@ test('urbit keys from seed', async () => {
 });
 
 test('full wallet from ticket, no boot', async () => {
-  const ticket = Buffer.from('my awesome urbit ticket, i am so lucky');
+  const ticket = '~tastud-holruc-sidwet-salpel-taswet-holdeg-paddec-davdut-holdut-davwex-balwet-divwen-holdet-holruc-taslun-salpel-holtux-dacwex-baltud';
   const seedSize = 16;
 
   const config0 = {
@@ -164,7 +168,8 @@ test('full wallet from ticket, no boot', async () => {
     ships: [1],
   };
 
-  const seed = await argon2u(ticket, seedSize);
+  const buf = Buffer.from(ob.patq2hex(ticket), 'hex')
+  const seed = await argon2u(buf, seedSize);
 
   const wallet0 = await fullWalletFromTicket(config0);
   const wallet1 = await fullWalletFromTicket(config1);
@@ -174,12 +179,11 @@ test('full wallet from ticket, no boot', async () => {
   expect(wallet0.owner.seed).toEqual(seed.hashHex);
   expect(wallet0.network).toEqual([]);
 
-  const hexTicket = _buf2hex(ticket);
-  expect(wallet0.ticket).toEqual(hexTicket);
+  expect(wallet0.ticket).toEqual(ticket);
 });
 
 test('full wallet from ticket, boot', async () => {
-  const ticket = Buffer.from('my awesome urbit ticket, i am so lucky');
+  const ticket = '~tastud-holruc-sidwet-salpel-taswet-holdeg-paddec-davdut-holdut-davwex-balwet-divwen-holdet-holruc-taslun-salpel-holtux-dacwex-baltud';
   const seedSize = 16;
 
   const config0 = {
@@ -276,9 +280,8 @@ test('full wallet from ticket, boot', async () => {
     seed: "99d69220db6a812168ada183f1ff8eaf",
   }]);
 
-  const hexTicket = _buf2hex(ticket)
-  expect(res0.ticket).toEqual(hexTicket)
-  expect(res1.ticket).toEqual(hexTicket)
+  expect(res0.ticket).toEqual(ticket)
+  expect(res1.ticket).toEqual(ticket)
 });
 
 
@@ -321,47 +324,86 @@ test('sharding internals: combineBuffer . shardBuffer ~ id', async () => {
   expect(combined1).toEqual(buf1);
 });
 
-test('sharding internals: combine . shard ~ id', async () => {
+test('sharding internals: combineHex . shardHex ~ id', async () => {
   const original0 = '736f6d652073656564';
-  let shards = _shard(original0);
+  let shards = _shardHex(original0);
   let slice0 = shards.slice(0, 2);
   let slice1 = shards.slice(1, 3);
   let slice2 = shards.slice(0, 1).concat(shards.slice(2, 3));
-  let reconstructed = _combine(slice0)
+  let reconstructed = _combineHex(slice0)
   expect(reconstructed).toEqual(original0);
-  reconstructed = _combine(slice1);
+  reconstructed = _combineHex(slice1);
   expect(reconstructed).toEqual(original0);
-  reconstructed = _combine(slice2);
+  reconstructed = _combineHex(slice2);
   expect(reconstructed).toEqual(original0);
 
   const original1 = '544a22a7a9de737a1ed342cb1f03158314ecee7d364550daf27990cdacb9a7ea';
-  shards = _shard(original1);
+  shards = _shardHex(original1);
   slice0 = shards.slice(0, 2);
   slice1 = shards.slice(1, 3);
   slice2 = shards.slice(0, 1).concat(shards.slice(2, 3));
-  reconstructed = _combine(slice0)
+  reconstructed = _combineHex(slice0)
   expect(reconstructed).toEqual(original1);
-  reconstructed = _combine(slice1);
+  reconstructed = _combineHex(slice1);
   expect(reconstructed).toEqual(original1);
-  reconstructed = _combine(slice2);
+  reconstructed = _combineHex(slice2);
   expect(reconstructed).toEqual(original1);
 
   const original2 = '02bb80a59fd51ed853285f3b7738b4542f619a52819a04680e5f36c4d76547eec9'
-  shards = _shard(original2);
+  shards = _shardHex(original2);
   slice0 = shards.slice(0, 2);
   slice1 = shards.slice(1, 3);
   slice2 = shards.slice(0, 1).concat(shards.slice(2, 3));
-  reconstructed = _combine(slice0)
+  reconstructed = _combineHex(slice0)
   expect(reconstructed).toEqual(original2);
-  reconstructed = _combine(slice1);
+  reconstructed = _combineHex(slice1);
   expect(reconstructed).toEqual(original2);
-  reconstructed = _combine(slice2);
+  reconstructed = _combineHex(slice2);
+  expect(reconstructed).toEqual(original2);
+
+});
+
+test('sharding internals: combinePatq . shardPatq ~ id', async () => {
+  const original0 = '~dozset-ligtug-watlun-salwet-watsyr';
+  let shards = _shardPatq(original0);
+  let slice0 = shards.slice(0, 2);
+  let slice1 = shards.slice(1, 3);
+  let slice2 = shards.slice(0, 1).concat(shards.slice(2, 3));
+  let reconstructed = _combinePatq(slice0)
+  expect(reconstructed).toEqual(original0);
+  reconstructed = _combinePatq(slice1);
+  expect(reconstructed).toEqual(original0);
+  reconstructed = _combinePatq(slice2);
+  expect(reconstructed).toEqual(original0);
+
+  const original1 = '~tolsup-lacrym-firryl-salnux-silrud-daplec-mirwes-lidrum-fogfed-bacwyt-winpet-ritler-pittud-billyd-batmel-ricdem';
+  shards = _shardPatq(original1);
+  slice0 = shards.slice(0, 2);
+  slice1 = shards.slice(1, 3);
+  slice2 = shards.slice(0, 1).concat(shards.slice(2, 3));
+  reconstructed = _combinePatq(slice0)
+  expect(reconstructed).toEqual(original1);
+  reconstructed = _combinePatq(slice1);
+  expect(reconstructed).toEqual(original1);
+  reconstructed = _combinePatq(slice2);
+  expect(reconstructed).toEqual(original1);
+
+  const original2 = '~dozbud-doslyt-pinmer-fopsyd-noltev-tabsym-widsur-biclur-tolfeb-nortus-motdus-tilsev-picwyl-sipwyd-mitdes-watsyn-bacrup';
+  shards = _shardPatq(original2);
+  slice0 = shards.slice(0, 2);
+  slice1 = shards.slice(1, 3);
+  slice2 = shards.slice(0, 1).concat(shards.slice(2, 3));
+  reconstructed = _combinePatq(slice0)
+  expect(reconstructed).toEqual(original2);
+  reconstructed = _combinePatq(slice1);
+  expect(reconstructed).toEqual(original2);
+  reconstructed = _combinePatq(slice2);
   expect(reconstructed).toEqual(original2);
 
 });
 
 test('sharded wallet from seed', async () => {
-  let ticket = Buffer.from('some ticket or other');
+  let ticket = '~salpel-taswet-holdut-davwex-balwet-divlun-ligmeb-holpel-divmes-watmeb';
 
   const config0 = {
     ticket: ticket,
@@ -371,20 +413,19 @@ test('sharded wallet from seed', async () => {
     revisions: {},
     boot: false
   };
-  const original0 = '736f6d65207469636b6574206f72206f74686572';
   let res = await fullWalletFromTicket(config0);
   let sharded = shardWallet(res).ticket;
   let slice0 = sharded.slice(0, 2);
   let slice1 = sharded.slice(1, 3);
   let slice2 = sharded.slice(0, 1).concat(sharded.slice(2, 3));
-  let reconstructed = _combine(slice0);
-  expect(reconstructed).toEqual(original0);
-  reconstructed = _combine(slice1);
-  expect(reconstructed).toEqual(original0);
-  reconstructed = _combine(slice2);
-  expect(reconstructed).toEqual(original0);
+  let reconstructed = _combinePatq(slice0);
+  expect(reconstructed).toEqual(ticket);
+  reconstructed = _combinePatq(slice1);
+  expect(reconstructed).toEqual(ticket);
+  reconstructed = _combinePatq(slice2);
+  expect(reconstructed).toEqual(ticket);
 
-  ticket = Buffer.from('a way longer ticket, even longer than before')
+  ticket = '~norlun-sidruc-tarlun-timpel-malmyn-watmeb-holdut-davwex-balwet-divwen-holwet-tanwet-mallun-timpel-malmyn-watmeb-holdut-picruc-mallun-botwet-dolpel-padwet';
   const config1 = {
     ticket: ticket,
     seedSize: 16,
@@ -393,22 +434,21 @@ test('sharded wallet from seed', async () => {
     revisions: {},
     boot: true
   };
-  const original1 = '6120776179206c6f6e676572207469636b65742c206576656e206c6f6e676572207468616e206265666f7265';
   res = await fullWalletFromTicket(config1);
   sharded = shardWallet(res).ticket;
   slice0 = sharded.slice(0, 2);
   slice1 = sharded.slice(1, 3);
   slice2 = sharded.slice(0, 1).concat(sharded.slice(2, 3));
-  reconstructed = _combine(slice0);
-  expect(reconstructed).toEqual(original1);
-  reconstructed = _combine(slice1);
-  expect(reconstructed).toEqual(original1);
-  reconstructed = _combine(slice2);
-  expect(reconstructed).toEqual(original1);
+  reconstructed = _combinePatq(slice0);
+  expect(reconstructed).toEqual(ticket);
+  reconstructed = _combinePatq(slice1);
+  expect(reconstructed).toEqual(ticket);
+  reconstructed = _combinePatq(slice2);
+  expect(reconstructed).toEqual(ticket);
 });
 
 test('wallets do not contain voting seeds for non-voting ships', async () => {
-  const ticket = Buffer.from('some ticket or other');
+  const ticket = '~salpel-taswet-holdut-davwex-balwet-divlun-ligmeb-holpel-divmes-watmeb';
   const config0 = {
     ticket: ticket,
     seedSize: 16,

@@ -3,6 +3,7 @@ const argon2 = require('argon2-wasm');
 const nacl = require('tweetnacl');
 const bip32 = require('bip32');
 const lodash = require('lodash');
+const ob = require('urbit-ob');
 
 /**
  * Check if a ship is a galaxy.
@@ -258,15 +259,32 @@ const reduceByXor = (arrays) => {
 /**
  * Encode a hex string as three shards, such that any two shards can be
  * combined to recover it.
+ *
+ * You should only shard high-bitlength strings, e.g. 128-bit and above.
  * @param  {string}  string hex-encoded string
  * @return {Array of strings} resulting shards
  */
-const shard = hex => {
+const shardHex = hex => {
   const buffer = hex2buf(hex);
   const sharded = shardBuffer(buffer);
   return sharded.map(pair =>
-           lodash.reduce(pair, (acc, arr) =>
-             acc + buf2hex(Buffer.from(arr)), ''))
+    lodash.reduce(pair, (acc, arr) =>
+      acc + buf2hex(Buffer.from(arr)), ''))
+}
+
+
+
+/**
+ * Encode a @q-encoded string as three shards, such that any two shards can be
+ * combined to recover it.
+ *
+ * You should only shard high-bitlength strings, e.g. 128-bit and above.
+ * @param  {string}  string @q-encoded string
+ * @return {Array of strings} resulting shards
+ */
+const shardPatq = patq => {
+  const hexed = shardHex(ob.patq2hex(patq))
+  return hexed.map(ob.hex2patq)
 }
 
 
@@ -311,18 +329,32 @@ const combineBuffer = shards => {
 
 
 /**
- * Combine shards together to reconstruct a secret.
+ * Combine hex-encoded shards together to reconstruct a secret.
  * @param  {Array of Array of strings}  shards a collection of hex-encoded
  *  shards
  * @return {string} the reconstructed secret
  */
-const combine = shards => {
+const combineHex = shards => {
   const splat = shards.map(shard =>
     splitAt(shard.length / 2, shard));
   const buffers = splat.map(pair =>
     pair.map(buf => Array.from(hex2buf(buf))));
   const combined = combineBuffer(buffers);
   return buf2hex(combined);
+}
+
+
+
+/**
+ * Combine @q-encoded shards together to reconstruct a secret.
+ * @param  {Array of Array of strings}  shards a collection of @q-encoded
+ *  shards
+ * @return {string} the reconstructed secret
+ */
+const combinePatq = shards => {
+  const hexed = shards.map(shard => ob.patq2hex(shard))
+  const combined = combineHex(hexed)
+  return ob.hex2patq(combined)
 }
 
 
@@ -337,7 +369,7 @@ const combine = shards => {
  */
 const shardWallet = wallet => {
   const walletCopy = lodash.cloneDeep(wallet);
-  const sharded = shard(walletCopy.ticket)
+  const sharded = shardPatq(walletCopy.ticket)
   walletCopy.ticket = sharded;
   return walletCopy;
 }
@@ -346,7 +378,7 @@ const shardWallet = wallet => {
 
 /**
  * Derive all keys from the ticket.
- * @param  {string, Uint8Array, Buffer}  ticket ticket, at least 16 bytes.
+ * @param  {string}  ticket a @q-encoded ticket, at least 16 bytes.
  * @param  {integer}  seedSize desired size of the generated seeds in bytes.
  * @param  {Array of integers}  ships array of ship-numbers to generate keys for.
  * @param  {string}  password optional password to use during derivation.
@@ -358,7 +390,8 @@ const shardWallet = wallet => {
 const fullWalletFromTicket = async config => {
   const { ticket, seedSize, ships, password, revisions, boot } = config;
 
-  const seed = await argon2u(ticket, seedSize);
+  const buf = Buffer.from(ob.patq2hex(ticket), 'hex')
+  const seed = await argon2u(buf, seedSize);
   const ownerSeed = Buffer.from(seed.hash)
 
   // Normalize revisions object
@@ -435,10 +468,8 @@ const fullWalletFromTicket = async config => {
     })));
   };
 
-  const displayTicket = buf2hex(ticket)
-
   const wallet = {
-    ticket: displayTicket,
+    ticket: ticket,
     owner: ownershipNode,
     manage: manageNodes,
     voting: votingNodes,
@@ -458,8 +489,10 @@ const _defaultTo = defaultTo;
 const _get = get;
 const _shardBuffer = shardBuffer;
 const _combineBuffer = combineBuffer;
-const _shard = shard;
-const _combine = combine;
+const _shardHex = shardHex;
+const _combineHex = combineHex;
+const _shardPatq = shardPatq;
+const _combinePatq = combinePatq;
 
 module.exports = {
   argon2u,
@@ -477,6 +510,8 @@ module.exports = {
   _get,
   _shardBuffer,
   _combineBuffer,
-  _shard,
-  _combine
+  _shardHex,
+  _combineHex,
+  _shardPatq,
+  _combinePatq
 }
