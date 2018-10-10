@@ -14,29 +14,20 @@ const {
   _combinePatq
   } = require('../src')
 
-const arrayMinBytes = n => jsc.tuple(new Array(n).fill(jsc.uint8))
-
-const hexString = jsc.string.smap(
+const hexString = jsc.nestring.smap(
   str => Buffer.from(str).toString('hex'),
   hex => Buffer.from(hex, 'hex').toString()
 )
 
-const hexStringN = n => arrayMinBytes(n).smap(
-  arr => Buffer.from(arr).toString('hex'),
-  hex => Array.from(Buffer.from(hex, 'hex'))
-)
-
-const buffer = jsc.array(jsc.uint8).smap(
+const buffer = jsc.nearray(jsc.uint8).smap(
   arr => Buffer.from(arr),
   buf => Array.from(buf)
 )
 
-const bufferN = n => arrayMinBytes(n).smap(
-  arr => Buffer.from(arr),
-  buf => Array.from(buf)
-)
+const patq = hexString.smap(ob.hex2patq, ob.patq2hex)
 
-const patq = n => hexStringN(n).smap(ob.hex2patq, ob.patq2hex)
+eqModuloLeadingDoz = (s, t) =>
+  s.replace(/~doz/, '~') === t.replace(/~doz/, '~')
 
 describe('sharding', () => {
   it('hex2buf and buf2hex are inverses', () => {
@@ -50,30 +41,30 @@ describe('sharding', () => {
   })
 
   it('combineBuffer . shardBuffer ~ id', () => {
-    let rel = gen => jsc.forall(gen, buf =>
+    let rel = jsc.forall(buffer, buf =>
       _.isEqual(_combineBuffer(_shardBuffer(buf)), buf))
 
-    jsc.assert(rel(bufferN(16)), { tests: 250 })
-    jsc.assert(rel(bufferN(32)), { tests: 250 })
-    jsc.assert(rel(bufferN(48)), { tests: 250 })
+    jsc.assert(rel, { tests: 250 })
+    jsc.assert(rel, { tests: 250 })
+    jsc.assert(rel, { tests: 250 })
   })
 
   it('combineHex . shardHex ~ id', () => {
-    let rel = gen =>
-      jsc.forall(gen, hex => _combineHex(_shardHex(hex)) === hex)
+    let rel = jsc.forall(hexString, hex =>
+      _combineHex(_shardHex(hex)) === hex)
 
-    jsc.assert(rel(hexStringN(32)), { tests: 250 })
-    jsc.assert(rel(hexStringN(64)), { tests: 250 })
-    jsc.assert(rel(hexStringN(96)), { tests: 250 })
+    jsc.assert(rel, { tests: 250 })
+    jsc.assert(rel, { tests: 250 })
+    jsc.assert(rel, { tests: 250 })
   })
 
   it('combinePatq . shardPatq ~ id', () => {
-    let rel = gen =>
-      jsc.forall(gen, pq => _combinePatq(_shardPatq(pq)) === pq)
+    let rel = jsc.forall(patq, pq =>
+      eqModuloLeadingDoz(_combinePatq(_shardPatq(pq)), pq))
 
-    jsc.assert(rel(patq(32), { tests: 250 }))
-    jsc.assert(rel(patq(64), { tests: 250 }))
-    jsc.assert(rel(patq(96), { tests: 250 }))
+    jsc.assert(rel, { tests: 250 })
+    jsc.assert(rel, { tests: 250 })
+    jsc.assert(rel, { tests: 250 })
   })
 })
 

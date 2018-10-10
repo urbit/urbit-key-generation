@@ -311,7 +311,7 @@ const shardBuffer = buffer => {
     || lodash.isEqual(k1, k2)
 
   return anyEqual
-    ? genShardKeys(buffer)
+    ? shardBuffer(buffer)
     : [[k0, k1], [k0, k2], [k1, k2]];
 }
 
