@@ -26,20 +26,6 @@ const buffer = jsc.nearray(jsc.uint8).smap(
 
 const patq = hexString.smap(ob.hex2patq, ob.patq2hex)
 
-removeLeadingZeroBytes = str =>
-  str.slice(0, 2) === '00'
-  ? removeLeadingZeroBytes(str.slice(2))
-  : str
-
-eqModLeadingZeroBytes = (s, t) =>
-  removeLeadingZeroBytes(s) === removeLeadingZeroBytes(t)
-
-eqPatq = (p, q) => {
-  phex = ob.patq2hex(p)
-  qhex = ob.patq2hex(q)
-  return eqModLeadingZeroBytes(phex, qhex)
-}
-
 describe('sharding', () => {
   it('hex2buf and buf2hex are inverses', () => {
     let iso0 = jsc.forall(hexString, hex =>
@@ -68,7 +54,7 @@ describe('sharding', () => {
   it('combinePatq . shardPatq ~ id', () => {
     let rel = jsc.forall(patq, pq => {
       let combined = _combinePatq(_shardPatq(pq))
-      return eqPatq(combined, pq)
+      return ob.eqPatq(combined, pq)
     })
 
     jsc.assert(rel, { tests: 250 })
