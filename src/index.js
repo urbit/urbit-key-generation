@@ -305,12 +305,15 @@ const shardBuffer = buffer => {
 
   const k0 = reduceByXor([k, k1, k2]);
 
-  const shard0 = [k0, k1];
-  const shard1 = [k0, k2];
-  const shard2 = [k1, k2];
+  const anyEqual =
+       lodash.isEqual(k0, k1)
+    || lodash.isEqual(k0, k2)
+    || lodash.isEqual(k1, k2)
 
-  return [shard0, shard1, shard2];
-};
+  return anyEqual
+    ? genShardKeys(buffer)
+    : [[k0, k1], [k0, k2], [k1, k2]];
+}
 
 
 
