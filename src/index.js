@@ -5,6 +5,8 @@ const bip32 = require('bip32');
 const lodash = require('lodash');
 const ob = require('urbit-ob');
 
+
+
 /**
  * Check if a ship is a galaxy.
  * @param  {integer}  ship
@@ -245,6 +247,29 @@ const urbitKeysFromSeed = (seed, password) => {
 
 
 /**
+ * Perform a sanity check on a set of three shards, checking that any two of
+ * them can be combined to produce a reference value.
+ * @param  {array of strings => string}  combiner a shard-combining function
+ * @param  {string}  ref a reference value for comparison
+ * @param  {string => string => bool}  comp a comparison function
+ * @param  {array of strings}  shards an array of shards
+ * @return  {array of shards}  returns consistent shards
+ */
+const shardsConsistent = (combiner, ref, comp, shards) => {
+  const set0 = shards.slice(0, 2);
+  const set1 = shards.slice(1);
+  const set2 = [shards[0], shards[2]];
+
+  const check0 = comp(combiner(set0), ref);
+  const check1 = comp(combiner(set1), ref);
+  const check2 = comp(combiner(set2), ref);
+
+  return check0 && check1 && check2;
+}
+
+
+
+/**
  * Reduce a collection of arrays by recursive applications of bytewise XOR.
  * @param  {Array of Array of integers}  arrays an array of arrays
  * @return {Array} the resulting array
@@ -266,9 +291,15 @@ const reduceByXor = (arrays) => {
 const shardHex = hex => {
   const buffer = hex2buf(hex);
   const sharded = shardBuffer(buffer);
-  return sharded.map(pair =>
+  const shards = sharded.map(pair =>
     lodash.reduce(pair, (acc, arr) =>
-      acc + buf2hex(Buffer.from(arr)), ''))
+      acc + buf2hex(Buffer.from(arr)), ''));
+
+  if (shardsConsistent(combineHex, hex, lodash.isEqual, shards)) {
+    return shards;
+  } else {
+    throw("shardHex: inconsistent shards -- please report this as a bug");
+  }
 }
 
 
@@ -282,7 +313,13 @@ const shardHex = hex => {
  */
 const shardPatq = patq => {
   const hexed = shardHex(ob.patq2hex(patq))
-  return hexed.map(ob.hex2patq)
+  const shards = hexed.map(ob.hex2patq)
+
+  if (shardsConsistent(combinePatq, patq, ob.eqPatq, shards)) {
+    return shards;
+  } else {
+    throw("shardPatq: inconsistent shards -- please report this as a bug");
+  }
 }
 
 
