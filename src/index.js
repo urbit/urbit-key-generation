@@ -260,7 +260,6 @@ const reduceByXor = (arrays) => {
  * Encode a hex string as three shards, such that any two shards can be
  * combined to recover it.
  *
- * You should only shard high-bitlength strings, e.g. 128-bit and above.
  * @param  {string}  string hex-encoded string
  * @return {Array of strings} resulting shards
  */
@@ -278,7 +277,6 @@ const shardHex = hex => {
  * Encode a @q-encoded string as three shards, such that any two shards can be
  * combined to recover it.
  *
- * You should only shard high-bitlength strings, e.g. 128-bit and above.
  * @param  {string}  string @q-encoded string
  * @return {Array of strings} resulting shards
  */
@@ -355,8 +353,16 @@ const combineHex = shards => {
  * @return {string} the reconstructed secret
  */
 const combinePatq = shards => {
-  const hexed = shards.map(shard => ob.patq2hex(shard))
-  const combined = combineHex(hexed)
+  const hexed = shards.map(ob.patq2hex)
+  const max = lodash.reduce(hexed, (acc, hex) =>
+    hex.length > acc
+      ? hex.length
+      : acc
+    , 0)
+
+  const padded = hexed.map(hex => hex.padStart(max, '0'))
+
+  const combined = combineHex(padded)
   return ob.hex2patq(combined)
 }
 

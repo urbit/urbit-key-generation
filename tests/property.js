@@ -26,8 +26,19 @@ const buffer = jsc.nearray(jsc.uint8).smap(
 
 const patq = hexString.smap(ob.hex2patq, ob.patq2hex)
 
-eqModuloLeadingDoz = (s, t) =>
-  s.replace(/~doz/, '~') === t.replace(/~doz/, '~')
+removeLeadingZeroBytes = str =>
+  str.slice(0, 2) === '00'
+  ? removeLeadingZeroBytes(str.slice(2))
+  : str
+
+eqModLeadingZeroBytes = (s, t) =>
+  removeLeadingZeroBytes(s) === removeLeadingZeroBytes(t)
+
+eqPatq = (p, q) => {
+  phex = ob.patq2hex(p)
+  qhex = ob.patq2hex(q)
+  return eqModLeadingZeroBytes(phex, qhex)
+}
 
 describe('sharding', () => {
   it('hex2buf and buf2hex are inverses', () => {
@@ -45,8 +56,6 @@ describe('sharding', () => {
       _.isEqual(_combineBuffer(_shardBuffer(buf)), buf))
 
     jsc.assert(rel, { tests: 250 })
-    jsc.assert(rel, { tests: 250 })
-    jsc.assert(rel, { tests: 250 })
   })
 
   it('combineHex . shardHex ~ id', () => {
@@ -54,16 +63,14 @@ describe('sharding', () => {
       _combineHex(_shardHex(hex)) === hex)
 
     jsc.assert(rel, { tests: 250 })
-    jsc.assert(rel, { tests: 250 })
-    jsc.assert(rel, { tests: 250 })
   })
 
   it('combinePatq . shardPatq ~ id', () => {
-    let rel = jsc.forall(patq, pq =>
-      eqModuloLeadingDoz(_combinePatq(_shardPatq(pq)), pq))
+    let rel = jsc.forall(patq, pq => {
+      let combined = _combinePatq(_shardPatq(pq))
+      return eqPatq(combined, pq)
+    })
 
-    jsc.assert(rel, { tests: 250 })
-    jsc.assert(rel, { tests: 250 })
     jsc.assert(rel, { tests: 250 })
   })
 })
