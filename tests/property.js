@@ -2,6 +2,7 @@ const expect =  require('chai').expect
 const jsc = require('jsverify')
 const _ = require('lodash')
 const ob = require('urbit-ob')
+const lodash = require('lodash')
 
 const {
   _buf2hex,
@@ -10,8 +11,9 @@ const {
   _combineHex,
   _shardBuffer,
   _combineBuffer,
-  _shardPatq,
-  _combinePatq
+  _shardsConsistent,
+  shardPatq,
+  combinePatq
   } = require('../src')
 
 const hexString = jsc.nestring.smap(
@@ -25,6 +27,11 @@ const buffer = jsc.nearray(jsc.uint8).smap(
 )
 
 const patq = hexString.smap(ob.hex2patq, ob.patq2hex)
+
+const shardable = jsc.oneof([
+    jsc.pair(patq, jsc.constant('patq')),
+    jsc.pair(hexString, jsc.constant('hex'))
+  ])
 
 describe('sharding', () => {
   it('hex2buf and buf2hex are inverses', () => {
@@ -53,9 +60,19 @@ describe('sharding', () => {
 
   it('combinePatq . shardPatq ~ id', () => {
     let rel = jsc.forall(patq, pq => {
-      let combined = _combinePatq(_shardPatq(pq))
+      let combined = combinePatq(shardPatq(pq))
       return ob.eqPatq(combined, pq)
     })
+
+    jsc.assert(rel, { tests: 250 })
+  })
+
+  it('2/3 shards always sufficient for recovery', () => {
+    let rel = jsc.forall(shardable, inp =>
+      inp[1] === 'patq'
+      ? _shardsConsistent(combinePatq, inp[0], ob.eqPatq, shardPatq(inp[0]))
+      : _shardsConsistent(_combineHex, inp[0], lodash.isEqual, _shardHex(inp[0]))
+    )
 
     jsc.assert(rel, { tests: 250 })
   })

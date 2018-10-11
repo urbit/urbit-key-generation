@@ -253,7 +253,7 @@ const urbitKeysFromSeed = (seed, password) => {
  * @param  {string}  ref a reference value for comparison
  * @param  {string => string => bool}  comp a comparison function
  * @param  {array of strings}  shards an array of shards
- * @return  {array of shards}  returns consistent shards
+ * @return  {bool}  true if shards consistent
  */
 const shardsConsistent = (combiner, ref, comp, shards) => {
   const set0 = shards.slice(0, 2);
@@ -537,8 +537,7 @@ const _shardBuffer = shardBuffer;
 const _combineBuffer = combineBuffer;
 const _shardHex = shardHex;
 const _combineHex = combineHex;
-const _shardPatq = shardPatq;
-const _combinePatq = combinePatq;
+const _shardsConsistent = shardsConsistent;
 
 module.exports = {
   argon2u,
@@ -548,6 +547,8 @@ module.exports = {
   walletFromSeed,
   urbitKeysFromSeed,
   shardWallet,
+  shardPatq,
+  combinePatq,
   _buf2hex,
   _hex2buf,
   _hash,
@@ -558,6 +559,5 @@ module.exports = {
   _combineBuffer,
   _shardHex,
   _combineHex,
-  _shardPatq,
-  _combinePatq
+  _shardsConsistent
 }
