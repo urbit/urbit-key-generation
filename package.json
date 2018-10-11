@@ -1,6 +1,6 @@
 {
   "name": "urbit-keygen",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "description": "Wrapper functions for key generation according to the Urbit hierarchical wallet design.",
   "main": "src/index.js",
   "scripts": {
