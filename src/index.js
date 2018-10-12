@@ -298,6 +298,8 @@ const shardHex = hex => {
   if (shardsConsistent(combineHex, hex, lodash.isEqual, shards)) {
     return shards;
   } else {
+    // shards must always be consistent, so this should be unreachable
+    /* istanbul ignore next */
     throw("shardHex: inconsistent shards -- please report this as a bug");
   }
 }
@@ -318,6 +320,8 @@ const shardPatq = patq => {
   if (shardsConsistent(combinePatq, patq, ob.eqPatq, shards)) {
     return shards;
   } else {
+    // shards must always be consistent, so this should be unreachable
+    /* istanbul ignore next */
     throw("shardPatq: inconsistent shards -- please report this as a bug");
   }
 }
