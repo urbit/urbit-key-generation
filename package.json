@@ -1,6 +1,6 @@
 {
   "name": "urbit-keygen",
-  "version": "2.4.0",
+  "version": "3.0.0",
   "description": "Key derivation and HD wallet generation functions for Urbit.",
   "main": "src/index.js",
   "browser": {
@@ -26,6 +26,8 @@
   "dependencies": {
     "argon2-wasm": "github:urbit/argon2-wasm.git#00c29a4",
     "bip32": "^1.0.2",
+    "bip39": "^2.5.0",
+    "hdkey": "^1.1.0",
     "isomorphic-webcrypto": "^1.6.0",
     "lodash": "^4.17.11",
     "tweetnacl": "^1.0.0",
