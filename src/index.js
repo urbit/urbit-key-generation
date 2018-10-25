@@ -315,7 +315,6 @@ const generateWallet = async config => {
   const network = {}
 
   if (boot === true) {
-    let base = bip39.mnemonicToSeed(management.seed)
     let seed = await childSeedFromSeed({
       seed: bip39.mnemonicToSeed(management.seed),
       type: CHILD_SEED_TYPES.NETWORK,
