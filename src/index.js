@@ -1,567 +1,366 @@
-const crypto = require('isomorphic-webcrypto');
-const argon2 = require('argon2-wasm');
-const nacl = require('tweetnacl');
-const bip32 = require('bip32');
-const lodash = require('lodash');
-const ob = require('urbit-ob');
+const argon2 = require('argon2-wasm')
+const bip39 = require('bip39')
+const crypto = require('isomorphic-webcrypto')
+const util = require('ethereumjs-util')
+const hdkey = require('hdkey')
+const lodash = require('lodash')
+const nacl = require('tweetnacl')
+const ob = require('urbit-ob')
 
-
+const CHILD_SEED_TYPES = {
+  OWNERSHIP: 'ownership',
+  TRANSFER: 'transfer',
+  SPAWN: 'spawn',
+  VOTING: 'voting',
+  MANAGEMENT: 'management',
+  NETWORK: 'network'
+}
 
 /**
  * Check if a ship is a galaxy.
- * @param  {integer}  ship
- * @return  {bool}  true if galaxy, false otherwise
+ * @param  {Number}  ship
+ * @return  {Bool}  true if galaxy, false otherwise
  */
-const isGalaxy = ship => Number.isInteger(ship) && ship >= 0 && ship < 256;
-
-
+const isGalaxy = ship =>
+  lodash.isInteger(ship) && ship >= 0 && ship < 256
 
 /**
- * Split a string at the provided index, returning both chunks.
- * @param  {integer}  index the index to split at
- * @param  {string}  string a string
- * @return  {array of strings}  the split string
- */
-const splitAt = (index, str) => [str.slice(0, index), str.slice(index)];
-
-
-
-/**
- * if any is undefined, return d. Otherwise return any
- * @param  {any} a value to check if defined
- * @param  {any} d   value to swap in if undefined.
- * @return {any}  either a or d
- */
-const defaultTo = (a, d) => isUndefined(a) ? d : a;
-
-
-
-/**
- * get a value from an object with a key. If no value is found or object is
- * undefined, return d
- * @param  {object} o The object to pull from.
- * @param  {string} k The key to use.
- * @param  {any} d The default value to swap in eith o or k is undefined.
- * @return {any}
- */
-const get = (o, k, d) => {
-  if (isUndefined(o)) return d;
-  const r = o[k];
-  return isUndefined(r) ? d : r;
-};
-
-
-
-/**
- * returns true if a is undefined, false if not.
- * @param  {any}  a the value to check
- * @return {Boolean}
- */
-const isUndefined = a => typeof a === 'undefined';
-
-
-
-/**
- * returns true if a is a number, false if not.
- * @param  {any}  any the value to check
- * @return {Boolean}
- */
-const isNumber = a => typeof a === 'number' && isFinite(a);
-
-
-
-/**
- * Converts a buffer to hexidecimal string
- * @param  {Buffer} buffer
- * @return {string}
+ * Encode a buffer as hex.
+ * @param  {Buffer}  buffer
+ * @return  {String}  hex-encoded buffer
  */
 const buf2hex = buffer => {
   return Array.from(new Uint8Array(buffer))
     .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-};
-
-
-
-/**
- * Converts a hexidecimal string to a buffer.
- * @param  {string} a hex-encoded string
- * @return {Buffer}
- */
-const hex2buf = hex => {
-  return Buffer.from(hex, 'hex');
-};
-
+    .join('')
+}
 
 
 /**
- * executes SHA-512 on any size input
- * @param  {Array, ArrayBuffer, Buffer, string} args any number of arguments
- * @return {Promise => ArrayBuffer} Promise that resolves to arrayBuffer
+ * Derive a 256-bit key from provided entropy via Argon2.
+ *
+ * @param  {String}  entropy
+ * @return {Promise<Object>} derived key
  */
-const hash = async (...args) => {
-  // map args into buffers and concat into one buffer
-  const buffer = Buffer.concat(args.map(a => Buffer.from(a)));
-  // generate a SHA-512 hash from input buffer
-  return crypto.subtle.digest({ name: 'SHA-512' }, buffer);
-};
-
-
-
-/**
- * Runs argon2wasm to return a seed of desired bytes
- * @param  {Uint8Array, Buffer, string} entropy ticket bytes as string or
- * Uint8Array or Buffer, at least 16 bytes
- * @param  {int} seedSize desired size of the generated seeds in bytes
- * @return {Promise => ArrayBuffer} Promise that resolves to arrayBuffer
- */
-const argon2u = (entropy, seedSize) => argon2.hash({
-  pass: entropy, // string or Uint8Array
+const argon2u = entropy => argon2.hash({
+  pass: entropy,
   salt: 'urbitkeygen',
   type: argon2.types.Argon2u,
-  hashLen: seedSize,
-  // distPath: 'node_modules/argon2-wasm/dist',
+  hashLen: 32,
   parallelism: 4,
   mem: 512000,
   time: 1,
-});
-
-
+})
 
 /**
- * Derive a new seed from a seed. Uses a config with the following entries:
- * @param  {Buffer}   seed seed to derive from.
- * @param  {string}   type the type of the seed we want to derive:
- * ("transfer", "spawn", "voting", "manage", "network").
- * @param  {object}   revision the revision number of the seed we want to derive.
- * @param  {integer}  ship  optional ship number we want to derive the seed for.
- * @param  {string}   password  optional password to salt the seed with before
- * deriving.
- * @return {Promise => Buffer} a new seed
+ * SHA-256 hash function.
+ *
+ * @param  {Array, ArrayBuffer, Buffer, String} args any number of arguments
+ * @return {Promise<ArrayBuffer>}  the hash, as bytes
+ */
+const sha256 = async (...args) => {
+  const buffer = Buffer.concat(args.map(Buffer.from))
+  return crypto.subtle.digest({ name: 'SHA-256' }, buffer)
+}
+
+/**
+ * Derive a child seed from a parent.
+ *
+ * @param  {Array, ArrayBuffer, Buffer, String}  seed a parent seed
+ * @param  {String}  type the type of child seed to derive
+ * @param  {Number}  ship the ship to derive the seed for
+ * @param  {Number}  revision the revision number
+ * @return {Promise<String>} the BIP39 child mnemonic
  */
 const childSeedFromSeed = async config => {
-  const { seed, type, revision, ship, password } = config;
-
-  const salt = isNumber(ship)
-    ? `${type}-${revision}-${ship}`
-    : `${type}-${revision}`;
-
-  const childSeed = await hash(seed, salt, defaultTo(password, ''));
-
-  return childSeed.slice(0, seed.byteLength || seed.length);
-};
-
-
-
-/**
- * Derive a new node from a seed. Uses a config with the following entries:
- * @param  {Buffer}   seed seed to derive from.
- * @param  {string}   type the type of the seed we want to derive:
- * ("transfer", "spawn", "voting", "manage", "network").
- * @param  {integer}  revision the revision number of the seed we want to derive.
- * @param  {integer}  ship  optional ship number we want to derive the seed for.
- * @param  {string}   password  optional password to salt the seed with before
- * deriving.
- * @return {Promise => Object} a new node
- */
-const childNodeFromSeed = async config => {
-  const { seed, type, revision, ship, password } = config;
-  const childSeed = await childSeedFromSeed({seed, type, revision, ship, password});
-  return {
-    meta: {
-      type,
-      revision: defaultTo(revision, 0),
-      ship: !isUndefined(ship)
-        ? ship
-        : null
-    },
-    seed: buf2hex(childSeed),
-    keys: await walletFromSeed(childSeed, password),
-  };
-};
-
-
-
-/**
- * Derive a BIP32 master node from a seed.
- * @param  {string, Buffer}  seed     seed to derive from.
- * @param  {string}          password optional password to salt the seed with before
- * deriving.
- * @return {Promise => Object} a wallet derived according to BIP32 from the
- *  SHA-512 hash of the seed+password.
- */
-const walletFromSeed = async (seed, password) => {
-  // we hash the seed with SHA-512 before doing BIP32 wallet generation,
-  // because BIP32 doesn't support seeds of bit-lengths < 128 or > 512.
-  const seedHash = await hash(seed, defaultTo(password, ''));
-  const { publicKey, privateKey, chainCode } = bip32.fromSeed(Buffer.from(seedHash));
-  return {
-    public: buf2hex(publicKey),
-    private: buf2hex(privateKey),
-    chain: buf2hex(chainCode),
-  };
-};
-
-
-
-/**
- * Wraps nacl.lowlvel.crypto_hash
- * @param  {Uint8Array} seed
- * @return {Array}
- */
-const naclHash = seed => {
-  let newHash = []
-  nacl.lowlevel.crypto_hash(newHash, seed.reverse(), seed.length)
-  return newHash
+  const { seed, type, ship, revision } = config
+  const salt = lodash.isNull(ship) ? '' : `${ship}`
+  const hash = await sha256(seed, type, salt, `${revision}`)
+  return type !== CHILD_SEED_TYPES.NETWORK
+    ? bip39.entropyToMnemonic(hash)
+    : Buffer.from(hash).toString('hex')
 }
 
 
 
 /**
- * Derive Urbit network keypairs from a seed. Matches ++pit:nu:crub:crypto
- * @param  {Buffer} seed     seed to derive from
- * @param  {Buffer} password optional password to salt the seed before deriving
- * @return {object} urbitKeys, derived according to ++pit:nu:crub:crypto.
+ * Derive a child BIP32 node from a parent seed.
+ *
+ * @param  {Array, ArrayBuffer, Buffer, String}  seed a parent seed
+ * @param  {String}  type the type of child node to derive
+ * @param  {Number}  ship the ship to derive the node for
+ * @param  {Number}  revision the revision number
+ * @return {Promise<Object>} the BIP32 child node
  */
-const urbitKeysFromSeed = (seed, password) => {
-  const h = naclHash(Buffer.concat([seed, password]));
+const childNodeFromSeed = async config => {
+  const { type, ship, revision, password } = config
+  const child = await childSeedFromSeed(config)
+  return {
+    meta: {
+      type: type,
+      revision: revision,
+      ship: ship
+    },
+    seed: child,
+    keys: bip32NodeFromSeed(child, password)
+  }
+}
 
-  const c = h.slice(32);
-  const a = h.slice(0, 32);
 
-  const crypt = nacl.sign.keyPair.fromSeed(Buffer.from(c));
-  const auth = nacl.sign.keyPair.fromSeed(Buffer.from(a));
+
+/**
+ * Derive a BIP32 master node -- supplemented with a corresponding Ethereum
+ * address -- from a seed.
+ *
+ * @param  {String}  seed a BIP39 mnemonic
+ * @param  {String}  password an optional password to use when generating the
+ *   BIP39 seed
+ * @return {Object} a BIP32 node
+ */
+const bip32NodeFromSeed = (mnemonic, password) => {
+  const seed = bip39.mnemonicToSeed(mnemonic, password)
+  const hd = hdkey.fromMasterSeed(seed)
+  const path = "m/44'/60'/0'/0/0"
+  const wallet = hd.derive(path)
+
+  const public = buf2hex(wallet.publicKey)
+  const private = buf2hex(wallet.privateKey)
+  const chain = buf2hex(wallet.chainCode)
+  const address = addressFromSecp256k1Public(public)
+
+  return {
+    public,
+    private,
+    chain,
+    address
+  }
+}
+
+
+
+/**
+ * Derive Urbit network keypairs from a seed.  Matches ++pit:nu:crub:crypto
+ * @param  {Buffer} seed     seed to derive from
+ * @return {Object} resulting Urbit network keys
+ */
+const urbitKeysFromSeed = seed => {
+  let h = []
+  nacl.lowlevel.crypto_hash(h, seed.reverse(), seed.length)
+
+  const c = h.slice(32)
+  const a = h.slice(0, 32)
+
+  const crypt = nacl.sign.keyPair.fromSeed(Buffer.from(c))
+  const auth = nacl.sign.keyPair.fromSeed(Buffer.from(a))
+
+  const crypt_pub = buf2hex(crypt.publicKey.reverse())
+  const auth_pub = buf2hex(auth.publicKey.reverse())
 
   return {
     crypt: {
       private: buf2hex(c.reverse()),
-      public: buf2hex(crypt.publicKey.reverse()),
+      public: crypt_pub,
+      address: addressFromNetworkPublic(crypt_pub)
     },
     auth: {
       private: buf2hex(a.reverse()),
-      public: buf2hex(auth.publicKey.reverse()),
+      public: auth_pub,
+      address: addressFromNetworkPublic(auth_pub)
     }
-  };
-};
-
-
-
-/**
- * Perform a sanity check on a set of three shards, checking that any two of
- * them can be combined to produce a reference value.
- * @param  {array of strings => string}  combiner a shard-combining function
- * @param  {string}  ref a reference value for comparison
- * @param  {string => string => bool}  comp a comparison function
- * @param  {array of strings}  shards an array of shards
- * @return  {bool}  true if shards consistent
- */
-const shardsConsistent = (combiner, ref, comp, shards) => {
-  const set0 = shards.slice(0, 2);
-  const set1 = shards.slice(1);
-  const set2 = [shards[0], shards[2]];
-
-  const check0 = comp(combiner(set0), ref);
-  const check1 = comp(combiner(set1), ref);
-  const check2 = comp(combiner(set2), ref);
-
-  return check0 && check1 && check2;
-}
-
-
-
-/**
- * Reduce a collection of arrays by recursive applications of bytewise XOR.
- * @param  {Array of Array of integers}  arrays an array of arrays
- * @return {Array} the resulting array
- */
-const reduceByXor = (arrays) => {
-  return arrays.reduce((acc, arr) =>
-    lodash.zipWith(acc, arr, (x, y) => x ^ y));
-}
-
-
-
-/**
- * Encode a hex string as three shards, such that any two shards can be
- * combined to recover it.
- *
- * @param  {string}  string hex-encoded string
- * @return {Array of strings} resulting shards
- */
-const shardHex = hex => {
-  const buffer = hex2buf(hex);
-  const sharded = shardBuffer(buffer);
-  const shards = sharded.map(pair =>
-    lodash.reduce(pair, (acc, arr) =>
-      acc + buf2hex(Buffer.from(arr)), ''));
-
-  if (shardsConsistent(combineHex, hex, lodash.isEqual, shards)) {
-    return shards;
-  } else {
-    // shards must always be consistent, so this should be unreachable
-    /* istanbul ignore next */
-    throw("shardHex: inconsistent shards -- please report this as a bug");
   }
 }
 
 
 
 /**
- * Encode a @q-encoded string as three shards, such that any two shards can be
- * combined to recover it.
+ * Convert a hex-encoded secp256k1 public key into an Ethereum address.
+ * @param  {String}  pub a (compressed) hex-encoded public key
+ * @return  {String}  the corresponding Ethereum address
+ */
+const addressFromSecp256k1Public = pub => {
+  const hashed = util.keccak256(Buffer.from(pub, 'hex'))
+  const addr = util.addHexPrefix(hashed.slice(12).toString('hex'))
+  return util.toChecksumAddress(addr)
+}
+
+
+
+/**
+ * Convert a hex-encoded secp256k1 private key into an Ethereum address.
+ * @param  {String}  pub a hex-encoded private key
+ * @return  {String}  the corresponding Ethereum address
+ */
+const addressFromSecp256k1Private = priv => {
+  const pub = util.secp256k1.publicKeyCreate(Buffer.from(priv, 'hex'))
+  return addressFromSecp256k1Public(pub)
+}
+
+
+
+/**
+ * Convert a hex-encoded Ed25519-variant Urbit public network key into an
+ * Ethereum address.
+ * @param  {String}  pub a hex-encoded public key
+ * @return  {String}  the corresponding Ethereum address
+ */
+const addressFromNetworkPublic = pub => {
+  const hashed = util.keccak256(Buffer.from(pub, 'hex'))
+  const addr = util.addHexPrefix(hashed.slice(12).toString('hex'))
+  return util.toChecksumAddress(addr)
+}
+
+
+
+/**
+ * Break a 384-bit ticket into three shards, any two of which can be used to
+ * recover it.
  *
- * @param  {string}  string @q-encoded string
- * @return {Array of strings} resulting shards
- */
-const shardPatq = patq => {
-  const hexed = shardHex(ob.patq2hex(patq))
-  const shards = hexed.map(ob.hex2patq)
-
-  if (shardsConsistent(combinePatq, patq, ob.eqPatq, shards)) {
-    return shards;
-  } else {
-    // shards must always be consistent, so this should be unreachable
-    /* istanbul ignore next */
-    throw("shardPatq: inconsistent shards -- please report this as a bug");
-  }
-}
-
-
-
-/**
- * Produce three shards from a buffer such that any two of them can be used to
- * reconstruct it.
- * @param  {Buffer}  buffer arbitrary buffer
- * @return {Array of Array of integers} sharded buffer
- */
-const shardBuffer = buffer => {
-  const r1 = crypto.getRandomValues(new Uint8Array(buffer.length));
-  const r2 = crypto.getRandomValues(new Uint8Array(buffer.length));
-
-  const k  = Array.from(buffer);
-  const k1 = Array.from(r1);
-  const k2 = Array.from(r2);
-
-  const k0 = reduceByXor([k, k1, k2]);
-
-  const anyEqual =
-       lodash.isEqual(k0, k1)
-    || lodash.isEqual(k0, k2)
-    || lodash.isEqual(k1, k2)
-
-  return anyEqual
-    ? shardBuffer(buffer)
-    : [[k0, k1], [k0, k2], [k1, k2]];
-}
-
-
-
-/**
- * Combine pieces of a sharded buffer together to recover the original buffer.
- * @param  {Array of Array of integers}  shards a collection of shards
- * @return {Buffer} the unsharded buffer
- */
-const combineBuffer = shards => {
-  const flattened = lodash.flatten(shards);
-  const uniques = lodash.uniqWith(flattened, lodash.isEqual);
-  const reduced = reduceByXor(uniques);
-  return Buffer.from(reduced);
-}
-
-
-
-/**
- * Combine hex-encoded shards together to reconstruct a secret.
- * @param  {Array of Array of strings}  shards a collection of hex-encoded
- *  shards
- * @return {string} the reconstructed secret
- */
-const combineHex = shards => {
-  const splat = shards.map(shard =>
-    splitAt(shard.length / 2, shard));
-  const buffers = splat.map(pair =>
-    pair.map(buf => Array.from(hex2buf(buf))));
-  const combined = combineBuffer(buffers);
-  return buf2hex(combined);
-}
-
-
-
-/**
- * Combine @q-encoded shards together to reconstruct a secret.
- * @param  {Array of Array of strings}  shards a collection of @q-encoded
- *  shards
- * @return {string} the reconstructed secret
- */
-const combinePatq = shards => {
-  const hexed = shards.map(ob.patq2hex)
-  const max = lodash.reduce(hexed, (acc, hex) =>
-    hex.length > acc
-      ? hex.length
-      : acc
-    , 0)
-
-  const padded = hexed.map(hex => hex.padStart(max, '0'))
-
-  const combined = combineHex(padded)
-  return ob.hex2patq(combined)
-}
-
-
-
-/**
- * Convert a full wallet into a sharded wallet.  Transforms the owner's seed
- * into a number of shards, of which only a subset are required in order to
- * reconstruct the original.
+ * Each shard is simply 2/3 of the ticket -- the first third, second third, and
+ * first and last thirds concatenated together.
  *
- * @param  {object}  wallet full HD wallet
- * @return  {object} an object representing a sharded full HD wallet
+ * @param  {String} ticket a 384-bit @q ticket
+ * @return {Array<String>}
  */
-const shardWallet = wallet => {
-  const walletCopy = lodash.cloneDeep(wallet);
-  const sharded = shardPatq(walletCopy.ticket)
-  walletCopy.ticket = sharded;
-  return walletCopy;
-}
+const shard = ticket => {
+  const ticketHex = ob.patq2hex(ticket)
+  const ticketBuf = Buffer.from(ticketHex, 'hex')
 
-
-
-/**
- * Derive all keys from the ticket.
- * @param  {string}  ticket a @q-encoded ticket, at least 16 bytes.
- * @param  {integer}  seedSize desired size of the generated seeds in bytes.
- * @param  {Array of integers}  ships array of ship-numbers to generate keys for.
- * @param  {string}  password optional password to use during derivation.
- * @param  {object}  revisions optional revision per key purpose:
- * (transfer, spawn, voting, manage, network), defaults to all-zero
- * @param  {Boolean}  boot optional generate networking keys for this wallet
- * @return {Promise => object} an object representing a full HD wallet.
- */
-const fullWalletFromTicket = async config => {
-  const { ticket, seedSize, ships, password, revisions, boot } = config;
-
-  const buf = Buffer.from(ob.patq2hex(ticket), 'hex')
-  const seed = await argon2u(buf, seedSize);
-  const ownerSeed = Buffer.from(seed.hash)
-
-  // Normalize revisions object
-  const _revisions = {
-    transfer: get(revisions, 'transfer', 0),
-    spawn: get(revisions, 'spawn', 0),
-    voting: get(revisions, 'voting', 0),
-    manage: get(revisions, 'manage', 0),
-    network: get(revisions, 'network', 0),
-  };
-
-  const ownershipNode = {
-    keys: await walletFromSeed(ownerSeed, password),
-    seed: buf2hex(ownerSeed),
+  if (ticketBuf.length !== 48) {
+    return [ ticket ]
   }
 
-  const manageNodes = await Promise.all(ships.map(ship =>
-     childNodeFromSeed({
-       seed: ownerSeed,
-       type: 'manage',
-       revision: _revisions.manage,
-       ship: ship,
-       password: password,
-    })));
+  const shard0 = ticketBuf.slice(0, 32)
+  const shard1 = ticketBuf.slice(16)
+  const shard2 = Buffer.concat([
+    ticketBuf.slice(0, 16),
+    ticketBuf.slice(32)
+  ])
 
-  const manageSeeds = lodash.mapValues(lodash.keyBy(manageNodes, 'meta.ship'), 'seed');
+  return lodash.map([shard0, shard1, shard2], buf =>
+    ob.hex2patq(buf.toString('hex')))
+}
 
-  const votingNodes = await Promise.all(ships.filter(ship => isGalaxy(ship)).map(ship => childNodeFromSeed({
-      seed: ownerSeed,
-      type: 'voting',
-      revision: _revisions.voting,
+
+
+/**
+ * Generate an Urbit HD wallet given the provided configuration.
+ *
+ * @param  {String}  ticket a 64, 128, or 384-bit @q master ticket
+ * @param  {Number}  ship an optional ship number
+ * @param  {String}  password a password used to salt generated seeds (default:
+ *   null)
+ * @param  {Number}  revision a revision number used as a salt (default: 0)
+ * @param  {Bool}  boot if true, generate network keys for the provided ship
+ *   (default: false)
+ * @return  {Promise<Object>}
+ */
+const generateWallet = async config => {
+  const { ticket } = config
+  const ship = 'ship' in config ? config.ship : null
+  const password = 'password' in config ? config.password : null
+  const revision = 'revision' in config ? config.revision : 0
+  const boot = 'boot' in config ? config.boot : false
+
+  const ticketHex = ob.patq2hex(ticket)
+  const ticketBuf = Buffer.from(ticketHex, 'hex')
+  const hashedTicket = await argon2u(ticketBuf)
+
+  const shards = shard(ticket)
+
+  const masterSeed = hashedTicket.hash
+
+  const ownership = await childNodeFromSeed({
+      seed: masterSeed,
+      type: CHILD_SEED_TYPES.OWNERSHIP,
       ship: ship,
-      password: password,
-    })));
+      revision: revision,
+      password: password
+    })
 
-  const transferNodes = await Promise.all(ships.map(ship => childNodeFromSeed({
-    seed: ownerSeed,
-    type: 'transfer',
-    revision: _revisions.transfer,
-    ship: ship,
-    password: password,
-  })));
+  const transfer = await childNodeFromSeed({
+      seed: masterSeed,
+      type: CHILD_SEED_TYPES.TRANSFER,
+      ship: ship,
+      revision: revision,
+      password: password
+    })
 
-  const spawnNodes = await Promise.all(ships.map(ship => childNodeFromSeed({
-    seed: ownerSeed,
-    type: 'spawn',
-    revision: _revisions.spawn,
-    ship: ship,
-    password: password,
-  })));
+  const spawn = await childNodeFromSeed({
+      seed: masterSeed,
+      type: CHILD_SEED_TYPES.SPAWN,
+      ship: ship,
+      revision: revision,
+      password: password
+    })
 
+  const voting =
+    isGalaxy(ship)
+    ? await childNodeFromSeed({
+        seed: masterSeed,
+        type: CHILD_SEED_TYPES.VOTING,
+        ship: ship,
+        revision: revision,
+        password: password
+      })
+    : {}
 
-  let networkSeeds = [];
-  let networkNodes = [];
+  const management = await childNodeFromSeed({
+      seed: masterSeed,
+      type: CHILD_SEED_TYPES.MANAGEMENT,
+      ship: ship,
+      revision: revision,
+      password: password
+    })
+
+  const network = {}
 
   if (boot === true) {
-
-    networkSeeds = await Promise.all(ships.map(ship => childSeedFromSeed({
-      seed: hex2buf(manageSeeds[ship]),
-      type: 'network',
-      revision: _revisions.network,
+    let base = bip39.mnemonicToSeed(management.seed)
+    let seed = await childSeedFromSeed({
+      seed: bip39.mnemonicToSeed(management.seed),
+      type: CHILD_SEED_TYPES.NETWORK,
       ship: ship,
-      password: password,
-    })));
+      revision: revision
+    })
 
-    networkNodes = await Promise.all(networkSeeds.map((seed, index) => ({
-      seed: buf2hex(seed),
-      keys: urbitKeysFromSeed(Buffer.from(seed), Buffer.from(defaultTo(password, ''))),
+    lodash.assign(network, {
+      seed: seed,
+      keys: urbitKeysFromSeed(Buffer.from(seed, 'hex')),
       meta: {
-        type: 'network',
-        revision: _revisions.network,
-        ship: ships[index],
+        type: CHILD_SEED_TYPES.NETWORK,
+        revision: revision,
+        ship: ship
       }
-    })));
-  };
+    })
+  }
 
-  const wallet = {
+  return {
     ticket: ticket,
-    owner: ownershipNode,
-    manage: manageNodes,
-    voting: votingNodes,
-    network: networkNodes,
-    transfer: transferNodes,
-    spawn: spawnNodes,
-  };
-
-  return wallet;
+    shards: shards,
+    ownership: ownership,
+    transfer: transfer,
+    spawn: spawn,
+    voting: voting,
+    management: management,
+    network: network
+  }
 }
-
-const _buf2hex = buf2hex;
-const _hex2buf = hex2buf;
-const _hash = hash;
-const _argon2 = argon2;
-const _defaultTo = defaultTo;
-const _get = get;
-const _shardBuffer = shardBuffer;
-const _combineBuffer = combineBuffer;
-const _shardHex = shardHex;
-const _combineHex = combineHex;
-const _shardsConsistent = shardsConsistent;
 
 module.exports = {
-  argon2u,
-  fullWalletFromTicket,
-  childNodeFromSeed,
+  generateWallet,
   childSeedFromSeed,
-  walletFromSeed,
-  urbitKeysFromSeed,
-  shardWallet,
-  shardPatq,
-  combinePatq,
-  _buf2hex,
-  _hex2buf,
-  _hash,
-  _argon2,
-  _defaultTo,
-  _get,
-  _shardBuffer,
-  _combineBuffer,
-  _shardHex,
-  _combineHex,
-  _shardsConsistent
+  childNodeFromSeed,
+
+  _isGalaxy: isGalaxy,
+  _argon2u: argon2u,
+  _sha256: sha256,
+  _CHILD_SEED_TYPES: CHILD_SEED_TYPES,
+  _bip32NodeFromSeed: bip32NodeFromSeed,
+  _urbitKeysFromSeed: urbitKeysFromSeed,
+  _shard: shard,
+  _addressFromSecp256k1Public: addressFromSecp256k1Public,
+  _addressFromSecp256k1Private: addressFromSecp256k1Private,
+  _addressFromNetworkPublic: addressFromNetworkPublic
 }
+
+
