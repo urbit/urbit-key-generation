@@ -4,6 +4,7 @@ const fs = require('fs-extra')
 const hdkey = require('hdkey')
 const jsc = require('jsverify')
 const lodash = require('lodash')
+const ob = require('urbit-ob')
 
 const kg = require('../src/keygen')
 
@@ -32,18 +33,17 @@ describe('isGalaxy', () => {
   })
 })
 
-// FIXME uncomment
-// describe('argon2u', () => {
-//   it('works as expected', async function() {
-//     this.timeout(10000)
-//
-//     let res = await kg._argon2u({entropy: 'my rad entropy'})
-//
-//     expect(res).to.not.be.undefined
-//     expect('hash' in res).to.equal(true)
-//     expect(res.hash).to.have.lengthOf(32)
-//   })
-// })
+describe('argon2u', () => {
+  it('works as expected', async function() {
+    this.timeout(10000)
+
+    let res = await kg._argon2u({entropy: 'my rad entropy'})
+
+    expect(res).to.not.be.undefined
+    expect('hash' in res).to.equal(true)
+    expect(res.hash).to.have.lengthOf(32)
+  })
+})
 
 describe('sha256', () => {
   it('produces 256-bit digests', () => {
@@ -267,6 +267,18 @@ describe('urbitKeysFromSeed', () => {
   })
 })
 
+describe('shard', () => {
+  it('does not shard non-384-bit tickets', () => {
+    let ticket = '~doznec-marbud'
+    expect(kg._shard(ticket)).to.have.lengthOf(1)
+  })
+
+  it('shards 384-bit tickets', () => {
+    let ticket = '~wacfus-dabpex-danted-mosfep-pasrud-lavmer-nodtex-taslus-pactyp-milpub-pildeg-fornev-ralmed-dinfeb-fopbyr-sanbet-sovmyl-dozsut-mogsyx-mapwyc-sorrup-ricnec-marnys-lignex'
+    expect(kg._shard(ticket)).to.have.lengthOf(3)
+  })
+})
+
 describe('generateWallet', () => {
   it('generates wallets', async function() {
     this.timeout(20000)
@@ -291,7 +303,7 @@ describe('generateWallet', () => {
     expect(lodash.isEqual(wallet, expected)).to.equal(true)
 
     config = {
-      ticket: '~dozset-ligtug-watlun-salwet-watsyr',
+      ticket: '~wacfus-dabpex-danted-mosfep-pasrud-lavmer-nodtex-taslus-pactyp-milpub-pildeg-fornev-ralmed-dinfeb-fopbyr-sanbet-sovmyl-dozsut-mogsyx-mapwyc-sorrup-ricnec-marnys-lignex',
       password: 'froot loops',
       revision: 6
     }

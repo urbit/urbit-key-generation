@@ -159,6 +159,36 @@ const urbitKeysFromSeed = seed => {
 }
 
 
+/**
+ * Break a 384-bit ticket into three shards, any two of which can be used to
+ * recover it.
+ *
+ * Each shard is simply 2/3 of the ticket -- the first third, second third, and
+ * first and last thirds concatenated together.
+ *
+ * @param  {String} ticket a 384-bit @q ticket
+ * @return {Array<String>}
+ */
+const shard = ticket => {
+  const ticketHex = ob.patq2hex(ticket)
+  const ticketBuf = Buffer.from(ticketHex, 'hex')
+
+  if (ticketBuf.length !== 48) {
+    return [ ticket ]
+  }
+
+  const shard0 = ticketBuf.slice(0, 32)
+  const shard1 = ticketBuf.slice(16)
+  const shard2 = Buffer.concat([
+    ticketBuf.slice(0, 16),
+    ticketBuf.slice(32)
+  ])
+
+  return lodash.map([shard0, shard1, shard2], buf =>
+    ob.hex2patq(buf.toString('hex')))
+}
+
+
 
 /**
  * Generate an Urbit HD wallet given the provided configuration.
@@ -182,6 +212,8 @@ const generateWallet = async config => {
   const ticketHex = ob.patq2hex(ticket)
   const ticketBuf = Buffer.from(ticketHex, 'hex')
   const hashedTicket = await argon2u(ticketBuf)
+
+  const shards = shard(ticket)
 
   const masterSeed = hashedTicket.hash
 
@@ -252,6 +284,7 @@ const generateWallet = async config => {
 
   return {
     ticket: ticket,
+    shards: shards,
     ownership: ownership,
     transfer: transfer,
     spawn: spawn,
@@ -271,7 +304,8 @@ module.exports = {
   _sha256: sha256,
   _CHILD_SEED_TYPES: CHILD_SEED_TYPES,
   _bip32NodeFromSeed: bip32NodeFromSeed,
-  _urbitKeysFromSeed: urbitKeysFromSeed
+  _urbitKeysFromSeed: urbitKeysFromSeed,
+  _shard: shard
 }
 
 
