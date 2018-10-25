@@ -24,6 +24,18 @@ const isGalaxy = ship =>
   lodash.isInteger(ship) && ship >= 0 && ship < 256
 
 /**
+ * Encode a buffer as hex.
+ * @param  {Buffer}  buffer
+ * @return  {String}  hex-encoded buffer
+ */
+const buf2hex = buffer => {
+  return Array.from(new Uint8Array(buffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+};
+
+
+/**
  * Derive a 256-bit key from provided entropy via Argon2.
  *
  * @param  {String}  entropy
@@ -63,7 +75,9 @@ const childSeedFromSeed = async config => {
   const { seed, type, ship, revision } = config
   const salt = lodash.isNull(ship) ? '' : `${ship}`
   const hash = await sha256(seed, type, salt, `${revision}`)
-  return bip39.entropyToMnemonic(hash)
+  return type !== CHILD_SEED_TYPES.NETWORK
+    ? bip39.entropyToMnemonic(hash)
+    : Buffer.from(hash).toString('hex')
 }
 
 
@@ -87,11 +101,13 @@ const childNodeFromSeed = async config => {
       ship: ship
     },
     seed: child,
-    keys: await bip32NodeFromSeed(child, password)
+    keys: bip32NodeFromSeed(child, password)
   }
 }
 
 
+
+// FIXME check this -- no hash here now?
 
 /**
  * Derive a BIP32 master node from a seed.
@@ -99,9 +115,9 @@ const childNodeFromSeed = async config => {
  * @param  {String}  seed a BIP39 mnemonic
  * @param  {String}  password an optional password to use when generating the
  *   BIP39 seed
- * @return {Promise<Object>} a BIP32 node
+ * @return {Object} a BIP32 node
  */
-const bip32NodeFromSeed = async (mnemonic, password) => {
+const bip32NodeFromSeed = (mnemonic, password) => {
   const seed = bip39.mnemonicToSeed(mnemonic, password)
   const hd = hdkey.fromMasterSeed(seed)
   const path = "m/44'/60'/0'/0/0"
@@ -158,10 +174,10 @@ const urbitKeysFromSeed = seed => {
  */
 const generateWallet = async config => {
   const { ticket } = config
-  const ship = 'ship' in config ? config[ship] : null
-  const password = 'password' in config ? config[password] : null
-  const revision = 'revision' in config ? config[revision] : 0
-  const boot = 'boot' in config ? config[boot] : false
+  const ship = 'ship' in config ? config.ship : null
+  const password = 'password' in config ? config.password : null
+  const revision = 'revision' in config ? config.revision : 0
+  const boot = 'boot' in config ? config.boot : false
 
   const ticketHex = ob.patq2hex(ticket)
   const ticketBuf = Buffer.from(ticketHex, 'hex')
@@ -194,15 +210,15 @@ const generateWallet = async config => {
     })
 
   const voting =
-    isGalaxy(ship) === false
-    ? {}
-    : await childNodeFromSeed({
+    isGalaxy(ship)
+    ? await childNodeFromSeed({
         seed: masterSeed,
         type: CHILD_SEED_TYPES.VOTING,
         ship: ship,
         revision: revision,
         password: password
       })
+    : {}
 
   const management = await childNodeFromSeed({
       seed: masterSeed,
@@ -215,17 +231,17 @@ const generateWallet = async config => {
   const network = {}
 
   if (boot === true) {
-    let networkSeed = await childSeedFromSeed({
+    let base = bip39.mnemonicToSeed(management.seed)
+    let seed = await childSeedFromSeed({
       seed: bip39.mnemonicToSeed(management.seed),
       type: CHILD_SEED_TYPES.NETWORK,
       ship: ship,
-      revision: revision,
-      password: password
+      revision: revision
     })
 
     lodash.assign(network, {
-      seed: networkSeed,
-      keys: urbitKeysFromSeed(networkSeed),
+      seed: seed,
+      keys: urbitKeysFromSeed(Buffer.from(seed, 'hex')),
       meta: {
         type: CHILD_SEED_TYPES.NETWORK,
         revision: revision,
@@ -248,7 +264,14 @@ const generateWallet = async config => {
 module.exports = {
   generateWallet,
   childSeedFromSeed,
-  childNodeFromSeed
+  childNodeFromSeed,
+
+  _isGalaxy: isGalaxy,
+  _argon2u: argon2u,
+  _sha256: sha256,
+  _CHILD_SEED_TYPES: CHILD_SEED_TYPES,
+  _bip32NodeFromSeed: bip32NodeFromSeed,
+  _urbitKeysFromSeed: urbitKeysFromSeed
 }
 
 
