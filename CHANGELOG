@@ -1,4 +1,15 @@
 # Changelog
 
+- 3.0.0 (2018-10-25)
+    * Fix all seeds at 256 bits.
+    * Always derive BIP32 nodes according to the path m/44'/60'/0'/0/0.
+    * Remove the optional 'password' salt.
+    * Render and handle non-network seeds as BIP39 mnemonics.
+    * Displays corresponding Ethereum addresses in derived BIP32 nodes.
+    * Replaces XOR-based 2-3 sharding with concat-based 2-3 sharding.  Shards
+      are also now reported in the 'shards' property of the final wallet.
+    * Add an 'ownership' seed, plus slight changes to other seed type names.
+    * Miscellaneous housekeeping and simplification throughout.
+
 - 2.1.0 (2018-10-11)
     * Export 'shardPatq' and 'combinePatq' functions.
