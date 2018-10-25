@@ -1,9 +1,10 @@
 const argon2 = require('argon2-wasm')
-const bip39 = require('bip39');
-const crypto = require('isomorphic-webcrypto');
-const hdkey = require('hdkey');
-const lodash = require('lodash');
-const nacl = require('tweetnacl');
+const bip39 = require('bip39')
+const crypto = require('isomorphic-webcrypto')
+const util = require('ethereumjs-util')
+const hdkey = require('hdkey')
+const lodash = require('lodash')
+const nacl = require('tweetnacl')
 const ob = require('urbit-ob')
 
 const CHILD_SEED_TYPES = {
@@ -31,8 +32,8 @@ const isGalaxy = ship =>
 const buf2hex = buffer => {
   return Array.from(new Uint8Array(buffer))
     .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-};
+    .join('')
+}
 
 
 /**
@@ -107,10 +108,9 @@ const childNodeFromSeed = async config => {
 
 
 
-// FIXME check this -- no hash here now?
-
 /**
- * Derive a BIP32 master node from a seed.
+ * Derive a BIP32 master node -- supplemented with a corresponding Ethereum
+ * address -- from a seed.
  *
  * @param  {String}  seed a BIP39 mnemonic
  * @param  {String}  password an optional password to use when generating the
@@ -122,10 +122,17 @@ const bip32NodeFromSeed = (mnemonic, password) => {
   const hd = hdkey.fromMasterSeed(seed)
   const path = "m/44'/60'/0'/0/0"
   const wallet = hd.derive(path)
+
+  const public = buf2hex(wallet.publicKey)
+  const private = buf2hex(wallet.privateKey)
+  const chain = buf2hex(wallet.chainCode)
+  const address = addressFromSecp256k1Public(public)
+
   return {
-    public: buf2hex(wallet.publicKey),
-    private: buf2hex(wallet.privateKey),
-    chain: buf2hex(wallet.chainCode),
+    public,
+    private,
+    chain,
+    address
   }
 }
 
@@ -146,17 +153,62 @@ const urbitKeysFromSeed = seed => {
   const crypt = nacl.sign.keyPair.fromSeed(Buffer.from(c))
   const auth = nacl.sign.keyPair.fromSeed(Buffer.from(a))
 
+  const crypt_pub = buf2hex(crypt.publicKey.reverse())
+  const auth_pub = buf2hex(auth.publicKey.reverse())
+
   return {
     crypt: {
       private: buf2hex(c.reverse()),
-      public: buf2hex(crypt.publicKey.reverse()),
+      public: crypt_pub,
+      address: addressFromNetworkPublic(crypt_pub)
     },
     auth: {
       private: buf2hex(a.reverse()),
-      public: buf2hex(auth.publicKey.reverse()),
+      public: auth_pub,
+      address: addressFromNetworkPublic(auth_pub)
     }
   }
 }
+
+
+
+/**
+ * Convert a hex-encoded secp256k1 public key into an Ethereum address.
+ * @param  {String}  pub a (compressed) hex-encoded public key
+ * @return  {String}  the corresponding Ethereum address
+ */
+const addressFromSecp256k1Public = pub => {
+  const hashed = util.keccak256(Buffer.from(pub, 'hex'))
+  const addr = util.addHexPrefix(hashed.slice(12).toString('hex'))
+  return util.toChecksumAddress(addr)
+}
+
+
+
+/**
+ * Convert a hex-encoded secp256k1 private key into an Ethereum address.
+ * @param  {String}  pub a hex-encoded private key
+ * @return  {String}  the corresponding Ethereum address
+ */
+const addressFromSecp256k1Private = priv => {
+  const pub = util.secp256k1.publicKeyCreate(Buffer.from(priv, 'hex'))
+  return addressFromSecp256k1Public(pub)
+}
+
+
+
+/**
+ * Convert a hex-encoded Ed25519-variant Urbit public network key into an
+ * Ethereum address.
+ * @param  {String}  pub a hex-encoded public key
+ * @return  {String}  the corresponding Ethereum address
+ */
+const addressFromNetworkPublic = pub => {
+  const hashed = util.keccak256(Buffer.from(pub, 'hex'))
+  const addr = util.addHexPrefix(hashed.slice(12).toString('hex'))
+  return util.toChecksumAddress(addr)
+}
+
 
 
 /**
@@ -305,7 +357,10 @@ module.exports = {
   _CHILD_SEED_TYPES: CHILD_SEED_TYPES,
   _bip32NodeFromSeed: bip32NodeFromSeed,
   _urbitKeysFromSeed: urbitKeysFromSeed,
-  _shard: shard
+  _shard: shard,
+  _addressFromSecp256k1Public: addressFromSecp256k1Public,
+  _addressFromSecp256k1Private: addressFromSecp256k1Private,
+  _addressFromNetworkPublic: addressFromNetworkPublic
 }
 
 

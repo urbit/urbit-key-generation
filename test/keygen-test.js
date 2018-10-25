@@ -209,7 +209,9 @@ describe('bip32NodeFromSeed', () => {
       private:
         'fc4475d16c797542d3e6c0907a6bdff81aed9c1efa8e5c2b82bc72d36e8de1b2',
       chain:
-        '51ede5795e85de1f6b4032b152704f1fca125402f9fe1835fc2a82863f617125'
+        '51ede5795e85de1f6b4032b152704f1fca125402f9fe1835fc2a82863f617125',
+      address:
+        '0x1A24D827E5fFC40A0C4E2174deFFbb22B3A80923'
     }
 
     expect(lodash.isEqual(node, expected)).to.equal(true)
@@ -220,15 +222,19 @@ describe('urbitKeysFromSeed', () => {
   it('matches ++pit:nu:crub:crypto', () => {
     // ~zod:dojo> /+ keygen
     // ~zod:dojo> (urbit:sd:keygen (to-byts:keygen 'test'))
+    //
+    // supplemented with ethereum addresses
 
     let expected = {
       auth: {
         public: '27805022e91c06573e0e789a393921e7f417a43564ab39b7d9b036c39f0e180f',
-        private: 'ec491815377abc52019230c575d29bcb4f288e0df5070c3dbb74c0822150c7ce'
+        private: 'ec491815377abc52019230c575d29bcb4f288e0df5070c3dbb74c0822150c7ce',
+        address: '0x08DA6006f8a59C083b845c390A341b2B9BbA4234'
       },
       crypt: {
         public: '8e2487a0e81314e4f9bc5edbb9de750e79e92d981e0cf4a27664244569dd06ba',
-        private: '8b02ff5c5c36447ab4644cb5c37b5362c44fc19cceb8286c3fccbc11d92353a8'
+        private: '8b02ff5c5c36447ab4644cb5c37b5362c44fc19cceb8286c3fccbc11d92353a8',
+        address: '0x8e12CE80a41bFADFF7B4f830ec853a47Ba961CF3'
       }
     }
 
@@ -243,11 +249,13 @@ describe('urbitKeysFromSeed', () => {
     expected = {
       auth: {
         private: 'fd816b63558f3f4ee5eafedbabe56293ee1f64e837f081724bfdd47d6e4b9815',
-        public: 'bbba375a6dd28dc9e44d6a98c75edeb699c10d78e92ccad78c892efa2466c666'
+        public: 'bbba375a6dd28dc9e44d6a98c75edeb699c10d78e92ccad78c892efa2466c666',
+        address: '0xc9932DfB6eF2111eD53743AB63eca611F5285190'
       },
       crypt: {
         private: '15ef9b020606faf25dd4b622d34a5f2ba83e3498f78e35c6d256379f4871391e',
-        public: '220c0db4f436d2532f0fddb56555bf6926d6bcfb073d790b8f1e9c4258ebb43e'
+        public: '220c0db4f436d2532f0fddb56555bf6926d6bcfb073d790b8f1e9c4258ebb43e',
+        address: '0x49af602B37039Af5F5671f021507f07890EB6FCC'
       }
     }
 
@@ -264,6 +272,34 @@ describe('urbitKeysFromSeed', () => {
     })
 
     jsc.assert(prop, { tests: 50 })
+  })
+})
+
+describe('ethereum addresses from keys', () => {
+  let config = jsc.record({
+    seed: jsc.nestring.smap((x) => Buffer.from(x), (x) => x.toString()),
+    type: jsc.constant(kg._CHILD_SEED_TYPES.MANAGEMENT),
+    revision: jsc.uint8,
+    ship: jsc.uint32,
+    password: jsc.string
+  })
+
+  it('matches when derived from public or private secp256k1 keys', () => {
+    const secpConfig = lodash.cloneDeep(config)
+    secpConfig.type = jsc.oneof(
+        lodash.map(
+          lodash.filter(lodash.values(kg._CHILD_SEED_TYPES), type =>
+            type !== kg._CHILD_SEED_TYPES.NETWORK),
+          jsc.constant))
+
+    let matches = jsc.forall(secpConfig, async cfg => {
+      let node = await kg.childNodeFromSeed(cfg)
+      let addrPriv = kg._addressFromSecp256k1Private(node.keys.private)
+      let addrPub = kg._addressFromSecp256k1Public(node.keys.public)
+      return addrPriv === addrPub
+    })
+
+    jsc.assert(matches)
   })
 })
 
