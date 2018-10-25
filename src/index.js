@@ -123,14 +123,14 @@ const bip32NodeFromSeed = (mnemonic, password) => {
   const path = "m/44'/60'/0'/0/0"
   const wallet = hd.derive(path)
 
-  const public = buf2hex(wallet.publicKey)
-  const private = buf2hex(wallet.privateKey)
+  const publicKey = buf2hex(wallet.publicKey)
+  const privateKey = buf2hex(wallet.privateKey)
   const chain = buf2hex(wallet.chainCode)
-  const address = addressFromSecp256k1Public(public)
+  const address = addressFromSecp256k1Public(publicKey)
 
   return {
-    public,
-    private,
+    public: publicKey,
+    private: privateKey,
     chain,
     address
   }
@@ -361,5 +361,3 @@ module.exports = {
   _addressFromSecp256k1Private: addressFromSecp256k1Private,
   _addressFromNetworkPublic: addressFromNetworkPublic
 }
-
-

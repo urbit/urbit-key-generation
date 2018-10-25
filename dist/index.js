@@ -32807,33 +32807,38 @@ utils.intFromLE = intFromLE;
 
 },{"bn.js":35,"minimalistic-assert":139,"minimalistic-crypto-utils":140}],103:[function(require,module,exports){
 module.exports={
-  "_from": "elliptic@^6.2.3",
+  "_args": [
+    [
+      "elliptic@6.4.1",
+      "/Users/gavinatkinson/Tlon/keygen-js"
+    ]
+  ],
+  "_from": "elliptic@6.4.1",
   "_id": "elliptic@6.4.1",
   "_inBundle": false,
   "_integrity": "sha512-BsXLz5sqX8OHcsh7CqBMztyXARmGQ3LWPtGjJi6DiJHq5C/qvi9P3OqgswKSDftbu8+IoI/QDTAm2fFnQ9SZSQ==",
   "_location": "/elliptic",
   "_phantomChildren": {},
   "_requested": {
-    "type": "range",
+    "type": "version",
     "registry": true,
-    "raw": "elliptic@^6.2.3",
+    "raw": "elliptic@6.4.1",
     "name": "elliptic",
     "escapedName": "elliptic",
-    "rawSpec": "^6.2.3",
+    "rawSpec": "6.4.1",
     "saveSpec": null,
-    "fetchSpec": "^6.2.3"
+    "fetchSpec": "6.4.1"
   },
   "_requiredBy": [
     "/@trust/keyto",
     "/@trust/webcrypto",
     "/browserify-sign",
     "/create-ecdh",
-    "/secp256k1"
+    "/tiny-secp256k1"
   ],
   "_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.4.1.tgz",
-  "_shasum": "c2d0b7776911b86722c632c3c06c60f2f819939a",
-  "_spec": "elliptic@^6.2.3",
-  "_where": "/Users/jtobin/projects/urbit/keygen-js/node_modules/secp256k1",
+  "_spec": "6.4.1",
+  "_where": "/Users/gavinatkinson/Tlon/keygen-js",
   "author": {
     "name": "Fedor Indutny",
     "email": "fedor@indutny.com"
@@ -32841,7 +32846,6 @@ module.exports={
   "bugs": {
     "url": "https://github.com/indutny/elliptic/issues"
   },
-  "bundleDependencies": false,
   "dependencies": {
     "bn.js": "^4.4.0",
     "brorand": "^1.0.1",
@@ -32851,7 +32855,6 @@ module.exports={
     "minimalistic-assert": "^1.0.0",
     "minimalistic-crypto-utils": "^1.0.0"
   },
-  "deprecated": false,
   "description": "EC cryptography",
   "devDependencies": {
     "brfs": "^1.4.3",
@@ -65150,14 +65153,14 @@ const bip32NodeFromSeed = (mnemonic, password) => {
   const path = "m/44'/60'/0'/0/0"
   const wallet = hd.derive(path)
 
-  const public = buf2hex(wallet.publicKey)
-  const private = buf2hex(wallet.privateKey)
+  const publicKey = buf2hex(wallet.publicKey)
+  const privateKey = buf2hex(wallet.privateKey)
   const chain = buf2hex(wallet.chainCode)
-  const address = addressFromSecp256k1Public(public)
+  const address = addressFromSecp256k1Public(publicKey)
 
   return {
-    public,
-    private,
+    public: publicKey,
+    private: privateKey,
     chain,
     address
   }
@@ -65342,7 +65345,6 @@ const generateWallet = async config => {
   const network = {}
 
   if (boot === true) {
-    let base = bip39.mnemonicToSeed(management.seed)
     let seed = await childSeedFromSeed({
       seed: bip39.mnemonicToSeed(management.seed),
       type: CHILD_SEED_TYPES.NETWORK,
@@ -65389,8 +65391,6 @@ module.exports = {
   _addressFromSecp256k1Private: addressFromSecp256k1Private,
   _addressFromNetworkPublic: addressFromNetworkPublic
 }
-
-
 
 }).call(this,require("buffer").Buffer)
 },{"argon2-wasm":3,"bip39":25,"buffer":67,"ethereumjs-util":104,"hdkey":121,"isomorphic-webcrypto":129,"lodash":136,"tweetnacl":197,"urbit-ob":199}]},{},[203])(203)
