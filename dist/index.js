@@ -32807,38 +32807,33 @@ utils.intFromLE = intFromLE;
 
 },{"bn.js":35,"minimalistic-assert":139,"minimalistic-crypto-utils":140}],103:[function(require,module,exports){
 module.exports={
-  "_args": [
-    [
-      "elliptic@6.4.1",
-      "/Users/gavinatkinson/Tlon/keygen-js"
-    ]
-  ],
-  "_from": "elliptic@6.4.1",
+  "_from": "elliptic@^6.2.3",
   "_id": "elliptic@6.4.1",
   "_inBundle": false,
   "_integrity": "sha512-BsXLz5sqX8OHcsh7CqBMztyXARmGQ3LWPtGjJi6DiJHq5C/qvi9P3OqgswKSDftbu8+IoI/QDTAm2fFnQ9SZSQ==",
   "_location": "/elliptic",
   "_phantomChildren": {},
   "_requested": {
-    "type": "version",
+    "type": "range",
     "registry": true,
-    "raw": "elliptic@6.4.1",
+    "raw": "elliptic@^6.2.3",
     "name": "elliptic",
     "escapedName": "elliptic",
-    "rawSpec": "6.4.1",
+    "rawSpec": "^6.2.3",
     "saveSpec": null,
-    "fetchSpec": "6.4.1"
+    "fetchSpec": "^6.2.3"
   },
   "_requiredBy": [
     "/@trust/keyto",
     "/@trust/webcrypto",
     "/browserify-sign",
     "/create-ecdh",
-    "/tiny-secp256k1"
+    "/secp256k1"
   ],
   "_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.4.1.tgz",
-  "_spec": "6.4.1",
-  "_where": "/Users/gavinatkinson/Tlon/keygen-js",
+  "_shasum": "c2d0b7776911b86722c632c3c06c60f2f819939a",
+  "_spec": "elliptic@^6.2.3",
+  "_where": "/Users/jtobin/projects/urbit/keygen-js/node_modules/secp256k1",
   "author": {
     "name": "Fedor Indutny",
     "email": "fedor@indutny.com"
@@ -32846,6 +32841,7 @@ module.exports={
   "bugs": {
     "url": "https://github.com/indutny/elliptic/issues"
   },
+  "bundleDependencies": false,
   "dependencies": {
     "bn.js": "^4.4.0",
     "brorand": "^1.0.1",
@@ -32855,6 +32851,7 @@ module.exports={
     "minimalistic-assert": "^1.0.0",
     "minimalistic-crypto-utils": "^1.0.0"
   },
+  "deprecated": false,
   "description": "EC cryptography",
   "devDependencies": {
     "brfs": "^1.4.3",
@@ -65104,8 +65101,9 @@ const sha256 = async (...args) => {
  */
 const childSeedFromSeed = async config => {
   const { seed, type, ship, revision } = config
-  const salt = lodash.isNull(ship) ? '' : `${ship}`
-  const hash = await sha256(seed, type, salt, `${revision}`)
+  const shipSalt = lodash.isNull(ship) ? '0' : `${ship}`
+  const salt = `${type}-${shipSalt}-${revision}`
+  const hash = await sha256(seed, salt)
   return type !== CHILD_SEED_TYPES.NETWORK
     ? bip39.entropyToMnemonic(hash)
     : Buffer.from(hash).toString('hex')
@@ -65183,19 +65181,14 @@ const urbitKeysFromSeed = seed => {
   const crypt = nacl.sign.keyPair.fromSeed(Buffer.from(c))
   const auth = nacl.sign.keyPair.fromSeed(Buffer.from(a))
 
-  const crypt_pub = buf2hex(crypt.publicKey.reverse())
-  const auth_pub = buf2hex(auth.publicKey.reverse())
-
   return {
     crypt: {
       private: buf2hex(c.reverse()),
-      public: crypt_pub,
-      address: addressFromNetworkPublic(crypt_pub)
+      public: buf2hex(crypt.publicKey.reverse())
     },
     auth: {
       private: buf2hex(a.reverse()),
-      public: auth_pub,
-      address: addressFromNetworkPublic(auth_pub)
+      public: buf2hex(auth.publicKey.reverse())
     }
   }
 }
@@ -65204,12 +65197,14 @@ const urbitKeysFromSeed = seed => {
 
 /**
  * Convert a hex-encoded secp256k1 public key into an Ethereum address.
+ *
  * @param  {String}  pub a (compressed) hex-encoded public key
  * @return  {String}  the corresponding Ethereum address
  */
 const addressFromSecp256k1Public = pub => {
   const hashed = util.keccak256(Buffer.from(pub, 'hex'))
-  const addr = util.addHexPrefix(hashed.slice(12).toString('hex'))
+  const idx = hashed.length - 20
+  const addr = util.addHexPrefix(hashed.slice(idx).toString('hex'))
   return util.toChecksumAddress(addr)
 }
 
@@ -65223,20 +65218,6 @@ const addressFromSecp256k1Public = pub => {
 const addressFromSecp256k1Private = priv => {
   const pub = util.secp256k1.publicKeyCreate(Buffer.from(priv, 'hex'))
   return addressFromSecp256k1Public(pub)
-}
-
-
-
-/**
- * Convert a hex-encoded Ed25519-variant Urbit public network key into an
- * Ethereum address.
- * @param  {String}  pub a hex-encoded public key
- * @return  {String}  the corresponding Ethereum address
- */
-const addressFromNetworkPublic = pub => {
-  const hashed = util.keccak256(Buffer.from(pub, 'hex'))
-  const addr = util.addHexPrefix(hashed.slice(12).toString('hex'))
-  return util.toChecksumAddress(addr)
 }
 
 
@@ -65388,8 +65369,7 @@ module.exports = {
   _urbitKeysFromSeed: urbitKeysFromSeed,
   _shard: shard,
   _addressFromSecp256k1Public: addressFromSecp256k1Public,
-  _addressFromSecp256k1Private: addressFromSecp256k1Private,
-  _addressFromNetworkPublic: addressFromNetworkPublic
+  _addressFromSecp256k1Private: addressFromSecp256k1Private
 }
 
 }).call(this,require("buffer").Buffer)
