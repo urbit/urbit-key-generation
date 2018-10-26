@@ -110,8 +110,8 @@ const childNodeFromSeed = async config => {
   return {
     meta: {
       type: type,
-      revision: revision,
-      ship: ship
+      revision: lodash.isUndefined(revision) ? null : revision,
+      ship: lodash.isUndefined(ship) ? null : ship
     },
     seed: child,
     keys: bip32NodeFromSeed(child, password)
@@ -322,8 +322,8 @@ const generateWallet = async config => {
       keys: urbitKeysFromSeed(Buffer.from(seed, 'hex')),
       meta: {
         type: CHILD_SEED_TYPES.NETWORK,
-        revision: revision,
-        ship: ship
+        revision: lodash.isUndefined(revision) ? null : revision,
+        ship: lodash.isUndefined(ship) ? null : ship
       }
     })
   }
