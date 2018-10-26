@@ -154,19 +154,14 @@ const urbitKeysFromSeed = seed => {
   const crypt = nacl.sign.keyPair.fromSeed(Buffer.from(c))
   const auth = nacl.sign.keyPair.fromSeed(Buffer.from(a))
 
-  const crypt_pub = buf2hex(crypt.publicKey.reverse())
-  const auth_pub = buf2hex(auth.publicKey.reverse())
-
   return {
     crypt: {
       private: buf2hex(c.reverse()),
-      public: crypt_pub,
-      address: addressFromNetworkPublic(crypt_pub)
+      public: buf2hex(crypt.publicKey.reverse())
     },
     auth: {
       private: buf2hex(a.reverse()),
-      public: auth_pub,
-      address: addressFromNetworkPublic(auth_pub)
+      public: buf2hex(auth.publicKey.reverse())
     }
   }
 }
@@ -194,20 +189,6 @@ const addressFromSecp256k1Public = pub => {
 const addressFromSecp256k1Private = priv => {
   const pub = util.secp256k1.publicKeyCreate(Buffer.from(priv, 'hex'))
   return addressFromSecp256k1Public(pub)
-}
-
-
-
-/**
- * Convert a hex-encoded Ed25519-variant Urbit public network key into an
- * Ethereum address.
- * @param  {String}  pub a hex-encoded public key
- * @return  {String}  the corresponding Ethereum address
- */
-const addressFromNetworkPublic = pub => {
-  const hashed = util.keccak256(Buffer.from(pub, 'hex'))
-  const addr = util.addHexPrefix(hashed.slice(12).toString('hex'))
-  return util.toChecksumAddress(addr)
 }
 
 
@@ -359,6 +340,5 @@ module.exports = {
   _urbitKeysFromSeed: urbitKeysFromSeed,
   _shard: shard,
   _addressFromSecp256k1Public: addressFromSecp256k1Public,
-  _addressFromSecp256k1Private: addressFromSecp256k1Private,
-  _addressFromNetworkPublic: addressFromNetworkPublic
+  _addressFromSecp256k1Private: addressFromSecp256k1Private
 }
