@@ -37,7 +37,7 @@ describe('argon2u', () => {
   it('works as expected', async function() {
     this.timeout(10000)
 
-    let res = await kg._argon2u({entropy: 'my rad entropy'})
+    let res = await kg.argon2u({entropy: 'my rad entropy'})
 
     expect(res).to.not.be.undefined
     expect('hash' in res).to.equal(true)
@@ -66,10 +66,10 @@ describe('sha256', () => {
 })
 
 describe('childSeedFromSeed', () => {
-  let types = lodash.values(kg._CHILD_SEED_TYPES)
+  let types = lodash.values(kg.CHILD_SEED_TYPES)
   let nonNetworkSeedType = jsc.oneof(
     lodash.map(
-      lodash.filter(types, type => type !== kg._CHILD_SEED_TYPES.NETWORK),
+      lodash.filter(types, type => type !== kg.CHILD_SEED_TYPES.NETWORK),
       jsc.constant
     ))
 
@@ -177,7 +177,7 @@ describe('bip32NodeFromSeed', () => {
       let wallet0 = hd.derive(VALID_PATH)
       let wallet1 = hd.derive(INVALID_PATH)
 
-      let node = kg._bip32NodeFromSeed(mnem)
+      let node = kg.bip32NodeFromSeed(mnem)
 
       return wallet0.publicKey.toString('hex') === node.public
         && wallet0.privateKey.toString('hex') === node.private
@@ -192,14 +192,14 @@ describe('bip32NodeFromSeed', () => {
 
   it('has the correct properties', () => {
     let prop = jsc.forall(mnemonic, mnem => {
-      let node = kg._bip32NodeFromSeed(mnem)
+      let node = kg.bip32NodeFromSeed(mnem)
 
       return 'public' in node && 'private' in node && 'chain' in node
     })
   })
 
   it('works as expected', () => {
-    let node = kg._bip32NodeFromSeed(
+    let node = kg.bip32NodeFromSeed(
       'market truck nice joke upper divide spot essay mosquito mushroom buzz undo'
     )
 
@@ -272,7 +272,7 @@ describe('urbitKeysFromSeed', () => {
 describe('ethereum addresses from keys', () => {
   let config = jsc.record({
     seed: jsc.nestring.smap((x) => Buffer.from(x), (x) => x.toString()),
-    type: jsc.constant(kg._CHILD_SEED_TYPES.MANAGEMENT),
+    type: jsc.constant(kg.CHILD_SEED_TYPES.MANAGEMENT),
     revision: jsc.uint8,
     ship: jsc.uint32,
     password: jsc.string
@@ -282,14 +282,14 @@ describe('ethereum addresses from keys', () => {
     const secpConfig = lodash.cloneDeep(config)
     secpConfig.type = jsc.oneof(
         lodash.map(
-          lodash.filter(lodash.values(kg._CHILD_SEED_TYPES), type =>
-            type !== kg._CHILD_SEED_TYPES.NETWORK),
+          lodash.filter(lodash.values(kg.CHILD_SEED_TYPES), type =>
+            type !== kg.CHILD_SEED_TYPES.NETWORK),
           jsc.constant))
 
     let matches = jsc.forall(secpConfig, async cfg => {
       let node = await kg.childNodeFromSeed(cfg)
-      let addrPriv = kg._addressFromSecp256k1Private(node.keys.private)
-      let addrPub = kg._addressFromSecp256k1Public(node.keys.public)
+      let addrPriv = kg.addressFromSecp256k1Private(node.keys.private)
+      let addrPub = kg.addressFromSecp256k1Public(node.keys.public)
       return addrPriv === addrPub
     })
 
