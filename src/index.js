@@ -94,6 +94,21 @@ const childSeedFromSeed = async config => {
 }
 
 
+/**
+ * Create metadata for a BIP32 node.
+ *
+ * @param  {String}  type type of node being derived
+ * @param  {Number}  revision a revision number
+ * @param  {Number}  ship a ship number
+ * @return  {Object}
+ */
+const nodeMetadata = (type, revision, ship) => ({
+  type: type,
+  revision: lodash.isUndefined(revision) ? 0 : revision,
+  ship: lodash.isUndefined(ship) ? null : ship
+})
+
+
 
 /**
  * Derive a child BIP32 node from a parent seed.
@@ -108,11 +123,7 @@ const childNodeFromSeed = async config => {
   const { type, ship, revision, password } = config
   const child = await childSeedFromSeed(config)
   return {
-    meta: {
-      type: type,
-      revision: lodash.isUndefined(revision) ? null : revision,
-      ship: lodash.isUndefined(ship) ? null : ship
-    },
+    meta: nodeMetadata(type, revision, ship),
     seed: child,
     keys: bip32NodeFromSeed(child, password)
   }
@@ -320,11 +331,7 @@ const generateWallet = async config => {
     lodash.assign(network, {
       seed: seed,
       keys: urbitKeysFromSeed(Buffer.from(seed, 'hex')),
-      meta: {
-        type: CHILD_SEED_TYPES.NETWORK,
-        revision: lodash.isUndefined(revision) ? null : revision,
-        ship: lodash.isUndefined(ship) ? null : ship
-      }
+      meta: nodeMetadata(CHILD_SEED_TYPES.NETWORK, revision, ship)
     })
   }
 
