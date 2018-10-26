@@ -77,7 +77,7 @@ describe('childSeedFromSeed', () => {
     seed: jsc.string,
     type: nonNetworkSeedType,
     ship: jsc.oneof(jsc.uint32, jsc.constant(null)),
-    revision: jsc.uint8,
+    revision: jsc.oneof(jsc.uint8, jsc.constant(null)),
     password: jsc.string
   })
 
