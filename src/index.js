@@ -170,12 +170,14 @@ const urbitKeysFromSeed = seed => {
 
 /**
  * Convert a hex-encoded secp256k1 public key into an Ethereum address.
+ *
  * @param  {String}  pub a (compressed) hex-encoded public key
  * @return  {String}  the corresponding Ethereum address
  */
 const addressFromSecp256k1Public = pub => {
   const hashed = util.keccak256(Buffer.from(pub, 'hex'))
-  const addr = util.addHexPrefix(hashed.slice(12).toString('hex'))
+  const idx = hashed.length - 20
+  const addr = util.addHexPrefix(hashed.slice(idx).toString('hex'))
   return util.toChecksumAddress(addr)
 }
 
