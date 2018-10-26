@@ -142,7 +142,7 @@ describe('childSeedFromSeed', () => {
     }
 
     let child = await kg.childSeedFromSeed(cfg)
-    let mnemonic = 'feed security pear moment leader uncover rubber bachelor again height tortoise spread arrow excuse property dwarf head govern movie arch rubber farm tone dial'
+    let mnemonic = 'embody arm since script grocery retire laptop task chunk exclude eyebrow minimum crouch security wish ceiling engage resist good rural illegal trophy imitate public'
 
     expect(child).to.equal(mnemonic)
 
@@ -154,7 +154,7 @@ describe('childSeedFromSeed', () => {
     }
 
     child = await kg.childSeedFromSeed(cfg)
-    mnemonic = 'dinosaur sword where delay scheme liquid urge raccoon diesel right middle tip check rather know symbol home orient protect vanish equip foster uncover visual'
+    mnemonic = 'truth absent quiz metal just retreat large example excess okay lunch plate coast flat void rule input world skill duck zero again loan buddy'
 
     expect(child).to.equal(mnemonic)
   })
@@ -345,6 +345,14 @@ describe('generateWallet', () => {
     }
     wallet = await kg.generateWallet(config)
     expected = objectFromFile('./test/assets/wallet2.json')
+
+    expect(lodash.isEqual(wallet, expected)).to.equal(true)
+
+    config = {
+      ticket: '~doznec-marbud',
+    }
+    wallet = await kg.generateWallet(config)
+    expected = objectFromFile('./test/assets/wallet3.json')
 
     expect(lodash.isEqual(wallet, expected)).to.equal(true)
 

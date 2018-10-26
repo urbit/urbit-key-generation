@@ -74,8 +74,9 @@ const sha256 = async (...args) => {
  */
 const childSeedFromSeed = async config => {
   const { seed, type, ship, revision } = config
-  const salt = lodash.isNull(ship) ? '' : `${ship}`
-  const hash = await sha256(seed, type, salt, `${revision}`)
+  const shipSalt = lodash.isNull(ship) ? '0' : `${ship}`
+  const salt = `${type}-${shipSalt}-${revision}`
+  const hash = await sha256(seed, salt)
   return type !== CHILD_SEED_TYPES.NETWORK
     ? bip39.entropyToMnemonic(hash)
     : Buffer.from(hash).toString('hex')
