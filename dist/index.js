@@ -65097,7 +65097,7 @@ const sha256 = async (...args) => {
  * @param  {String}  type the type of child seed to derive
  * @param  {Number}  ship the ship to derive the seed for
  * @param  {Number}  revision the revision number
- * @return {Promise<String>} the BIP39 child mnemonic
+ * @return {Promise<String>} the child seed
  */
 const childSeedFromSeed = async config => {
   const { seed, type, ship, revision } = config
@@ -65360,6 +65360,10 @@ module.exports = {
   generateWallet,
   childSeedFromSeed,
   childNodeFromSeed,
+  urbitKeysFromSeed,
+  addressFromSecp256k1Public,
+  argon2u,
+  shard,
 
   _isGalaxy: isGalaxy,
   _argon2u: argon2u,

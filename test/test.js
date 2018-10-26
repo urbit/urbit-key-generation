@@ -235,12 +235,12 @@ describe('urbitKeysFromSeed', () => {
     }
 
     let seed = Buffer.from('test')
-    let keys = kg._urbitKeysFromSeed(seed)
+    let keys = kg.urbitKeysFromSeed(seed)
 
     expect(lodash.isEqual(keys, expected)).to.equal(true)
 
     seed = Buffer.from('some seed');
-    keys = kg._urbitKeysFromSeed(seed)
+    keys = kg.urbitKeysFromSeed(seed)
 
     expected = {
       auth: {
@@ -258,7 +258,7 @@ describe('urbitKeysFromSeed', () => {
 
   it('contains the expected fields', () => {
     let prop = jsc.forall(jsc.string, str => {
-      let keys = kg._urbitKeysFromSeed(Buffer.from(str))
+      let keys = kg.urbitKeysFromSeed(Buffer.from(str))
 
       return 'auth' in keys && 'crypt' in keys
         && 'public' in keys.auth && 'private' in keys.auth
@@ -300,12 +300,12 @@ describe('ethereum addresses from keys', () => {
 describe('shard', () => {
   it('does not shard non-384-bit tickets', () => {
     let ticket = '~doznec-marbud'
-    expect(kg._shard(ticket)).to.have.lengthOf(1)
+    expect(kg.shard(ticket)).to.have.lengthOf(1)
   })
 
   it('shards 384-bit tickets', () => {
     let ticket = '~wacfus-dabpex-danted-mosfep-pasrud-lavmer-nodtex-taslus-pactyp-milpub-pildeg-fornev-ralmed-dinfeb-fopbyr-sanbet-sovmyl-dozsut-mogsyx-mapwyc-sorrup-ricnec-marnys-lignex'
-    expect(kg._shard(ticket)).to.have.lengthOf(3)
+    expect(kg.shard(ticket)).to.have.lengthOf(3)
   })
 })
 

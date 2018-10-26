@@ -333,6 +333,10 @@ module.exports = {
   generateWallet,
   childSeedFromSeed,
   childNodeFromSeed,
+  urbitKeysFromSeed,
+  addressFromSecp256k1Public,
+  argon2u,
+  shard,
 
   _isGalaxy: isGalaxy,
   _argon2u: argon2u,
