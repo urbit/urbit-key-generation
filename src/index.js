@@ -360,5 +360,6 @@ module.exports = {
   addressFromSecp256k1Private,
 
   _isGalaxy: isGalaxy,
-  _sha256: sha256
+  _sha256: sha256,
+  _nodeMetadata: nodeMetadata
 }

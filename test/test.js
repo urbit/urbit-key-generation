@@ -33,6 +33,26 @@ describe('isGalaxy', () => {
   })
 })
 
+describe('nodeMetadata', () => {
+  let types = lodash.values(kg.CHILD_SEED_TYPES)
+  let type = jsc.oneof(lodash.map(types, jsc.constant))
+  let revision = jsc.oneof(jsc.constant(undefined), jsc.uint8)
+  let ship = jsc.oneof(jsc.constant(undefined), jsc.uint32)
+
+  it('produces an object with the expected properties', () => {
+    let prop = jsc.forall(jsc.tuple([type, revision, ship]), args => {
+      let typ = args[0]
+      let rev = args[1]
+      let shp = args[2]
+
+      let meta = kg._nodeMetadata(typ, rev, shp)
+      return 'type' in meta && 'revision' in meta && 'ship' in meta
+    })
+
+    jsc.assert(prop)
+  })
+})
+
 describe('argon2u', () => {
   it('works as expected', async function() {
     this.timeout(10000)
