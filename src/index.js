@@ -353,7 +353,6 @@ module.exports = {
   childNodeFromSeed,
   bip32NodeFromSeed,
   urbitKeysFromSeed,
-  addressFromSecp256k1Public,
   CHILD_SEED_TYPES,
   argon2u,
   shard,
