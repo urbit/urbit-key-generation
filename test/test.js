@@ -236,7 +236,7 @@ describe('bip32NodeFromSeed', () => {
       chain:
         '51ede5795e85de1f6b4032b152704f1fca125402f9fe1835fc2a82863f617125',
       address:
-        '0x1A24D827E5fFC40A0C4E2174deFFbb22B3A80923'
+        '0xB8517352a8F1DDe913b191CCDB0D2124e95983a3'
     }
 
     expect(lodash.isEqual(node, expected)).to.equal(true)
@@ -324,6 +324,50 @@ describe('ethereum addresses from keys', () => {
 
     jsc.assert(matches)
   })
+
+  it('derives correct addresses', () => {
+    const checkAddress = config  => {
+      let { epriv, epub, eaddr } = config
+      let fromPriv = kg.addressFromSecp256k1Private(epriv)
+      let fromPub  = kg.addressFromSecp256k1Public(epub)
+
+      expect(fromPriv === eaddr).to.equal(true)
+      expect(fromPub === eaddr).to.equal(true)
+    }
+
+    let config = {
+      epriv: '0000000000000000000000000000000000000000000000000000000000000001',
+      epub: '0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798',
+      eaddr: '0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf'
+    }
+
+    checkAddress(config)
+
+    config = {
+      epriv: 'b205a1e03ddf50247d8483435cd91f9c732bad281ad420061ab4310c33166276',
+      epub: '036cb84859e85b1d9a27e060fdede38bb818c93850fb6e42d9c7e4bd879f8b9153',
+      eaddr: '0xAFdEfC1937AE294C3Bd55386A8b9775539d81653'
+    }
+
+    checkAddress(config)
+
+    config = {
+      epriv: '44b9abf2708d9adeb1722dcc1e61bef14e5611dee710d66f106e356a111bef90',
+      epub: '02cabb8a3a73ea4a03d025a6ac2ebbbb19a545e4fb10e791ec9b5c942d77aa2076',
+      eaddr: '0xa0784ba3fcea41fD65a7A47b4cc1FA4C3DaA326f'
+    }
+
+    checkAddress(config)
+
+    config = {
+      epriv: '208065a247edbe5df4d86fbdc0171303f23a76961be9f6013850dd2bdc759bbb',
+      epub: '02836b35a026743e823a90a0ee3b91bf615c6a757e2b60b9e1dc1826fd0dd16106',
+      eaddr: '0x0BED7ABd61247635c1973eB38474A2516eD1D884'
+    }
+
+    checkAddress(config)
+  })
+
 })
 
 describe('shard', () => {
@@ -339,7 +383,7 @@ describe('shard', () => {
 })
 
 describe('generateWallet', () => {
-  it('generates wallets', async function() {
+  it('generates wallets as expected', async function() {
     this.timeout(20000)
 
     let config = {
