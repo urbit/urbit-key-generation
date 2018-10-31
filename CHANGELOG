@@ -1,5 +1,8 @@
 # Changelog
 
+- 3.0.2 (2018-10-31)
+    * Fix incorrect address derivation bug.
+
 - 3.0.0 (2018-10-25)
     * Fix all seeds at 256 bits.
     * Always derive BIP32 nodes according to the path m/44'/60'/0'/0/0.
