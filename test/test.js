@@ -16,6 +16,10 @@ const objectFromFile = (path) => {
   return JSON.parse(text)
 }
 
+const replicate = (n, g) => jsc.tuple(new Array(n).fill(g))
+
+const seedBuffer256 = replicate(32, jsc.uint8)
+
 // tests
 
 describe('isGalaxy', () => {
@@ -94,7 +98,7 @@ describe('childSeedFromSeed', () => {
     ))
 
   let config = jsc.record({
-    seed: jsc.string,
+    seed: seedBuffer256,
     type: nonNetworkSeedType,
     ship: jsc.oneof(jsc.uint32, jsc.constant(null)),
     revision: jsc.oneof(jsc.uint8, jsc.constant(null)),
@@ -154,27 +158,28 @@ describe('childSeedFromSeed', () => {
   })
 
   it('works as expected', async () => {
+    let seed = Buffer.from('b2bdf8de8452b18f02195b6e7bfc82b900fbcc25681f07ae10f38f11e5af53af', 'hex')
     let cfg = {
-      seed: 'my amazing seed',
+      seed: seed,
       type: 'management',
       ship: 10,
       revision: 0,
     }
 
     let child = await kg.childSeedFromSeed(cfg)
-    let mnemonic = 'embody arm since script grocery retire laptop task chunk exclude eyebrow minimum crouch security wish ceiling engage resist good rural illegal trophy imitate public'
+    let mnemonic = 'forum equal youth afford sketch piece direct room clarify dumb autumn soon capable elegant nest cover lawn drive motion vault river athlete vicious blush'
 
     expect(child).to.equal(mnemonic)
 
     cfg = {
-      seed: 'my amazing seed',
+      seed: seed,
       type: 'ownership',
       ship: 10,
       revision: 0,
     }
 
     child = await kg.childSeedFromSeed(cfg)
-    mnemonic = 'truth absent quiz metal just retreat large example excess okay lunch plate coast flat void rule input world skill duck zero again loan buddy'
+    mnemonic = 'crime pistol actress sentence thunder tide consider estate robot lava arena undo nominee baby ladder opinion congress private print tube mango arrange father prison'
 
     expect(child).to.equal(mnemonic)
   })
@@ -244,33 +249,37 @@ describe('urbitKeysFromSeed', () => {
     // ~zod:dojo> (urbit:sd:keygen (to-byts:keygen 'test'))
 
     let expected = {
-      auth: {
-        public: '27805022e91c06573e0e789a393921e7f417a43564ab39b7d9b036c39f0e180f',
-        private: 'ec491815377abc52019230c575d29bcb4f288e0df5070c3dbb74c0822150c7ce'
-      },
-      crypt: {
-        public: '8e2487a0e81314e4f9bc5edbb9de750e79e92d981e0cf4a27664244569dd06ba',
-        private: '8b02ff5c5c36447ab4644cb5c37b5362c44fc19cceb8286c3fccbc11d92353a8'
-      }
+      crypt:
+       { private:
+          '9c513a22795147661234eea13ee5fa5b1a8b9bed1aa4b1cf87f6bcf353afa8bb',
+         public:
+          'f7187602dff5e3eea27b4c46368601106916d704a2ef2e451838d4ea80b395e0' },
+      auth:
+       { private:
+          '52c830cd009a4c6599778b258fa8898cb8b49dd71279c7ca502cb04c2f530d7a',
+         public:
+          '9a09b7e816467b10ebdcd47d71861a2d0896189f2e66690b636ad3bdf8fcc343' }
     }
 
-    let seed = Buffer.from('test')
+    let seed = Buffer.from('88359ba61d766e1c2ec9598831668d4233b0f8f58b29da8cf33d25b2590d62a0', 'hex')
     let keys = kg.urbitKeysFromSeed(seed)
 
     expect(lodash.isEqual(keys, expected)).to.equal(true)
 
-    seed = Buffer.from('some seed');
+    seed = Buffer.from('52dc7422d68c0209610502e71009d6e9f054da2accafb612180c853f3f77d606');
     keys = kg.urbitKeysFromSeed(seed)
 
     expected = {
-      auth: {
-        private: 'fd816b63558f3f4ee5eafedbabe56293ee1f64e837f081724bfdd47d6e4b9815',
-        public: 'bbba375a6dd28dc9e44d6a98c75edeb699c10d78e92ccad78c892efa2466c666'
-      },
-      crypt: {
-        private: '15ef9b020606faf25dd4b622d34a5f2ba83e3498f78e35c6d256379f4871391e',
-        public: '220c0db4f436d2532f0fddb56555bf6926d6bcfb073d790b8f1e9c4258ebb43e'
-      }
+      crypt:
+       { private:
+          '83224ad861009302da0eaca4208f6b42be4f3346b27271b171f318016822ace9',
+         public:
+          'f815390c0419315a9c570e854b64560979b4b7aa0d4081024e2828bd457bfab9' },
+      auth:
+       { private:
+          '15e372f0444538dc5408c0a506a672e052f630b28de0a5e39d808e361f13da17',
+         public:
+          'ce287dd8af7f48cf72713aecbdfd63a09ea4b61c55bf7d505634833ef0e213f3' }
     }
 
     expect(lodash.isEqual(keys, expected)).to.equal(true)
@@ -291,7 +300,7 @@ describe('urbitKeysFromSeed', () => {
 
 describe('ethereum addresses from keys', () => {
   let config = jsc.record({
-    seed: jsc.nestring.smap((x) => Buffer.from(x), (x) => x.toString()),
+    seed: seedBuffer256,
     type: jsc.constant(kg.CHILD_SEED_TYPES.MANAGEMENT),
     revision: jsc.uint8,
     ship: jsc.uint32,
