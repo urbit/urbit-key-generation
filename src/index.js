@@ -193,13 +193,18 @@ const urbitKeysFromSeed = seed => {
 /**
  * Convert a hex-encoded secp256k1 public key into an Ethereum address.
  *
- * @param  {String}  pub a (compressed) hex-encoded public key
+ * @param  {String}  pub a 33-byte compressed and hex-encoded public key (i.e.,
+ *   including the leading parity byte)
  * @return  {String}  the corresponding Ethereum address
  */
 const addressFromSecp256k1Public = pub => {
-  const hashed = util.keccak256(Buffer.from(pub, 'hex'))
-  const idx = hashed.length - 20
-  const addr = util.addHexPrefix(hashed.slice(idx).toString('hex'))
+  const compressed = false
+  const uncompressed = util.secp256k1.publicKeyConvert(
+    Buffer.from(pub, 'hex'),
+    compressed
+  )
+  const hashed = util.keccak256(uncompressed.slice(1)) // chop parity byte
+  const addr = util.addHexPrefix(hashed.slice(-20).toString('hex'))
   return util.toChecksumAddress(addr)
 }
 
@@ -207,7 +212,7 @@ const addressFromSecp256k1Public = pub => {
 
 /**
  * Convert a hex-encoded secp256k1 private key into an Ethereum address.
- * @param  {String}  pub a hex-encoded private key
+ * @param  {String}  priv a 32-byte hex-encoded private key
  * @return  {String}  the corresponding Ethereum address
  */
 const addressFromSecp256k1Private = priv => {

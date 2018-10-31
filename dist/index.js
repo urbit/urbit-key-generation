@@ -65101,13 +65101,39 @@ const sha256 = async (...args) => {
  */
 const childSeedFromSeed = async config => {
   const { seed, type, ship, revision } = config
-  const shipSalt = lodash.isNull(ship) ? '0' : `${ship}`
-  const salt = `${type}-${shipSalt}-${revision}`
+
+  const shipSalt =
+    lodash.isNull(ship) || lodash.isUndefined(ship)
+    ? '0'
+    : `${ship}`
+
+  const revSalt =
+    lodash.isNull(revision) || lodash.isUndefined(revision)
+    ? '0'
+    : `${revision}`
+
+  const salt = `${type}-${shipSalt}-${revSalt}`
+
   const hash = await sha256(seed, salt)
   return type !== CHILD_SEED_TYPES.NETWORK
     ? bip39.entropyToMnemonic(hash)
     : Buffer.from(hash).toString('hex')
 }
+
+
+/**
+ * Create metadata for a BIP32 node.
+ *
+ * @param  {String}  type type of node being derived
+ * @param  {Number}  revision a revision number
+ * @param  {Number}  ship a ship number
+ * @return  {Object}
+ */
+const nodeMetadata = (type, revision, ship) => ({
+  type: type,
+  revision: lodash.isUndefined(revision) ? 0 : revision,
+  ship: lodash.isUndefined(ship) ? null : ship
+})
 
 
 
@@ -65124,11 +65150,7 @@ const childNodeFromSeed = async config => {
   const { type, ship, revision, password } = config
   const child = await childSeedFromSeed(config)
   return {
-    meta: {
-      type: type,
-      revision: revision,
-      ship: ship
-    },
+    meta: nodeMetadata(type, revision, ship),
     seed: child,
     keys: bip32NodeFromSeed(child, password)
   }
@@ -65202,9 +65224,13 @@ const urbitKeysFromSeed = seed => {
  * @return  {String}  the corresponding Ethereum address
  */
 const addressFromSecp256k1Public = pub => {
-  const hashed = util.keccak256(Buffer.from(pub, 'hex'))
-  const idx = hashed.length - 20
-  const addr = util.addHexPrefix(hashed.slice(idx).toString('hex'))
+  const compressed = false
+  const uncompressed = util.secp256k1.publicKeyConvert(
+    Buffer.from(pub, 'hex'),
+    compressed
+  )
+  const hashed = util.keccak256(uncompressed.slice(1)) // chop parity byte
+  const addr = util.addHexPrefix(hashed.slice(-20).toString('hex'))
   return util.toChecksumAddress(addr)
 }
 
@@ -65336,11 +65362,7 @@ const generateWallet = async config => {
     lodash.assign(network, {
       seed: seed,
       keys: urbitKeysFromSeed(Buffer.from(seed, 'hex')),
-      meta: {
-        type: CHILD_SEED_TYPES.NETWORK,
-        revision: revision,
-        ship: ship
-      }
+      meta: nodeMetadata(CHILD_SEED_TYPES.NETWORK, revision, ship)
     })
   }
 
@@ -65360,20 +65382,17 @@ module.exports = {
   generateWallet,
   childSeedFromSeed,
   childNodeFromSeed,
+  bip32NodeFromSeed,
   urbitKeysFromSeed,
-  addressFromSecp256k1Public,
+  CHILD_SEED_TYPES,
   argon2u,
   shard,
+  addressFromSecp256k1Public,
+  addressFromSecp256k1Private,
 
   _isGalaxy: isGalaxy,
-  _argon2u: argon2u,
   _sha256: sha256,
-  _CHILD_SEED_TYPES: CHILD_SEED_TYPES,
-  _bip32NodeFromSeed: bip32NodeFromSeed,
-  _urbitKeysFromSeed: urbitKeysFromSeed,
-  _shard: shard,
-  _addressFromSecp256k1Public: addressFromSecp256k1Public,
-  _addressFromSecp256k1Private: addressFromSecp256k1Private
+  _nodeMetadata: nodeMetadata
 }
 
 }).call(this,require("buffer").Buffer)
