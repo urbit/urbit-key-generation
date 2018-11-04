@@ -5,6 +5,7 @@ const fs = require('fs-extra')
 const jsc = require('jsverify')
 const lodash = require('lodash')
 const ob = require('urbit-ob')
+const util = require('ethereumjs-util')
 
 const kg = require('../src')
 
@@ -21,6 +22,27 @@ const replicate = (n, g) => jsc.tuple(new Array(n).fill(g))
 const seedBuffer256 = replicate(32, jsc.uint8)
 
 // tests
+
+describe('toChecksumAddress', () => {
+  it('matches a reference implementation', () => {
+    let prop = jsc.forall(seedBuffer256, buf => {
+      let hashed = kg._keccak256(buf.toString('hex'))
+      let addr = kg._addHexPrefix(hashed.slice(-20).toString('hex'))
+      return util.toChecksumAddress(addr) === kg._toChecksumAddress(addr)
+    })
+
+    jsc.assert(prop)
+  })
+})
+
+describe('hex prefix utils', () => {
+  it('work as expected', () => {
+    expect(kg._addHexPrefix('0102')).to.equal('0x0102')
+    expect(kg._addHexPrefix('0x0102')).to.equal('0x0102')
+    expect(kg._stripHexPrefix('0x0102')).to.equal('0102')
+    expect(kg._stripHexPrefix('0102')).to.equal('0102')
+  })
+})
 
 describe('isGalaxy', () => {
   const galaxies = jsc.integer(0, 255)
