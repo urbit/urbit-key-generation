@@ -208,11 +208,11 @@ describe('childSeedFromSeed', () => {
 })
 
 describe('bip32NodeFromSeed', () => {
-  const mnemonicGenerator = _ => bip39.generateMnemonic()
-  const mnemonic = jsc.nonshrink({
-    generator: mnemonicGenerator,
-    show: (a) => a
-  })
+
+  const mnemonic = replicate(16, jsc.uint8).smap(
+    bip39.entropyToMnemonic,
+    bip39.mnemonicToEntropy
+  )
 
   const VALID_PATH = "m/44'/60'/0'/0/0"
   const INVALID_PATH = "m/44'/60/0'/0/0"
