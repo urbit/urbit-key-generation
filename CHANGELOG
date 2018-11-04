@@ -1,5 +1,8 @@
 # Changelog
 
+- 0.9.1 (2018-11-05)
+    * Simplify dependencies.
+
 - 0.9.0 (2018-11-04)
     * Change name of library to urbit-key-generation.  Decrement version to
       0.9.0.
