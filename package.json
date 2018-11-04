@@ -1,6 +1,6 @@
 {
-  "name": "urbit-keygen",
-  "version": "3.0.2",
+  "name": "urbit-key-generation",
+  "version": "0.9.0",
   "description": "Key derivation and HD wallet generation functions for Urbit.",
   "main": "src/index.js",
   "browser": {
@@ -31,7 +31,7 @@
     "isomorphic-webcrypto": "^1.6.0",
     "lodash": "^4.17.11",
     "tweetnacl": "^1.0.0",
-    "urbit-ob": "^2.0.0"
+    "urbit-ob": "^3.0.0"
   },
   "devDependencies": {
     "browserify": "^16.2.3",

@@ -1,5 +1,9 @@
 # Changelog
 
+- 0.9.0 (2018-11-04)
+    * Change name of library to urbit-key-generation.  Decrement version to
+      0.9.0.
+
 - 3.0.2 (2018-10-31)
     * Fix incorrect address derivation bug.
 
