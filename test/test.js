@@ -195,7 +195,9 @@ describe('bip32NodeFromSeed', () => {
   const VALID_PATH = "m/44'/60'/0'/0/0"
   const INVALID_PATH = "m/44'/60/0'/0/0"
 
-  it('derives by paths correctly', () => {
+  it('derives by paths correctly', async function() {
+    this.timeout(10000)
+
     let prop = jsc.forall(mnemonic, mnem => {
       let seed = bip39.mnemonicToSeed(mnem)
       let hd = hdkey.fromMasterSeed(seed)
