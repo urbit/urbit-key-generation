@@ -1,8 +1,8 @@
 const argon2 = require('argon2-wasm')
+const bip32 = require('bip32')
 const bip39 = require('bip39')
 const crypto = require('isomorphic-webcrypto')
 const util = require('ethereumjs-util')
-const hdkey = require('hdkey')
 const lodash = require('lodash')
 const nacl = require('tweetnacl')
 const ob = require('urbit-ob')
@@ -142,9 +142,8 @@ const childNodeFromSeed = async config => {
  */
 const bip32NodeFromSeed = (mnemonic, password) => {
   const seed = bip39.mnemonicToSeed(mnemonic, password)
-  const hd = hdkey.fromMasterSeed(seed)
-  const path = "m/44'/60'/0'/0/0"
-  const wallet = hd.derive(path)
+  const hd = bip32.fromSeed(seed)
+  const wallet = hd.derivePath("m/44'/60'/0'/0/0")
 
   const publicKey = buf2hex(wallet.publicKey)
   const privateKey = buf2hex(wallet.privateKey)

@@ -1,7 +1,7 @@
+const bip32 = require('bip32')
 const bip39 = require('bip39')
 const { expect } = require('chai')
 const fs = require('fs-extra')
-const hdkey = require('hdkey')
 const jsc = require('jsverify')
 const lodash = require('lodash')
 const ob = require('urbit-ob')
@@ -200,9 +200,9 @@ describe('bip32NodeFromSeed', () => {
 
     let prop = jsc.forall(mnemonic, mnem => {
       let seed = bip39.mnemonicToSeed(mnem)
-      let hd = hdkey.fromMasterSeed(seed)
-      let wallet0 = hd.derive(VALID_PATH)
-      let wallet1 = hd.derive(INVALID_PATH)
+      let hd = bip32.fromSeed(seed)
+      let wallet0 = hd.derivePath(VALID_PATH)
+      let wallet1 = hd.derivePath(INVALID_PATH)
 
       let node = kg.bip32NodeFromSeed(mnem)
 
