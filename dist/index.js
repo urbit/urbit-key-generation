@@ -399,7 +399,7 @@ Entity.prototype.encode = function encode(data, enc, /* internal */ reporter) {
   return this._getEncoder(enc).encode(data, reporter);
 };
 
-},{"../asn1":5,"inherits":124,"vm":201}],7:[function(require,module,exports){
+},{"../asn1":5,"inherits":124,"vm":204}],7:[function(require,module,exports){
 var inherits = require('inherits');
 var Reporter = require('../base').Reporter;
 var Buffer = require('buffer').Buffer;
@@ -36304,7 +36304,7 @@ if (isEdge || isIE11) {
 
 module.exports = window.crypto;
 
-},{"b64u-lite/bundle/b64u-lite":23,"str2buf":192,"webcrypto-shim":202}],129:[function(require,module,exports){
+},{"b64u-lite/bundle/b64u-lite":23,"str2buf":192,"webcrypto-shim":205}],129:[function(require,module,exports){
 module.exports = require('./browser')
 
 },{"./browser":128}],130:[function(require,module,exports){
@@ -57904,7 +57904,7 @@ Writable.prototype._destroy = function (err, cb) {
   cb(err);
 };
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("timers").setImmediate)
-},{"./_stream_duplex":163,"./internal/streams/destroy":169,"./internal/streams/stream":170,"_process":153,"core-util-is":71,"inherits":124,"process-nextick-args":152,"safe-buffer":177,"timers":196,"util-deprecate":200}],168:[function(require,module,exports){
+},{"./_stream_duplex":163,"./internal/streams/destroy":169,"./internal/streams/stream":170,"_process":153,"core-util-is":71,"inherits":124,"process-nextick-args":152,"safe-buffer":177,"timers":196,"util-deprecate":203}],168:[function(require,module,exports){
 'use strict';
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -63495,26 +63495,65 @@ UChar.udata={
 }(this));
 
 },{}],199:[function(require,module,exports){
+
+const co = require('./internal/co')
+const ob = require('./internal/ob')
+
+/**
+ * Remove all leading zero bytes from a hex-encoded string.
+ * @param  {string}  str a hex encoded string
+ * @return  {string}
+ */
+const removeLeadingZeroBytes = str =>
+  str.slice(0, 2) === '00'
+  ? removeLeadingZeroBytes(str.slice(2))
+  : str
+
+/**
+ * Equality comparison, modulo leading zero bytes.
+ * @param  {string}  s a hex-encoded string
+ * @param  {string}  t a hex-encoded string
+ * @return  {bool}
+ */
+const eqModLeadingZeroBytes = (s, t) =>
+  removeLeadingZeroBytes(s) === removeLeadingZeroBytes(t)
+
+/**
+ * Equality comparison on @q values.
+ * @param  {string}  p a @q-encoded string
+ * @param  {string}  q a @q-encoded string
+ * @return  {bool}
+ */
+const eqPatq = (p, q) => {
+  const phex = co.patq2hex(p)
+  const qhex = co.patq2hex(q)
+  return eqModLeadingZeroBytes(phex, qhex)
+}
+
+module.exports = Object.assign(
+  co,
+  ob,
+  { eqPatq }
+)
+
+
+},{"./internal/co":200,"./internal/ob":202}],200:[function(require,module,exports){
 (function (Buffer){
-const bnjs = require('bn.js')
+// ++  co
+//
+// See arvo/sys/hoon.hoon.
 
-const {
-  isUndefined,
-  every,
-  map,
-  isString,
-  reduce,
-  concat,
-  split,
-  chunk
-  } = require('lodash')
+const BN = require('bn.js')
+const lodash = require('lodash')
 
-const raku = [
-  3077398253,
-  3995603712,
-  2243735041,
-  1261992695,
-]
+const ob = require('./ob')
+
+const zero = new BN(0)
+const one = new BN(1)
+const two = new BN(2)
+const three = new BN(3)
+const four = new BN(4)
+const five = new BN(5)
 
 const pre = `
 dozmarbinwansamlitsighidfidlissogdirwacsabwissib\
@@ -63554,365 +63593,150 @@ remlysfynwerrycsugnysnyllyndyndemluxfedsedbecmun\
 lyrtesmudnytbyrsenwegfyrmurtelreptegpecnelnevfes\
 `
 
-// split string at the indicated index
-const splitAt = (index, str) => [str.slice(0, index), str.slice(index)];
+const patp2syls = name =>
+  name.replace(/[\^~-]/g,'').match(/.{1,3}/g)
 
-// convert a decimal number to a hex string
-const dec2hex = dec => dec.toString(16).padStart(2, '0')
+const splitAt = (index, str) => [str.slice(0, index), str.slice(index)]
 
-// groups suffixes into array of syllables
-const suffixes = suf.match(/.{1,3}/g)
-
-// groups prefixes into array of syllables
 const prefixes = pre.match(/.{1,3}/g)
 
-// Get item at an index in array
-const getAt = (arr, index) => arr[index]
+const suffixes = suf.match(/.{1,3}/g)
 
-// Gets the length of an array
-const len = arr => arr.length
+const bex = (n) =>
+  two.pow(n)
 
-// gets the last index as an int from an array
-const lid = arr => arr.length - 1
+const lsh = (a, b, c) =>
+  bex(bex(a).mul(b)).mul(c)
 
-// wraps indexOf
-const indexOf = (arr, str) => arr.indexOf(str)
+const rsh = (a, b, c) =>
+  c.div(bex(bex(a).mul(b)))
 
-// is a int odd?
-const isOdd = n => n % 2 !== 0
+const met = (a, b, c = zero) =>
+  b.eq(zero)
+  ? c
+  : met(a, rsh(a, one, b), c.add(one))
 
-// is a int even?
-const isEven = n => !isOdd(n)
+const end = (a, b, c) =>
+  c.mod(bex(bex(a).mul(b)))
 
-// Makes an array of length num populated with its indices
-const seq = n => Array.from(Array(n), (x, i) => i)
-
-// Gets the prefix at an index
-const getPrefix = i => getAt(prefixes, i)
-
-// Gets the suffix at an index
-const getSuffix = i => getAt(suffixes, i)
-
-// Checks if a syllable exists in both suffixes and prefixes
-const doesExist = str => [...suffixes, ...prefixes].includes(str)
-
-// Checks if a suffix exists
-const doesSuffixExist = str => suffixes.includes(str)
-
-// Checks if a prefix exists
-const doesPrefixExist = str => prefixes.includes(str)
-
-// Gets the index of a prefix
-const getPrefixIndex = str => indexOf(prefixes, str)
-
-// Gets the index of a suffix
-const getSuffixIndex = str => indexOf(suffixes, str)
-
-// converts a binary string to a base-10 integer
-const bin2dec = str => parseInt(str, 2).toString(10)
-
-// converts a base-10 integer to a binary string
-const dec2bin = num => num.toString(2)
-
-// converts an @P syllable index to a binary string
-const syl2bin = index => dec2bin(index).padStart(8, '0')
-
-// converts a @P string to an array of syllables
-const patp2arr = p => p.replace(/[\^~-]/g,'').match(/.{1,3}/g)
-
-// converts an array of syllables to a string @P
-const arr2patp = a => reduce(a, (acc, syl, i) => isEven(i)
-  ? i === 0
-    ? `~${acc}${syl}`
-      ? i === 16
-      : `${acc}^${syl}`
-    : `${acc}-${syl}`
-  : `${acc}${syl}`
-, '')
-
-
-const feen = pyn => {
-  if (pyn >= 0x10000 && pyn <= 0xFFFFFFFF) {
-    const tmp = fice(pyn - 0x10000) + 0x10000
-    return tmp
-  }
-  if (pyn >= 0x100000000 && pyn <= 0xffffffffffffffff) {
-    const f = new bnjs('4294967295')
-    const g = new bnjs('18446744069414584000')
-    const lo = pyn.and(f)
-    const hi = pyn.and(g)
-    let next = new bnjs(feen(lo))
-    return hi.or(next)
-  }
-  return pyn
-}
-
-
-const fend = cry => {
-  if (cry >= 0x10000 && cry <= 0xFFFFFFFF) {
-    const res = new bnjs(teil(cry - 0x10000))
-    const resNum = res.add(new bnjs(65536)).toNumber()
-    return resNum
-  }
-  if (cry >= 0x100000000 && cry <= bn(0xffffffffffffffff)) {
-    const cryBn = new bnjs(cry)
-    const lo = cryBn.and(new bnjs('0xFFFFFFFF'))
-    const hi = cryBn.and(new bnjs('0xffffffff00000000'))
-    const res = hi.or(fend(lo))
-    return res.toNumber()
-  }
-  return cry
-}
-
-
-
-const fice = nor => {
-  let sel = [
-    nor % 65535,
-    nor / 65535
-  ]
-  for (var i = 0; i < 4; i++) {
-    sel = rynd(i, sel[0], sel[1])
-  }
-
-  const res = 65535 * sel[0] + sel[1]
-  return res
-}
-
-
-const teil = vip => {
-  let sel = [
-    vip % 65535,
-    vip / 65535
-    //vip % 0xFFFF,
-    //vip / 0x10000
-  ]
-  // maybe the for loops got borked in lua conversion
-  for (var i = 3; i > -1; i--) {
-    sel = rund(i, sel[0], sel[1])
-  }
-  //var res = bn(bn(0xFFFF).mul(sel[0])).add(sel[1])
-  const r1 = new bnjs(65535)
-  const res = r1.mul(new bnjs(sel[0])).add(new bnjs(sel[1]))
-  return res.toNumber()
-}
-
-
-const rynd = (n, l, r) => {
-  l = Math.floor(l)
-  const res = [r, 0]
-  const m = isEven(n)
-    ? new bnjs(65535)
-    : new bnjs(65536)
-
-  //res[1] = (bn(muk(raku[n], 2, r)).add(l)) % m
-  const r1 = new bnjs(muk(raku[n], 2, r))
-  const r2 = r1.add(new bnjs(l)).mod(m)
-  res[1] = r2.toNumber()
-  return res
-}
-
-
-const rund = (n, l, r) => {
-  l = Math.floor(l)
-  const res = [r, 0]
-  const m = isEven(n)
-    ? new bnjs(65535)
-    : new bnjs(65536)
-  const h = new bnjs(muk(raku[n], 2, r))
-  const r1 = new bnjs(m + l)
-  const r2 = r1.sub(h.mod(m)).mod(m).toString()
-  res[1] = r2
-  return res
-}
-
-
-const muk = (syd, len, key) => {
-  //key = bn(key)
-  const lo = key & 0xFF
-  const hi = (key & 0xFF00) / 256
-  const res = murmur3(String.fromCharCode(lo) + String.fromCharCode(hi), syd)
-  return res
-}
-
-
-const murmur3 = (data, seed) => {
-  if (!seed) seed = 0
-
-  const c1 = new bnjs(3432918353)
-  const c2 = new bnjs(461845907)
-
-  const f = 4294967295
-
-  const length = new bnjs(len(data))
-  let h1 = new bnjs(seed)
-  let k1
-  const roundedEnd = length & 0xFFFFFFFC
-  // this will likely need to be redone with bignum
-  for (var i = 0; i < roundedEnd; i += 4) {
-    var x = data.charCodeAt(i + 3) ? data.charCodeAt(i + 3) : 0
-    k1 = bn(data.charCodeAt(i) & 0xFF)
-      | ((data.charCodeAt(i + 1) & 0xFF) << 8)
-      | ((data.charCodeAt(i + 2) & 0xFF) << 16)
-      | (x << 24)
-    k1 = k1 * c1
-    k1 = (k1 << 15) | ((k1 & 0xFFFFFFFF) >> 17)
-    k1 = k1 * c2
-    h1 = h1 ^ k1
-    h1 = (h1 << 13) | ((h1 & 0xFFFFFFFF) >> 19)
-    h1 = h1 * 5 + 3864292196
-  }
-
-  k1 = 0
-  const val = length & 0x03
-  if (val == 3) {
-    k1 = (data.charCodeAt(roundedEnd + 2) & 0xFF) << 16
-  }
-  if (val == 3 || val == 2) {
-    k1 = k1 | (data.charCodeAt(roundedEnd + 1) & 0xFF) << 8
-  }
-  if (val == 3 || val == 2 || val == 1) {
-    k1 = k1 | (data.charCodeAt(roundedEnd) & 0xFF)
-    k1 = new bnjs(k1 * c1)
-    var k2 = new bnjs(k1.and(new bnjs(f)).shrn(17))
-    k1 = k1.shln(15).or(k2)
-    k1 = k1.mul(c2)
-    h1 = h1.xor(k1)
-  }
-  h1 = h1.xor(length)
-  h1 = h1.xor(h1.and(new bnjs(f)).shrn(16))
-  h1 = h1.mul(new bnjs(2246822507))
-  h1 = h1.xor(h1.and(new bnjs(f)).shrn(13))
-  h1 = h1.mul(new bnjs(3266489909))
-  h1 = h1.xor(h1.and(new bnjs(f)).shrn(16))
-  return h1.and(new bnjs(f)).toNumber()
-}
-
-
-/*
- * Public methods
- *  -- patp2add ( ship name )
- *  --   => address number
- *  -- to{Galaxy,Star,Planet}Ship ( address number )
- *  --   => ship name
- *  ####################### NOT YET IMPLEMENTED ##########################
- *  -- clan ( ship name or address number (int or bn) )
- *  --   => "galaxy", "star", "planet", "moon" or "comet"
- *  -- sein ( ship name or address number (int or bn) )
- *  --   => parent name or address number
+/**
+ * Convert a number to a @p-encoded string.
  *
+ * @param  {String, Number, BN}  arg
+ * @return  {String}
  */
+const patp = (arg) => {
+  const n = new BN(arg)
 
-const zero = new bnjs(0)
-const one = new bnjs(1)
-const two = new bnjs(2)
-const three = new bnjs(3)
-const four = new bnjs(4)
-const five = new bnjs(5)
+  const sxz = ob.feen(n)
+  const dyy = met(four, sxz)
 
-const clan = (who) => {
-  const wid = met(three, who)
-  return wid.lte(one)
-    ? 'czar'
-    : wid.eq(two)
-    ? 'king'
-    : wid.lte(four)
-    ? 'duke'
-    : wid.lte(new bnjs(8))
-    ? 'earl'
-    : 'pawn'
-}
-
-const sein = (who) => {
-  const mir = clan(who)
-  const res =
-    mir === 'czar'
-    ? who
-    : mir === 'king'
-    ? end(three, one, who)
-    : mir === 'duke'
-    ? end(four, one, who)
-    : mir === 'earl'
-    ? end(five, one, who)
-    : zero
-  return add2patp(res)
-}
-
-const bex = (n) => two.pow(n)
-
-const rsh = (a, b, c) => {
-  const sub = bex(a).mul(b)
-  return c.div(bex(sub))
-}
-
-const met = (a, b, c = zero) => {
-  return b.eq(zero)
-    ? c
-    : met(a, rsh(a, one, b), c.add(one))
-}
-
-const end = (a, b, c) => c.mod(bex(bex(a).mul(b)))
-
-const lsh = (a, b, c) => {
-  const sub = bex(a).mul(b)
-  return bex(sub).mul(c)
-}
-
-// bignum patp
-const patp = (n) => {
-  let sxz = new bnjs(feen(n))
-  let dyy = met(four, sxz)
-
-  let loop = (tsxz, timp, trep) => {
-    let log = end(four, one, tsxz)
-    let pre = getPrefix(rsh(three, one, log))
-    let suf = getSuffix(end(three, one, log))
-    let etc =
+  const loop = (tsxz, timp, trep) => {
+    const log = end(four, one, tsxz)
+    const pre = prefixes[rsh(three, one, log)]
+    const suf = suffixes[end(three, one, log)]
+    const etc =
       (timp.mod(four)).eq(zero)
         ? timp.eq(zero)
           ? ''
           : '--'
         : '-'
 
-    let res = pre + suf + etc + trep
+    const res = pre + suf + etc + trep
 
     return timp.eq(dyy)
       ? trep
       : loop(rsh(four, one, tsxz), timp.add(one), res)
   }
 
-  let dyx = met(three, sxz)
+  const dyx = met(three, sxz)
 
   return '~' +
     (dyx.lte(one)
-    ? getSuffix(sxz)
+    ? suffixes[sxz]
     : loop(sxz, zero, ''))
 }
 
+/**
+ * Convert a hex-encoded string to a @p-encoded string.
+ *
+ * @param  {String}  hex
+ * @return  {String}
+ */
+const hex2patp = (hex) =>
+  patp(new BN(hex, 'hex'))
 
+/**
+ * Convert a @p-encoded string to a hex-encoded string.
+ *
+ * @param  {String}  name @p
+ * @return  {String}
+ */
+const patp2hex = (name) => {
+  if (isValidPat(name) === false) {
+    throw new Error('patp2hex: not a valid @p')
+  }
+  const syls = patp2syls(name)
 
-// bignum patq
-const patq = (n) => {
-  const buff = n.toArrayLike(Buffer)
+  const syl2bin = idx =>
+    idx.toString(2).padStart(8, '0')
+
+  const addr = lodash.reduce(syls, (acc, syl, idx) =>
+    idx % 2 !== 0 || syls.length === 1
+      ? acc + syl2bin(suffixes.indexOf(syl))
+      : acc + syl2bin(prefixes.indexOf(syl)),
+  '')
+
+  const bn = new BN(addr, 2)
+  return ob.fend(bn).toString('hex')
+}
+
+/**
+ * Convert a @p-encoded string to a bignum.
+ *
+ * @param  {String}  name @p
+ * @return  {BN}
+ */
+const patp2bn = name =>
+  new BN(patp2hex(name), 'hex')
+
+/**
+ * Convert a @p-encoded string to a decimal-encoded string.
+ *
+ * @param  {String}  name @p
+ * @return  {String}
+ */
+const patp2dec = name =>
+  patp2bn(name).toString()
+
+/**
+ * Convert a number to a @q-encoded string.
+ *
+ * @param  {String, Number, BN}  arg
+ * @return  {String}
+ */
+const patq = (arg) => {
+  const n = new BN(arg)
+
+  const buf = n.toArrayLike(Buffer)
 
   const chunked =
-    isOdd(buff.length) && buff.length > 1
-    ? concat([[buff[0]]], chunk(buff.slice(1), 2))
-    : chunk(buff, 2)
+    buf.length % 2 !== 0 && buf.length > 1
+    ? lodash.concat([[buf[0]]], lodash.chunk(buf.slice(1), 2))
+    : lodash.chunk(buf, 2)
 
   const prefixName = byts =>
-    isUndefined(byts[1])
-    ? getPrefix(0) + getSuffix(byts[0])
-    : getPrefix(byts[0]) + getSuffix(byts[1])
+    lodash.isUndefined(byts[1])
+    ? prefixes[0] + suffixes[byts[0]]
+    : prefixes[byts[0]] + suffixes[byts[1]]
 
   const name = byts =>
-    isUndefined(byts[1])
-    ? getSuffix(byts[0])
-    : getPrefix(byts[0]) + getSuffix(byts[1])
+    lodash.isUndefined(byts[1])
+    ? suffixes[byts[0]]
+    : prefixes[byts[0]] + suffixes[byts[1]]
 
-  // zero-pad odd, >1 bytelength strings for ease of string comparison
   const alg = pair =>
-    isOdd(pair.length) && chunked.length > 1
+    pair.length % 2 !== 0 && chunked.length > 1
     ? prefixName(pair)
     : name(pair)
 
@@ -63920,276 +63744,403 @@ const patq = (n) => {
     acc + (acc === '~' ? '' : '-') + alg(elem), '~')
 }
 
-
+/**
+ * Convert a hex-encoded string to a @q-encoded string.
+ *
+ * @param  {String}  hex
+ * @return  {String}
+ */
+const hex2patq = hex =>
+  patq(new BN(hex, 'hex'))
 
 /**
- * Convert a hex-encoded string to @q.  Preserves leading zero bytes.
- * @param  {string}  str a hex-encoded string
- * @return  {string} a @q-encoded string
+ * Convert a @q-encoded string to a hex-encoded string.
+ *
+ * Note that this preserves leading zero bytes.
+ *
+ * @param  {String}  name @q
+ * @return  {String}
  */
-const hex2patq = hex => {
-  const buf = Buffer.from(hex, 'hex')
-  const chunks =
-    isOdd(buf.length)
-    ? concat([[buf[0]]], chunk(buf.slice(1), 2))
-    : chunk(buf, 2)
-  const splat = map(chunks, chunk =>
-    isUndefined(chunk[1])
-    ? getPrefix(0) + getSuffix(chunk[0])
-    : getPrefix(chunk[0]) + getSuffix(chunk[1])
-  )
-  return hex.length === 0
-    ? '~zod'
-    : splat.reduce((acc, elem) =>
-        acc + (acc === '~' ? '' : '-') + elem, '~')
-}
+const patq2hex = name => {
+  if (isValidPat(name) === false) {
+    throw new Error('patq2hex: not a valid @q')
+  }
+  const chunks = lodash.split(name.slice(1), '-')
+  const dec2hex = dec =>
+    dec.toString(16).padStart(2, '0')
 
-
-
-/**
- * Convert a @q-encoded string to hexadecimal.  Preserves leading zero bytes.
- * @param  {string}  str a @q-encoded string
- * @return  {string} a hex-encoded string
- */
-const patq2hex = str => {
-  const chunks = split(str.slice(1), '-')
-  const splat = map(chunks, chunk => {
+  const splat = lodash.map(chunks, chunk => {
     let syls = splitAt(3, chunk)
-    let hex =
-      syls[1] === ''
-      ? dec2hex(getSuffixIndex(syls[0]))
-      : dec2hex(getPrefixIndex(syls[0])) +
-        dec2hex(getSuffixIndex(syls[1]))
-    return hex
+    return syls[1] === ''
+      ? dec2hex(suffixes.indexOf(syls[0]))
+      : dec2hex(prefixes.indexOf(syls[0])) +
+        dec2hex(suffixes.indexOf(syls[1]))
   })
-  return str.length === 0
+
+  return name.length === 0
     ? '00'
     : splat.join('')
 }
 
-
+/**
+ * Convert a @q-encoded string to a bignum.
+ *
+ * @param  {String}  name @q
+ * @return  {BN}
+ */
+const patq2bn = name =>
+  new BN(patq2hex(name), 'hex')
 
 /**
- * Remove all leading zero bytes from a hex-encoded string.
- * @param  {string}  str a hex encoded string
- * @return  {string}
+ * Convert a @q-encoded string to a decimal-encoded string.
+ *
+ * @param  {String}  name @q
+ * @return  {String}
  */
-const removeLeadingZeroBytes = str =>
-  str.slice(0, 2) === '00'
-  ? removeLeadingZeroBytes(str.slice(2))
-  : str
-
-
+const patq2dec = name =>
+  patq2bn(name).toString()
 
 /**
- * Equality comparison, modulo leading zero bytes.
- * @param  {string}  s a hex-encoded string
- * @param  {string}  t a hex-encoded string
- * @return  {bool}
+ * Determine the ship class of a @p value.
+ *
+ * @param  {String}  @p
+ * @return  {String}
  */
-const eqModLeadingZeroBytes = (s, t) =>
-  removeLeadingZeroBytes(s) === removeLeadingZeroBytes(t)
-
-
+const clan = who => {
+  const name = patp2bn(who)
+  const wid = met(three, name)
+  return wid.lte(one)
+    ? 'galaxy'
+    : wid.eq(two)
+    ? 'star'
+    : wid.lte(four)
+    ? 'planet'
+    : wid.lte(new BN(8))
+    ? 'moon'
+    : 'comet'
+}
 
 /**
- * Equality comparison on @q values.
- * @param  {string}  p a @q-encoded string
- * @param  {string}  q a @q-encoded string
- * @return  {bool}
+ * Determine the parent of a @p value.
+ *
+ * @param  {String}  @p
+ * @return  {String}
  */
-const eqPatq = (p, q) => {
-  const phex = patq2hex(p)
-  const qhex = patq2hex(q)
-  return eqModLeadingZeroBytes(phex, qhex)
+const sein = (name) => {
+  const mir = clan(name)
+  const who = patp2bn(name)
+  const res =
+    mir === 'galaxy'
+    ? who
+    : mir === 'star'
+    ? end(three, one, who)
+    : mir === 'planet'
+    ? end(four, one, who)
+    : mir === 'moon'
+    ? end(five, one, who)
+    : zero
+  return patp(res)
 }
 
+/**
+ * Weakly check if a string is a valid @p or @q value.
+ *
+ * This is, at present, a pretty weak internal sanity check.  It doesn't
+ * confirm the structure precisely (e.g. dashes), and for @q, it's required
+ * that q values of (greater than one) odd bytelength have been zero-padded.
+ * So, for example, '~doznec-binwod' will be considered a valid @q, but
+ * '~nec-binwod' will not.
+ *
+ * @param  {String}  name a @p or @q value
+ * @return  {String}
+ */
+const isValidPat = name => {
+  const syls = patp2syls(name)
 
+  const leadingTilde = name.slice(0, 1) === '~'
+  const wrongLength = syls.length % 2 !== 0 && syls.length !== 1
+  const sylsExist = lodash.reduce(syls, (acc, syl, index) =>
+    acc &&
+      (index % 2 !== 0 || syls.length === 1
+        ? suffixes.includes(syl)
+        : prefixes.includes(syl)),
+    true)
 
-// returns the class of a ship from it's name
-const tierOfpatp = name => {
-  const l = len(patp2arr(name))
-  if (l <= 1) return 'galaxy'
-  if (l <= 2) return 'star'
-  if (l <= 4) return 'planet'
-  if (l <= 8) return 'moon'
-  if (l <= 16) return 'comet'
-  return 'invalid'
-}
-
-
-const tierOfadd = addr => {
-  const b = len(dec2bin(addr))
-  if (b <= 8) return 'galaxy'
-  if (b <= 16) return 'star'
-  if (b <= 32) return 'planet'
-  if (b <= 64) return 'moon'
-  if (b <= 128) return 'comet'
-  return 'invalid'
-}
-
-
-const add2patp = addr => {
-  const b = len(dec2bin(addr))
-  if (b <= 8) return toGalaxyName(addr)
-  if (b <= 16) return toStarName(addr)
-  if (b <= 32) return toPlanetName(addr)
-  if (b <= 64) console.error('Convert to moon not currently supported.')
-  if (b <= 128) console.error('Convert to comet not currently supported.')
-  return 'invalid'
-}
-
-
-// converts a string @P into an integer address
-const patp2add = (name, unscramble) => {
-
-  // set a default true value for unscramble
-  if (isUndefined(unscramble)) unscramble = true
-
-  // if the name is invalid, return undefined
-  if (!isValidName(name)) return
-
-  // if the name is a string, convert to array of syllables
-  if (isString(name)) name = patp2arr(name)
-
-  // concat 8 bit binary numbers of syllable indexes
-  const addr = reduce(name, (acc, syl, index) => {
-      return isOdd(index) || len(name) === 1
-        ? acc + syl2bin(getSuffixIndex(syl))
-        : acc + syl2bin(getPrefixIndex(syl))
-  }, '')
-
-  // convert back to base 10
-  const addrInt = bin2dec(addr)
-
-  // if unscramble is true, use fend()
-  return unscramble
-    ? fend(addrInt)
-    : addrInt
-}
-
-
-// Checks if a string @P is valid
-const isValidName = name => {
-  // convert string @P to array of syllables
-  const sylArr = patp2arr(name)
-
-  // Quickly fail if length of @p is greater than 1 and odd
-  if (isOdd(len(sylArr)) && len(sylArr) !== 1) return false
-
-  // check if each syllable exists
-  const tests = map(sylArr, (syl, index) => isOdd(index) || len(sylArr) === 1
-    ? doesSuffixExist(syl)
-    : doesPrefixExist(syl))
-
-  // if all syllables exist, return true, if any single syllables don't exist,
-  // return false
-  return every(tests, test => test === true)
-}
-
-
-// converts a galaxy address to a string @P
-const toGalaxyName = galaxy => _add2patp(galaxy, 1)
-
-
-// converts a star address to a string @P
-const toStarName = star => _add2patp(star, 2)
-
-
-// converts a planet address to a string @P
-const toPlanetName = (scrambled, scramble) => {
-  if (isUndefined(scramble)) scramble = true
-  return _add2patp(scrambled, 4, scramble)
-}
-
-
-// converts an integer address to a string @P
-const _add2patp = (addr, minBytes, scramble) => {
-  if (isUndefined(scramble)) scramble = true
-
-  if (!minBytes) {
-    if (addr < 0x100) {
-      minBytes = 1
-    } else if (addr < 0x10000) {
-      minBytes = 2
-    } else {
-      minBytes = 4
-    }
-  }
-
-  if (minBytes === 4 && scramble) addr = feen(addr)
-
-  const name = reduce(seq(minBytes), (acc, index) => {
-    const byt = Math.floor(addr % 256)
-
-    addr = addr / 256
-
-    const syllable = isOdd(index)
-      ? getPrefix(byt)
-      : getSuffix(byt)
-
-    return index === 2
-      ? acc = syllable + '-' + acc
-      : acc = syllable + acc
-  }, '')
-
-  return name
+  return leadingTilde && !wrongLength && sylsExist
 }
 
 module.exports = {
-  patp2add: patp2add,
-  add2patp: add2patp,
-
-  tierOfpatp: tierOfpatp,
-  tierOfadd: tierOfadd,
-
-  toGalaxyName: toGalaxyName,
-  toStarName: toStarName,
-  toPlanetName: toPlanetName,
-  isValidName: isValidName,
-
-  patp: patp,
-  patq: patq,
-  hex2patq: hex2patq,
-  patq2hex: patq2hex,
-  eqPatq: eqPatq,
-
-  sein: sein,
-  _clan: clan,
-
-  _add2patp: _add2patp,
-  _getsuffix: getSuffix,
-  _muk: muk,
-  _feen: feen,
-  _fend: fend,
-  _teil: teil,
-  _getAt: getAt,
-  _len: len,
-  _lid: lid,
-  _indexOf: indexOf,
-  _isOdd: isOdd,
-  _isEven: isEven,
-  _seq: seq,
-  _getPrefix: getPrefix,
-  _getSuffix: getSuffix,
-  _doesExist: doesExist,
-  _doesSuffixExist: doesSuffixExist,
-  _doesPrefixExist: doesPrefixExist,
-  _getPrefixIndex: getPrefixIndex,
-  _getSuffixIndex: getSuffixIndex,
-  _bin2dec: bin2dec,
-  _dec2bin: dec2bin,
-  _syl2bin: syl2bin,
-
-  _eqModLeadingZeroBytes: eqModLeadingZeroBytes,
-
-  _met: met,
-
-  _arr2patp: arr2patp
+  patp,
+  patp2hex,
+  patp2dec,
+  hex2patp,
+  patq,
+  patq2hex,
+  patq2dec,
+  hex2patq,
+  clan,
+  sein
 }
 
 }).call(this,require("buffer").Buffer)
-},{"bn.js":35,"buffer":67,"lodash":136}],200:[function(require,module,exports){
+},{"./ob":202,"bn.js":35,"buffer":67,"lodash":136}],201:[function(require,module,exports){
+// ++  muk
+//
+// See arvo/sys/hoon.hoon.
+
+const BN = require('bn.js')
+
+const ux_FF = new BN(0xFF)
+const ux_FF00 = new BN(0xFF00)
+const u_256 = new BN(256)
+
+/**
+ * Standard murmur3.
+ *
+ * @param  {Number}  syd
+ * @param  {Number}  len
+ * @param  {BN}  key
+ * @return  {BN}
+ */
+const muk = (syd, len, key) => {
+  const lo = key.and(ux_FF).toNumber()
+  const hi = key.and(ux_FF00).div(u_256).toNumber()
+  const kee = String.fromCharCode(lo) + String.fromCharCode(hi)
+  return new BN(murmurhash3_32_gc(kee, syd))
+}
+
+// see: https://github.com/garycourt/murmurhash-js
+//
+// Copyright (c) 2011 Gary Court
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy of
+// this software and associated documentation files (the "Software"), to deal in
+// the Software without restriction, including without limitation the rights to
+// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+// of the Software, and to permit persons to whom the Software is furnished to do
+// so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+/**
+ * JS Implementation of MurmurHash3 (r136) (as of May 20, 2011)
+ *
+ * @author <a href="mailto:gary.court@gmail.com">Gary Court</a>
+ * @see http://github.com/garycourt/murmurhash-js
+ * @author <a href="mailto:aappleby@gmail.com">Austin Appleby</a>
+ * @see http://sites.google.com/site/murmurhash/
+ *
+ * @param {string} key ASCII only
+ * @param {number} seed Positive integer only
+ * @return {number} 32-bit positive integer hash
+ **/
+const murmurhash3_32_gc = (key, seed) => {
+  let remainder, bytes, h1, h1b, c1, c1b, c2, c2b, k1, i;
+
+  remainder = key.length & 3; // key.length % 4
+  bytes = key.length - remainder;
+  h1 = seed;
+  c1 = 0xcc9e2d51;
+  c2 = 0x1b873593;
+  i = 0;
+
+  while (i < bytes) {
+      k1 =
+        ((key.charCodeAt(i) & 0xff)) |
+        ((key.charCodeAt(++i) & 0xff) << 8) |
+        ((key.charCodeAt(++i) & 0xff) << 16) |
+        ((key.charCodeAt(++i) & 0xff) << 24);
+    ++i;
+
+    k1 = ((((k1 & 0xffff) * c1) + ((((k1 >>> 16) * c1) & 0xffff) << 16))) & 0xffffffff;
+    k1 = (k1 << 15) | (k1 >>> 17);
+    k1 = ((((k1 & 0xffff) * c2) + ((((k1 >>> 16) * c2) & 0xffff) << 16))) & 0xffffffff;
+
+    h1 ^= k1;
+        h1 = (h1 << 13) | (h1 >>> 19);
+    h1b = ((((h1 & 0xffff) * 5) + ((((h1 >>> 16) * 5) & 0xffff) << 16))) & 0xffffffff;
+    h1 = (((h1b & 0xffff) + 0x6b64) + ((((h1b >>> 16) + 0xe654) & 0xffff) << 16));
+  }
+
+  k1 = 0;
+
+  switch (remainder) {
+    case 3: k1 ^= (key.charCodeAt(i + 2) & 0xff) << 16;
+    case 2: k1 ^= (key.charCodeAt(i + 1) & 0xff) << 8;
+    case 1: k1 ^= (key.charCodeAt(i) & 0xff);
+
+    k1 = (((k1 & 0xffff) * c1) + ((((k1 >>> 16) * c1) & 0xffff) << 16)) & 0xffffffff;
+    k1 = (k1 << 15) | (k1 >>> 17);
+    k1 = (((k1 & 0xffff) * c2) + ((((k1 >>> 16) * c2) & 0xffff) << 16)) & 0xffffffff;
+    h1 ^= k1;
+  }
+
+  h1 ^= key.length;
+
+  h1 ^= h1 >>> 16;
+  h1 = (((h1 & 0xffff) * 0x85ebca6b) + ((((h1 >>> 16) * 0x85ebca6b) & 0xffff) << 16)) & 0xffffffff;
+  h1 ^= h1 >>> 13;
+  h1 = ((((h1 & 0xffff) * 0xc2b2ae35) + ((((h1 >>> 16) * 0xc2b2ae35) & 0xffff) << 16))) & 0xffffffff;
+  h1 ^= h1 >>> 16;
+
+  return h1 >>> 0;
+}
+
+module.exports = {
+  muk
+}
+
+},{"bn.js":35}],202:[function(require,module,exports){
+// ++  ob
+//
+// See arvo/sys/hoon.hoon.
+
+const BN = require('bn.js')
+const { muk } = require('./muk')
+
+const ux_1_0000 = new BN('10000', 'hex')
+const ux_ffff_ffff = new BN('ffffffff', 'hex')
+const ux_1_0000_0000 = new BN('100000000', 'hex')
+const ux_ffff_ffff_ffff_ffff = new BN('ffffffffffffffff', 'hex')
+const ux_ffff_ffff_0000_0000 = new BN('ffffffff00000000', 'hex')
+
+const u_65535 = new BN('65535')
+const u_65536 = new BN('65536')
+
+/**
+ * Conceal structure v2.
+ *
+ * @param  {String, Number, BN}  pyn
+ * @return  {BN}
+ */
+const feen = (arg) => {
+  const loop = (pyn) => {
+    const lo = pyn.and(ux_ffff_ffff)
+    const hi = pyn.and(ux_ffff_ffff_0000_0000)
+
+    return pyn.gte(ux_1_0000) && pyn.lte(ux_ffff_ffff)
+      ? ux_1_0000.add(fice(pyn.sub(ux_1_0000)))
+      : pyn.gte(ux_1_0000_0000) && pyn.lte(ux_ffff_ffff_ffff_ffff)
+      ? hi.or(loop(lo))
+      : pyn
+  }
+
+  return loop(new BN(arg))
+}
+
+/**
+ * Restore structure v2.
+ *
+ * @param  {String, Number, BN}  pyn
+ * @return  {BN}
+ */
+const fend = (arg) => {
+  const loop = (cry) => {
+    const lo = cry.and(ux_ffff_ffff)
+    const hi = cry.and(ux_ffff_ffff_0000_0000)
+
+    return cry.gte(ux_1_0000) && cry.lte(ux_ffff_ffff)
+      ? ux_1_0000.add(teil(cry.sub(ux_1_0000)))
+      : cry.gte(ux_1_0000_0000) && cry.lte(ux_ffff_ffff_ffff_ffff)
+      ? hi.or(loop(lo))
+      : cry
+  }
+
+  return loop(new BN(arg))
+}
+
+/**
+ * Adapted from Black and Rogaway "Ciphers with arbitrary finite domains",
+ * 2002.
+ *
+ * @param  {String, Number, BN}
+ * @return  {BN}
+ */
+const fice = (arg) => {
+  const nor = new BN(arg)
+
+  const sel =
+    rynd(3,
+    rynd(2,
+    rynd(1,
+    rynd(0, [ nor.mod(u_65535), nor.div(u_65535) ]))))
+
+  return (u_65535.mul(sel[0])).add(sel[1])
+}
+
+/**
+ * Reverse fice.
+ *
+ * @param  {String}  vip
+ * @return  {BN}
+ */
+const teil = (arg) => {
+  const vip = new BN(arg)
+
+  const sel =
+    rund(0,
+    rund(1,
+    rund(2,
+    rund(3, [ vip.mod(u_65535), vip.div(u_65535) ]))))
+
+  return (u_65535.mul(sel[0])).add(sel[1])
+}
+
+/**
+ * Feistel round.
+ *
+ * @param  {Number}  n
+ * @param  {Array<BN>}  [l, r]
+ * @return  {Array<BN>}
+ */
+const rynd = (n, arr) => {
+  const l = arr[0]
+  const r = arr[1]
+  const p = n % 2 === 0 ? u_65535 : u_65536
+  return [ r, l.add(muk(raku[n], 2, r)).mod(p) ]
+}
+
+/**
+ * Reverse round.
+ *
+ * @param  {Number}  n
+ * @param  {Array<BN>}  [l, r]
+ * @return  {Array<BN>}
+ */
+const rund = (n, arr) => {
+  const l = arr[0]
+  const r = arr[1]
+  const p = n % 2 === 0 ? u_65535 : u_65536
+  return [ r, l.add(p).sub(muk(raku[n], 2, r).mod(p)).mod(p) ]
+}
+
+const raku = [
+  0xb76d5eed,
+  0xee281300,
+  0x85bcae01,
+  0x4b387af7,
+]
+
+module.exports = {
+  feen,
+  fend,
+  fice,
+  teil,
+  rynd,
+  rund,
+  raku
+}
+
+},{"./muk":201,"bn.js":35}],203:[function(require,module,exports){
 (function (global){
 
 /**
@@ -64260,7 +64211,7 @@ function config (name) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],201:[function(require,module,exports){
+},{}],204:[function(require,module,exports){
 var indexOf = function (xs, item) {
     if (xs.indexOf) return xs.indexOf(item);
     else for (var i = 0; i < xs.length; i++) {
@@ -64411,7 +64362,7 @@ exports.createContext = Script.createContext = function (context) {
     return copy;
 };
 
-},{}],202:[function(require,module,exports){
+},{}],205:[function(require,module,exports){
 /**
  * @file Web Cryptography API shim
  * @author Artem S Vybornov <vybornov@gmail.com>
@@ -65023,7 +64974,7 @@ exports.createContext = Script.createContext = function (context) {
     }
 }));
 
-},{}],203:[function(require,module,exports){
+},{}],206:[function(require,module,exports){
 (function (Buffer){
 const argon2 = require('argon2-wasm')
 const bip39 = require('bip39')
@@ -65220,7 +65171,8 @@ const urbitKeysFromSeed = seed => {
 /**
  * Convert a hex-encoded secp256k1 public key into an Ethereum address.
  *
- * @param  {String}  pub a (compressed) hex-encoded public key
+ * @param  {String}  pub a 33-byte compressed and hex-encoded public key (i.e.,
+ *   including the leading parity byte)
  * @return  {String}  the corresponding Ethereum address
  */
 const addressFromSecp256k1Public = pub => {
@@ -65238,7 +65190,7 @@ const addressFromSecp256k1Public = pub => {
 
 /**
  * Convert a hex-encoded secp256k1 private key into an Ethereum address.
- * @param  {String}  pub a hex-encoded private key
+ * @param  {String}  priv a 32-byte hex-encoded private key
  * @return  {String}  the corresponding Ethereum address
  */
 const addressFromSecp256k1Private = priv => {
@@ -65396,5 +65348,5 @@ module.exports = {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"argon2-wasm":3,"bip39":25,"buffer":67,"ethereumjs-util":104,"hdkey":121,"isomorphic-webcrypto":129,"lodash":136,"tweetnacl":197,"urbit-ob":199}]},{},[203])(203)
+},{"argon2-wasm":3,"bip39":25,"buffer":67,"ethereumjs-util":104,"hdkey":121,"isomorphic-webcrypto":129,"lodash":136,"tweetnacl":197,"urbit-ob":199}]},{},[206])(206)
 });
