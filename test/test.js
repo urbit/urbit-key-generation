@@ -1,10 +1,11 @@
+const bip32 = require('bip32')
 const bip39 = require('bip39')
 const { expect } = require('chai')
 const fs = require('fs-extra')
-const hdkey = require('hdkey')
 const jsc = require('jsverify')
 const lodash = require('lodash')
 const ob = require('urbit-ob')
+const util = require('ethereumjs-util')
 
 const kg = require('../src')
 
@@ -21,6 +22,27 @@ const replicate = (n, g) => jsc.tuple(new Array(n).fill(g))
 const seedBuffer256 = replicate(32, jsc.uint8)
 
 // tests
+
+describe('toChecksumAddress', () => {
+  it('matches a reference implementation', () => {
+    let prop = jsc.forall(seedBuffer256, buf => {
+      let hashed = kg._keccak256(buf.toString('hex'))
+      let addr = kg._addHexPrefix(hashed.slice(-20).toString('hex'))
+      return util.toChecksumAddress(addr) === kg._toChecksumAddress(addr)
+    })
+
+    jsc.assert(prop)
+  })
+})
+
+describe('hex prefix utils', () => {
+  it('work as expected', () => {
+    expect(kg._addHexPrefix('0102')).to.equal('0x0102')
+    expect(kg._addHexPrefix('0x0102')).to.equal('0x0102')
+    expect(kg._stripHexPrefix('0x0102')).to.equal('0102')
+    expect(kg._stripHexPrefix('0102')).to.equal('0102')
+  })
+})
 
 describe('isGalaxy', () => {
   const galaxies = jsc.integer(0, 255)
@@ -186,11 +208,11 @@ describe('childSeedFromSeed', () => {
 })
 
 describe('bip32NodeFromSeed', () => {
-  const mnemonicGenerator = _ => bip39.generateMnemonic()
-  const mnemonic = jsc.nonshrink({
-    generator: mnemonicGenerator,
-    show: (a) => a
-  })
+
+  const mnemonic = replicate(16, jsc.uint8).smap(
+    bip39.entropyToMnemonic,
+    bip39.mnemonicToEntropy
+  )
 
   const VALID_PATH = "m/44'/60'/0'/0/0"
   const INVALID_PATH = "m/44'/60/0'/0/0"
@@ -200,9 +222,9 @@ describe('bip32NodeFromSeed', () => {
 
     let prop = jsc.forall(mnemonic, mnem => {
       let seed = bip39.mnemonicToSeed(mnem)
-      let hd = hdkey.fromMasterSeed(seed)
-      let wallet0 = hd.derive(VALID_PATH)
-      let wallet1 = hd.derive(INVALID_PATH)
+      let hd = bip32.fromSeed(seed)
+      let wallet0 = hd.derivePath(VALID_PATH)
+      let wallet1 = hd.derivePath(INVALID_PATH)
 
       let node = kg.bip32NodeFromSeed(mnem)
 

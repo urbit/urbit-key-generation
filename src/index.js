@@ -1,11 +1,12 @@
 const argon2 = require('argon2-wasm')
+const bip32 = require('bip32')
 const bip39 = require('bip39')
 const crypto = require('isomorphic-webcrypto')
-const util = require('ethereumjs-util')
-const hdkey = require('hdkey')
+const keccak = require('keccak')
 const lodash = require('lodash')
 const nacl = require('tweetnacl')
 const ob = require('urbit-ob')
+const secp256k1 = require('secp256k1')
 
 const CHILD_SEED_TYPES = {
   OWNERSHIP: 'ownership',
@@ -14,6 +15,54 @@ const CHILD_SEED_TYPES = {
   VOTING: 'voting',
   MANAGEMENT: 'management',
   NETWORK: 'network'
+}
+
+/**
+ * Add a hex prefix to a string, if one isn't already present.
+ *
+ * @param  {String}  hex
+ * @return  {String}
+ */
+addHexPrefix = hex =>
+  hex.slice(0, 2) === '0x'
+  ? hex
+  : '0x' + hex
+
+/**
+ * Strip a hex prefix from a string, if it's present.
+ *
+ * @param  {String}  hex
+ * @return  {String}
+ */
+stripHexPrefix = hex =>
+  hex.slice(0, 2) === '0x'
+  ? hex.slice(2)
+  : hex
+
+/**
+ * Keccak-256 hash function.
+ *
+ * @param  {String}  str
+ * @return  {String}
+ */
+const keccak256 = str =>
+  keccak('keccak256').update(str).digest()
+
+/**
+ * Convert an Ethereum address to a checksummed Ethereum address.
+ *
+ * @param  {String}  address an Ethereum address
+ * @return  {String}  checksummed address
+ */
+toChecksumAddress = (address) => {
+  const addr = stripHexPrefix(address).toLowerCase()
+  const hash = keccak256(addr).toString('hex')
+
+  return lodash.reduce(addr, (acc, char, idx) =>
+    parseInt(hash[idx], 16) >= 8
+      ? acc + char.toUpperCase()
+      : acc + char,
+    '0x')
 }
 
 /**
@@ -142,9 +191,8 @@ const childNodeFromSeed = async config => {
  */
 const bip32NodeFromSeed = (mnemonic, password) => {
   const seed = bip39.mnemonicToSeed(mnemonic, password)
-  const hd = hdkey.fromMasterSeed(seed)
-  const path = "m/44'/60'/0'/0/0"
-  const wallet = hd.derive(path)
+  const hd = bip32.fromSeed(seed)
+  const wallet = hd.derivePath("m/44'/60'/0'/0/0")
 
   const publicKey = buf2hex(wallet.publicKey)
   const privateKey = buf2hex(wallet.privateKey)
@@ -199,13 +247,14 @@ const urbitKeysFromSeed = seed => {
  */
 const addressFromSecp256k1Public = pub => {
   const compressed = false
-  const uncompressed = util.secp256k1.publicKeyConvert(
+  const uncompressed = secp256k1.publicKeyConvert(
     Buffer.from(pub, 'hex'),
     compressed
   )
-  const hashed = util.keccak256(uncompressed.slice(1)) // chop parity byte
-  const addr = util.addHexPrefix(hashed.slice(-20).toString('hex'))
-  return util.toChecksumAddress(addr)
+  const chopped = uncompressed.slice(1) // chop parity byte
+  const hashed = keccak256(chopped)
+  const addr = addHexPrefix(hashed.slice(-20).toString('hex'))
+  return toChecksumAddress(addr)
 }
 
 
@@ -216,7 +265,7 @@ const addressFromSecp256k1Public = pub => {
  * @return  {String}  the corresponding Ethereum address
  */
 const addressFromSecp256k1Private = priv => {
-  const pub = util.secp256k1.publicKeyCreate(Buffer.from(priv, 'hex'))
+  const pub = secp256k1.publicKeyCreate(Buffer.from(priv, 'hex'))
   return addressFromSecp256k1Public(pub)
 }
 
@@ -366,5 +415,9 @@ module.exports = {
 
   _isGalaxy: isGalaxy,
   _sha256: sha256,
-  _nodeMetadata: nodeMetadata
+  _keccak256: keccak256,
+  _nodeMetadata: nodeMetadata,
+  _toChecksumAddress: toChecksumAddress,
+  _addHexPrefix: addHexPrefix,
+  _stripHexPrefix: stripHexPrefix
 }
