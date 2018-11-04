@@ -23,7 +23,7 @@ const CHILD_SEED_TYPES = {
  * @param  {String}  hex
  * @return  {String}
  */
-addHexPrefix = hex =>
+const addHexPrefix = hex =>
   hex.slice(0, 2) === '0x'
   ? hex
   : '0x' + hex
@@ -34,7 +34,7 @@ addHexPrefix = hex =>
  * @param  {String}  hex
  * @return  {String}
  */
-stripHexPrefix = hex =>
+const stripHexPrefix = hex =>
   hex.slice(0, 2) === '0x'
   ? hex.slice(2)
   : hex
@@ -54,7 +54,7 @@ const keccak256 = str =>
  * @param  {String}  address an Ethereum address
  * @return  {String}  checksummed address
  */
-toChecksumAddress = (address) => {
+const toChecksumAddress = (address) => {
   const addr = stripHexPrefix(address).toLowerCase()
   const hash = keccak256(addr).toString('hex')
 
