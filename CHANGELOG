@@ -1,5 +1,8 @@
 # Changelog
 
+- 0.9.2 (2018-11-05)
+    * Bugfix, add missing 'const' to utility function declarations.
+
 - 0.9.1 (2018-11-05)
     * Simplify dependencies.
 
