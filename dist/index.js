@@ -58122,7 +58122,7 @@ const generateWallet = async config => {
 
   if (boot === true) {
     let seed = await childSeedFromSeed({
-      seed: bip39.mnemonicToSeed(management.seed),
+      seed: bip39.mnemonicToSeed(management.seed, password),
       type: CHILD_SEED_TYPES.NETWORK,
       ship: ship,
       revision: revision
