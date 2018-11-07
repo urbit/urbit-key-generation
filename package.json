@@ -1,6 +1,6 @@
 {
   "name": "urbit-key-generation",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "description": "Key derivation and HD wallet generation functions for Urbit.",
   "main": "src/index.js",
   "browser": {
