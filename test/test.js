@@ -269,8 +269,10 @@ describe('bip32NodeFromSeed', () => {
 
 describe('urbitKeysFromSeed', () => {
   it('matches ++pit:nu:crub:crypto', () => {
+    // to compare w/keygen-hoon:
+    //
     // ~zod:dojo> /+ keygen
-    // ~zod:dojo> (urbit:sd:keygen (to-byts:keygen 'test'))
+    // ~zod:dojo> (urbit:sd:keygen (to-byts:keygen 'my-input'))
 
     let expected = {
       crypt:
@@ -290,20 +292,20 @@ describe('urbitKeysFromSeed', () => {
 
     expect(lodash.isEqual(keys, expected)).to.equal(true)
 
-    seed = Buffer.from('52dc7422d68c0209610502e71009d6e9f054da2accafb612180c853f3f77d606');
+    seed = Buffer.from('52dc7422d68c0209610502e71009d6e9f054da2accafb612180c853f3f77d606', 'hex');
     keys = kg.urbitKeysFromSeed(seed)
 
     expected = {
       crypt:
        { private:
-          '83224ad861009302da0eaca4208f6b42be4f3346b27271b171f318016822ace9',
+          '972bd3bc056ac414a3c38bc948a74506120b2fc84ae22ba605c9eeef2b7cc1db',
          public:
-          'f815390c0419315a9c570e854b64560979b4b7aa0d4081024e2828bd457bfab9' },
+          'fadea0a37e6d111eb0806648fa66d689f200f38cfd1e3fe683fc148d76c69d27' },
       auth:
        { private:
-          '15e372f0444538dc5408c0a506a672e052f630b28de0a5e39d808e361f13da17',
+          '25619a9ce9458f869f064ca5693785283a20aa7a8433baf5fcccbb0a84f76cae',
          public:
-          'ce287dd8af7f48cf72713aecbdfd63a09ea4b61c55bf7d505634833ef0e213f3' }
+          '76fa3a858dfeb18fd7cd1a63b2fe84f95840e3e5b19e0e6950692cbdc55f3821' }
     }
 
     expect(lodash.isEqual(keys, expected)).to.equal(true)
