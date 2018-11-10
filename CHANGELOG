@@ -1,5 +1,8 @@
 # Changelog
 
+- 0.10.0 (2018-11-10)
+    * Add a 'combine' function for recombining shards.
+
 - 0.9.3 (2018-11-07)
     * Bugfix, make sure optional password is used when deriving seeds from
       BIP39 mnemonics when generating network keys.

@@ -273,7 +273,8 @@ const addressFromSecp256k1Private = priv => {
 
 /**
  * Break a 384-bit ticket into three shards, any two of which can be used to
- * recover it.
+ * recover it.  If provided with a ticket of some other length, it simply
+ * returns the ticket itself in an array.
  *
  * Each shard is simply 2/3 of the ticket -- the first third, second third, and
  * first and last thirds concatenated together.
@@ -289,15 +290,65 @@ const shard = ticket => {
     return [ ticket ]
   }
 
-  const shard0 = ticketBuf.slice(0, 32)
-  const shard1 = ticketBuf.slice(16)
-  const shard2 = Buffer.concat([
-    ticketBuf.slice(0, 16),
-    ticketBuf.slice(32)
-  ])
+  const shards = [
+    ticketBuf.slice(0, 32),
+    ticketBuf.slice(16),
+    Buffer.concat([ ticketBuf.slice(0, 16), ticketBuf.slice(32) ])
+  ]
 
-  return lodash.map([shard0, shard1, shard2], buf =>
-    ob.hex2patq(buf.toString('hex')))
+  const pq = lodash.map(shards,
+    shard => ob.hex2patq(shard.toString('hex')))
+
+  const combinable =
+    combine([pq[0], pq[1], undefined]) === ticket &&
+    combine([pq[0], undefined, pq[2]]) === ticket &&
+    combine([undefined, pq[1], pq[2]]) === ticket
+
+  // shards should always be combinable, so following should be unreachable
+  /* istanbul ignore next */
+  if (combinable === false) {
+    /* istanbul ignore next */
+    throw new Error('produced invalid shards -- please report this as a bug')
+  }
+
+  return pq
+}
+
+
+
+/**
+ * Combine two of three shards to recompute the original secret.
+ *
+ * @param  {Array<String>} shards an array of shards, in their appropriate
+ *   order; use 'undefined' to mark a missing shard, e.g.
+ *
+ *   > combine([shard0, undefined, shard2])
+ *
+ * @return {String} the original secret
+ */
+const combine = shards => {
+  const nundef = lodash.reduce(shards, (acc, shard) =>
+    acc + (lodash.isUndefined(shard) ? 1 : 0), 0)
+
+  if (nundef > 1) {
+    throw new Error('combine: need at least two shards')
+  }
+
+  const s0 = shards[0]
+  const s1 = shards[1]
+  const s2 = shards[2]
+
+  return ob.hex2patq(
+      lodash.isUndefined(s0) === false && lodash.isUndefined(s1) === false
+    ? ob.patq2hex(s0).slice(0, 32) + ob.patq2hex(s1)
+    : lodash.isUndefined(s0) === false && lodash.isUndefined(s2) === false
+    ? ob.patq2hex(s0) + ob.patq2hex(s2).slice(32)
+    : lodash.isUndefined(s1) === false && lodash.isUndefined(s2) === false
+    ? ob.patq2hex(s2).slice(0, 32) + ob.patq2hex(s1)
+    // above throw makes this unreachable
+    /* istanbul ignore next */
+    : undefined
+  )
 }
 
 
@@ -410,6 +461,7 @@ module.exports = {
   CHILD_SEED_TYPES,
   argon2u,
   shard,
+  combine,
   addressFromSecp256k1Public,
   addressFromSecp256k1Private,
 

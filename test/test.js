@@ -21,6 +21,11 @@ const replicate = (n, g) => jsc.tuple(new Array(n).fill(g))
 
 const seedBuffer256 = replicate(32, jsc.uint8)
 
+const buffer384 = replicate(48, jsc.uint8).smap(
+  arr => Buffer.from(arr),
+  buf => Array.from(buf)
+)
+
 // tests
 
 describe('toChecksumAddress', () => {
@@ -405,6 +410,25 @@ describe('shard', () => {
   it('shards 384-bit tickets', () => {
     let ticket = '~wacfus-dabpex-danted-mosfep-pasrud-lavmer-nodtex-taslus-pactyp-milpub-pildeg-fornev-ralmed-dinfeb-fopbyr-sanbet-sovmyl-dozsut-mogsyx-mapwyc-sorrup-ricnec-marnys-lignex'
     expect(kg.shard(ticket)).to.have.lengthOf(3)
+  })
+
+  it('produces valid shards', () => {
+    let prop = jsc.forall(buffer384, buf => {
+      let ticket = ob.hex2patq(buf.toString('hex'))
+      let shards = kg.shard(ticket)
+
+      return (
+        kg.combine([shards[0], shards[1], undefined]) === ticket &&
+        kg.combine([shards[0], undefined, shards[2]]) === ticket &&
+        kg.combine([undefined, shards[1], shards[2]]) === ticket
+      )
+    })
+
+    jsc.assert(prop)
+  })
+
+  it('throws when insufficient shards', () => {
+    expect(() => kg.combine([undefined, undefined, undefined])).to.throw()
   })
 })
 
