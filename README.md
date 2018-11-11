@@ -66,9 +66,10 @@ let wallet = await generateWallet(config)
 
 ## Dev
 
-Before making a PR, remember to include an updated browser bundle (generated
-via `npm run-script build`).  You can run the test suite with a simple `npm
-test`.
+Before making a PR, you should create an updated browser bundle (generated via
+`npm run-script build`).
+
+You can run the test suite with a simple `npm test`.
 
 [urbo]: https://www.npmjs.com/package/urbit-ob
 [roll]: https://rollupjs.org/guide/en

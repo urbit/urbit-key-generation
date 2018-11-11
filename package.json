@@ -8,7 +8,8 @@
   },
   "scripts": {
     "test": "nyc mocha --reporter spec",
-    "build": "mkdir -p dist && browserify src/index.js -s urbit-keygen > dist/index.js"
+    "build": "mkdir -p dist && browserify src/index.js -s urbit-keygen > dist/index.js",
+    "prepublish": "npm run build"
   },
   "repository": {
     "type": "git",
