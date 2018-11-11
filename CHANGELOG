@@ -1,5 +1,8 @@
 # Changelog
 
+- 0.10.1 (2018-11-11)
+    * Ship the browser bundle with the latest release.
+
 - 0.10.0 (2018-11-10)
     * Add a 'combine' function for recombining shards.
 
