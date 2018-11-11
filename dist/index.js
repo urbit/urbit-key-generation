@@ -56351,41 +56351,9 @@ UChar.udata={
 const co = require('./internal/co')
 const ob = require('./internal/ob')
 
-/**
- * Remove all leading zero bytes from a hex-encoded string.
- * @param  {string}  str a hex encoded string
- * @return  {string}
- */
-const removeLeadingZeroBytes = str =>
-  str.slice(0, 2) === '00'
-  ? removeLeadingZeroBytes(str.slice(2))
-  : str
-
-/**
- * Equality comparison, modulo leading zero bytes.
- * @param  {string}  s a hex-encoded string
- * @param  {string}  t a hex-encoded string
- * @return  {bool}
- */
-const eqModLeadingZeroBytes = (s, t) =>
-  removeLeadingZeroBytes(s) === removeLeadingZeroBytes(t)
-
-/**
- * Equality comparison on @q values.
- * @param  {string}  p a @q-encoded string
- * @param  {string}  q a @q-encoded string
- * @return  {bool}
- */
-const eqPatq = (p, q) => {
-  const phex = co.patq2hex(p)
-  const qhex = co.patq2hex(q)
-  return eqModLeadingZeroBytes(phex, qhex)
-}
-
 module.exports = Object.assign(
   co,
-  ob,
-  { eqPatq }
+  ob
 )
 
 
@@ -56519,6 +56487,15 @@ const hex2patp = (hex) =>
   patp(new BN(hex, 'hex'))
 
 /**
+ * Convert a Buffer to a @p-encoded string.
+ *
+ * @param  {Buffer}  buf
+ * @return  {String}
+ */
+const buf2patp = (buf) =>
+  hex2patp(buf.toString('hex'))
+
+/**
  * Convert a @p-encoded string to a hex-encoded string.
  *
  * @param  {String}  name @p
@@ -56540,8 +56517,20 @@ const patp2hex = (name) => {
   '')
 
   const bn = new BN(addr, 2)
-  return ob.fend(bn).toString('hex')
+  const hex = ob.fend(bn).toString('hex')
+  return hex.length % 2 !== 0
+    ? hex.padStart(hex.length + 1, '0')
+    : hex
 }
+
+/**
+ * Convert a @p-encoded string to a Buffer.
+ *
+ * @param  {String}  name
+ * @return  {Buffer}
+ */
+const patp2buf = name =>
+  Buffer.from(patp2hex(name), 'hex')
 
 /**
  * Convert a @p-encoded string to a bignum.
@@ -56568,10 +56557,18 @@ const patp2dec = name =>
  * @return  {String}
  */
 const patq = (arg) => {
-  const n = new BN(arg)
+  const bn = new BN(arg)
+  const buf = bn.toArrayLike(Buffer)
+  return buf2patq(buf)
+}
 
-  const buf = n.toArrayLike(Buffer)
-
+/**
+ * Convert a Buffer into a @q-encoded string.
+ *
+ * @param  {Buffer}  buf
+ * @return  {String}
+ */
+const buf2patq = buf => {
   const chunked =
     buf.length % 2 !== 0 && buf.length > 1
     ? lodash.concat([[buf[0]]], lodash.chunk(buf.slice(1), 2))
@@ -56599,11 +56596,20 @@ const patq = (arg) => {
 /**
  * Convert a hex-encoded string to a @q-encoded string.
  *
+ * Note that this preserves leading zero bytes.
+ *
  * @param  {String}  hex
  * @return  {String}
  */
-const hex2patq = hex =>
-  patq(new BN(hex, 'hex'))
+const hex2patq = arg => {
+  const hex =
+    arg.length % 2 !== 0
+    ? arg.padStart(arg.length + 1, '0')
+    : arg
+
+  const buf = Buffer.from(hex, 'hex')
+  return buf2patq(buf)
+}
 
 /**
  * Convert a @q-encoded string to a hex-encoded string.
@@ -56642,6 +56648,17 @@ const patq2hex = name => {
  */
 const patq2bn = name =>
   new BN(patq2hex(name), 'hex')
+
+/**
+ * Convert a @q-encoded string to a Buffer.
+ *
+ * @param  {String}  name @q
+ * @return  {Buffer}
+ */
+const patq2buf = name => {
+  const hex = patq2hex(name)
+  return Buffer.from(hex, 'hex')
+}
 
 /**
  * Convert a @q-encoded string to a decimal-encoded string.
@@ -56721,17 +56738,49 @@ const isValidPat = name => {
   return leadingTilde && !wrongLength && sylsExist
 }
 
+/**
+ * Remove all leading zero bytes from a sliceable value.
+ * @param  {String, Buffer, Array}
+ * @return  {String}
+ */
+const removeLeadingZeroBytes = str =>
+  str.slice(0, 2) === '00'
+  ? removeLeadingZeroBytes(str.slice(2))
+  : str
+
+/**
+ * Equality comparison, modulo leading zero bytes.
+ * @param  {String, Buffer, Array}
+ * @param  {String, Buffer, Array}
+ * @return  {Bool}
+ */
+const eqModLeadingZeroBytes = (s, t) =>
+  lodash.isEqual(removeLeadingZeroBytes(s), removeLeadingZeroBytes(t))
+
+/**
+ * Equality comparison on @q values.
+ * @param  {String}  p a @q-encoded string
+ * @param  {String}  q a @q-encoded string
+ * @return  {Bool}
+ */
+const eqPatq = (p, q) => {
+  const phex = patq2hex(p)
+  const qhex = patq2hex(q)
+  return eqModLeadingZeroBytes(phex, qhex)
+}
+
 module.exports = {
   patp,
   patp2hex,
-  patp2dec,
   hex2patp,
+  patp2dec,
   patq,
   patq2hex,
-  patq2dec,
   hex2patq,
+  patq2dec,
   clan,
-  sein
+  sein,
+  eqPatq
 }
 
 }).call(this,require("buffer").Buffer)
@@ -58019,7 +58068,8 @@ const addressFromSecp256k1Private = priv => {
 
 /**
  * Break a 384-bit ticket into three shards, any two of which can be used to
- * recover it.
+ * recover it.  If provided with a ticket of some other length, it simply
+ * returns the ticket itself in an array.
  *
  * Each shard is simply 2/3 of the ticket -- the first third, second third, and
  * first and last thirds concatenated together.
@@ -58035,15 +58085,65 @@ const shard = ticket => {
     return [ ticket ]
   }
 
-  const shard0 = ticketBuf.slice(0, 32)
-  const shard1 = ticketBuf.slice(16)
-  const shard2 = Buffer.concat([
-    ticketBuf.slice(0, 16),
-    ticketBuf.slice(32)
-  ])
+  const shards = [
+    ticketBuf.slice(0, 32),
+    ticketBuf.slice(16),
+    Buffer.concat([ ticketBuf.slice(0, 16), ticketBuf.slice(32) ])
+  ]
 
-  return lodash.map([shard0, shard1, shard2], buf =>
-    ob.hex2patq(buf.toString('hex')))
+  const pq = lodash.map(shards,
+    shard => ob.hex2patq(shard.toString('hex')))
+
+  const combinable =
+    combine([pq[0], pq[1], undefined]) === ticket &&
+    combine([pq[0], undefined, pq[2]]) === ticket &&
+    combine([undefined, pq[1], pq[2]]) === ticket
+
+  // shards should always be combinable, so following should be unreachable
+  /* istanbul ignore next */
+  if (combinable === false) {
+    /* istanbul ignore next */
+    throw new Error('produced invalid shards -- please report this as a bug')
+  }
+
+  return pq
+}
+
+
+
+/**
+ * Combine two of three shards to recompute the original secret.
+ *
+ * @param  {Array<String>} shards an array of shards, in their appropriate
+ *   order; use 'undefined' to mark a missing shard, e.g.
+ *
+ *   > combine([shard0, undefined, shard2])
+ *
+ * @return {String} the original secret
+ */
+const combine = shards => {
+  const nundef = lodash.reduce(shards, (acc, shard) =>
+    acc + (lodash.isUndefined(shard) ? 1 : 0), 0)
+
+  if (nundef > 1) {
+    throw new Error('combine: need at least two shards')
+  }
+
+  const s0 = shards[0]
+  const s1 = shards[1]
+  const s2 = shards[2]
+
+  return ob.hex2patq(
+      lodash.isUndefined(s0) === false && lodash.isUndefined(s1) === false
+    ? ob.patq2hex(s0).slice(0, 32) + ob.patq2hex(s1)
+    : lodash.isUndefined(s0) === false && lodash.isUndefined(s2) === false
+    ? ob.patq2hex(s0) + ob.patq2hex(s2).slice(32)
+    : lodash.isUndefined(s1) === false && lodash.isUndefined(s2) === false
+    ? ob.patq2hex(s2).slice(0, 32) + ob.patq2hex(s1)
+    // above throw makes this unreachable
+    /* istanbul ignore next */
+    : undefined
+  )
 }
 
 
@@ -58156,6 +58256,7 @@ module.exports = {
   CHILD_SEED_TYPES,
   argon2u,
   shard,
+  combine,
   addressFromSecp256k1Public,
   addressFromSecp256k1Private,
 
