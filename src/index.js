@@ -8,6 +8,8 @@ const nacl = require('tweetnacl')
 const ob = require('urbit-ob')
 const secp256k1 = require('secp256k1')
 
+const { version } = require('../package.json')
+
 const CHILD_SEED_TYPES = {
   OWNERSHIP: 'ownership',
   TRANSFER: 'transfer',
@@ -380,6 +382,10 @@ const generateWallet = async config => {
 
   const masterSeed = hashedTicket.hash
 
+  const meta = {
+    generator: `urbit-key-generation-v${version}`
+  }
+
   const ownership = await childNodeFromSeed({
       seed: masterSeed,
       type: CHILD_SEED_TYPES.OWNERSHIP,
@@ -441,6 +447,7 @@ const generateWallet = async config => {
   }
 
   return {
+    meta: meta,
     ticket: ticket,
     shards: shards,
     ownership: ownership,
