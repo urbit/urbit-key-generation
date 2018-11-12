@@ -117,47 +117,40 @@ const sha256 = async (...args) => {
  *
  * @param  {Array, ArrayBuffer, Buffer, String}  seed a parent seed
  * @param  {String}  type the type of child seed to derive
- * @param  {Number}  ship the ship to derive the seed for
- * @param  {Number}  revision the revision number
  * @return {Promise<String>} the child seed
  */
-const childSeedFromSeed = async config => {
-  const { seed, type, ship, revision } = config
-
-  const shipSalt =
-    lodash.isNull(ship) || lodash.isUndefined(ship)
-    ? '0'
-    : `${ship}`
-
-  const revSalt =
-    lodash.isNull(revision) || lodash.isUndefined(revision)
-    ? '0'
-    : `${revision}`
-
-  const salt = `${type}-${shipSalt}-${revSalt}`
-
-  const hash = await sha256(seed, salt)
-  return type !== CHILD_SEED_TYPES.NETWORK
-    ? bip39.entropyToMnemonic(hash)
-    : Buffer.from(hash).toString('hex')
+const childSeed = async config => {
+  const { seed, type } = config
+  const hash = await sha256(seed, type)
+  return bip39.entropyToMnemonic(hash)
 }
 
+/**
+ * Derive a child seed from a parent.
+ *
+ * @param  {Array, ArrayBuffer, Buffer, String}  seed a parent seed
+ * @param  {String}  type the type of child seed to derive
+ * @return {Promise<String>} the child seed
+ */
+const networkSeed = async config => {
+  const { seed, type, index } = config
+  const hash = await sha256(seed, type, `${index}`)
+  return Buffer.from(hash).toString('hex')
+}
 
 /**
  * Create metadata for a BIP32 node.
  *
  * @param  {String}  type type of node being derived
- * @param  {Number}  revision a revision number
- * @param  {Number}  ship a ship number
+ * @param  {Number}  index BIP44 index of the node being derived
+ * @param  {Number}  ship ship number of the node being derived
  * @return  {Object}
  */
-const nodeMetadata = (type, revision, ship) => ({
+const nodeMetadata = (type, index, ship) => ({
   type: type,
-  revision: lodash.isUndefined(revision) ? 0 : revision,
+  index: lodash.isUndefined(index) || lodash.isNull(index) ? 0 : index,
   ship: lodash.isUndefined(ship) ? null : ship
 })
-
-
 
 /**
  * Derive a child BIP32 node from a parent seed.
@@ -165,16 +158,16 @@ const nodeMetadata = (type, revision, ship) => ({
  * @param  {Array, ArrayBuffer, Buffer, String}  seed a parent seed
  * @param  {String}  type the type of child node to derive
  * @param  {Number}  ship the ship to derive the node for
- * @param  {Number}  revision the revision number
+ * @param  {Number}  index the BIP44 index
  * @return {Promise<Object>} the BIP32 child node
  */
-const childNodeFromSeed = async config => {
-  const { type, ship, revision, password } = config
-  const child = await childSeedFromSeed(config)
+const childNode = async config => {
+  const { type, ship, index, password } = config
+  const child = await childSeed(config)
   return {
-    meta: nodeMetadata(type, revision, ship),
+    meta: nodeMetadata(type, index, ship),
     seed: child,
-    keys: bip32NodeFromSeed(child, password)
+    keys: bip32NodeFromSeed(child, password, index)
   }
 }
 
@@ -187,12 +180,16 @@ const childNodeFromSeed = async config => {
  * @param  {String}  seed a BIP39 mnemonic
  * @param  {String}  password an optional password to use when generating the
  *   BIP39 seed
+ * @param  {Number}  index the 'index' path, as per BIP44 (defaults to 0)
  * @return {Object} a BIP32 node
  */
-const bip32NodeFromSeed = (mnemonic, password) => {
+const bip32NodeFromSeed = (mnemonic, password, index) => {
+
+  index = lodash.isUndefined(index) || lodash.isNull(index) ? 0 : index
+
   const seed = bip39.mnemonicToSeed(mnemonic, password)
   const hd = bip32.fromSeed(seed)
-  const wallet = hd.derivePath("m/44'/60'/0'/0/0")
+  const wallet = hd.derivePath(`m/44'/60'/0'/0/${index}`)
 
   const publicKey = buf2hex(wallet.publicKey)
   const privateKey = buf2hex(wallet.privateKey)
@@ -360,7 +357,7 @@ const combine = shards => {
  * @param  {Number}  ship an optional ship number
  * @param  {String}  password a password used to salt generated seeds (default:
  *   null)
- * @param  {Number}  revision a revision number used as a salt (default: 0)
+ * @param  {Number}  index a BIP44 index (default: 0)
  * @param  {Bool}  boot if true, generate network keys for the provided ship
  *   (default: false)
  * @return  {Promise<Object>}
@@ -369,7 +366,7 @@ const generateWallet = async config => {
   const { ticket } = config
   const ship = 'ship' in config ? config.ship : null
   const password = 'password' in config ? config.password : null
-  const revision = 'revision' in config ? config.revision : 0
+  const index = 'index' in config ? config.index : 0
   const boot = 'boot' in config ? config.boot : false
 
   const ticketHex = ob.patq2hex(ticket)
@@ -380,63 +377,62 @@ const generateWallet = async config => {
 
   const masterSeed = hashedTicket.hash
 
-  const ownership = await childNodeFromSeed({
+  const ownership = await childNode({
       seed: masterSeed,
       type: CHILD_SEED_TYPES.OWNERSHIP,
       ship: ship,
-      revision: revision,
+      index: index,
       password: password
     })
 
-  const transfer = await childNodeFromSeed({
+  const transfer = await childNode({
       seed: masterSeed,
       type: CHILD_SEED_TYPES.TRANSFER,
       ship: ship,
-      revision: revision,
+      index: index,
       password: password
     })
 
-  const spawn = await childNodeFromSeed({
+  const spawn = await childNode({
       seed: masterSeed,
       type: CHILD_SEED_TYPES.SPAWN,
       ship: ship,
-      revision: revision,
+      index: index,
       password: password
     })
 
   const voting =
     isGalaxy(ship)
-    ? await childNodeFromSeed({
+    ? await childNode({
         seed: masterSeed,
         type: CHILD_SEED_TYPES.VOTING,
         ship: ship,
-        revision: revision,
+        index: index,
         password: password
       })
     : {}
 
-  const management = await childNodeFromSeed({
+  const management = await childNode({
       seed: masterSeed,
       type: CHILD_SEED_TYPES.MANAGEMENT,
       ship: ship,
-      revision: revision,
+      index: index,
       password: password
     })
 
   const network = {}
 
   if (boot === true) {
-    let seed = await childSeedFromSeed({
+    let seed = await networkSeed({
       seed: bip39.mnemonicToSeed(management.seed, password),
       type: CHILD_SEED_TYPES.NETWORK,
-      ship: ship,
-      revision: revision
+      index: index
     })
 
     lodash.assign(network, {
       seed: seed,
       keys: urbitKeysFromSeed(Buffer.from(seed, 'hex')),
-      meta: nodeMetadata(CHILD_SEED_TYPES.NETWORK, revision, ship)
+      meta: nodeMetadata(CHILD_SEED_TYPES.NETWORK, index, ship)
     })
   }
 
@@ -454,8 +450,8 @@ const generateWallet = async config => {
 
 module.exports = {
   generateWallet,
-  childSeedFromSeed,
-  childNodeFromSeed,
+  childSeed,
+  childNode,
   bip32NodeFromSeed,
   urbitKeysFromSeed,
   CHILD_SEED_TYPES,
