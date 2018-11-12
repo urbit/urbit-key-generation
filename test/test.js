@@ -67,17 +67,17 @@ describe('isGalaxy', () => {
 describe('nodeMetadata', () => {
   let types = lodash.values(kg.CHILD_SEED_TYPES)
   let type = jsc.oneof(lodash.map(types, jsc.constant))
-  let revision = jsc.oneof(jsc.constant(undefined), jsc.uint8)
+  let index = jsc.oneof(jsc.constant(undefined), jsc.uint8)
   let ship = jsc.oneof(jsc.constant(undefined), jsc.uint32)
 
   it('produces an object with the expected properties', () => {
-    let prop = jsc.forall(jsc.tuple([type, revision, ship]), args => {
+    let prop = jsc.forall(jsc.tuple([type, index, ship]), args => {
       let typ = args[0]
       let rev = args[1]
       let shp = args[2]
 
       let meta = kg._nodeMetadata(typ, rev, shp)
-      return 'type' in meta && 'revision' in meta && 'ship' in meta
+      return 'type' in meta && 'index' in meta && 'ship' in meta
     })
 
     jsc.assert(prop)
@@ -116,7 +116,7 @@ describe('sha256', () => {
   })
 })
 
-describe('childSeedFromSeed', () => {
+describe('childSeed', () => {
   let types = lodash.values(kg.CHILD_SEED_TYPES)
   let nonNetworkSeedType = jsc.oneof(
     lodash.map(
@@ -128,55 +128,25 @@ describe('childSeedFromSeed', () => {
     seed: seedBuffer256,
     type: nonNetworkSeedType,
     ship: jsc.oneof(jsc.uint32, jsc.constant(null)),
-    revision: jsc.oneof(jsc.uint8, jsc.constant(null)),
+    index: jsc.oneof(jsc.uint8, jsc.constant(null)),
     password: jsc.string
   })
 
   it('produces valid BIP39 mnemonics for non-network seeds', () => {
     let prop = jsc.forall(config, async cfg => {
-      let child = await kg.childSeedFromSeed(cfg)
+      let child = await kg.childSeed(cfg)
       return bip39.validateMnemonic(child)
     })
     jsc.assert(prop)
   })
 
-  it('uses the ship to salt the parent seed, when present', () => {
-    let prop = jsc.forall(config, async cfg0 => {
-      let { seed, type, ship, revision } = cfg0
-      let cfg1 = { seed, type, ship: null, revision }
-
-      let child0 = await kg.childSeedFromSeed(cfg0)
-      let child1 = await kg.childSeedFromSeed(cfg1)
-
-      return lodash.isNull(ship)
-        ? lodash.isEqual(child0, child1) === true
-        : lodash.isEqual(child0, child1) === false
-    })
-
-    jsc.assert(prop)
-  })
-
-  it('uses the revision to salt the parent seed', () => {
-    let prop = jsc.forall(config, async cfg0 => {
-      let { seed, type, ship, revision } = cfg0
-      let cfg1 = { seed, type, ship, revision: 257 }
-
-      let child0 = await kg.childSeedFromSeed(cfg0)
-      let child1 = await kg.childSeedFromSeed(cfg1)
-
-      return lodash.isEqual(child0, child1) === false
-    })
-
-    jsc.assert(prop)
-  })
-
   it('uses the seed type to salt the parent seed', () => {
     let prop = jsc.forall(config, async cfg0 => {
-      let { seed, type, ship, revision } = cfg0
-      let cfg1 = { seed, type: 'bollocks', ship, revision }
+      let { seed, type, ship, index } = cfg0
+      let cfg1 = { seed, type: 'bollocks', ship, index }
 
-      let child0 = await kg.childSeedFromSeed(cfg0)
-      let child1 = await kg.childSeedFromSeed(cfg1)
+      let child0 = await kg.childSeed(cfg0)
+      let child1 = await kg.childSeed(cfg1)
 
       return lodash.isEqual(child0, child1) === false
     })
@@ -190,11 +160,11 @@ describe('childSeedFromSeed', () => {
       seed: seed,
       type: 'management',
       ship: 10,
-      revision: 0,
+      index: 0,
     }
 
-    let child = await kg.childSeedFromSeed(cfg)
-    let mnemonic = 'forum equal youth afford sketch piece direct room clarify dumb autumn soon capable elegant nest cover lawn drive motion vault river athlete vicious blush'
+    let child = await kg.childSeed(cfg)
+    let mnemonic = 'bonus favorite swallow panther frequent random essence loop motion apology skull ginger subject exchange please series meadow tree latin smile bring process excite tornado'
 
     expect(child).to.equal(mnemonic)
 
@@ -202,11 +172,11 @@ describe('childSeedFromSeed', () => {
       seed: seed,
       type: 'ownership',
       ship: 10,
-      revision: 0,
+      index: 0,
     }
 
-    child = await kg.childSeedFromSeed(cfg)
-    mnemonic = 'crime pistol actress sentence thunder tide consider estate robot lava arena undo nominee baby ladder opinion congress private print tube mango arrange father prison'
+    child = await kg.childSeed(cfg)
+    mnemonic = 'impact keep magnet two rice country girl jungle cabin mystery usual tree horn skull winter palace supreme reform sphere cabbage cry athlete puppy misery'
 
     expect(child).to.equal(mnemonic)
   })
@@ -333,7 +303,7 @@ describe('ethereum addresses from keys', () => {
   let config = jsc.record({
     seed: seedBuffer256,
     type: jsc.constant(kg.CHILD_SEED_TYPES.MANAGEMENT),
-    revision: jsc.uint8,
+    index: jsc.uint8,
     ship: jsc.uint32,
     password: jsc.string
   })
@@ -347,7 +317,7 @@ describe('ethereum addresses from keys', () => {
           jsc.constant))
 
     let matches = jsc.forall(secpConfig, async cfg => {
-      let node = await kg.childNodeFromSeed(cfg)
+      let node = await kg.childNode(cfg)
       let addrPriv = kg.addressFromSecp256k1Private(node.keys.private)
       let addrPub = kg.addressFromSecp256k1Public(node.keys.public)
       return addrPriv === addrPub
@@ -458,7 +428,7 @@ describe('generateWallet', () => {
     config = {
       ticket: '~wacfus-dabpex-danted-mosfep-pasrud-lavmer-nodtex-taslus-pactyp-milpub-pildeg-fornev-ralmed-dinfeb-fopbyr-sanbet-sovmyl-dozsut-mogsyx-mapwyc-sorrup-ricnec-marnys-lignex',
       password: 'froot loops',
-      revision: 6
+      index: 6
     }
     wallet = await kg.generateWallet(config)
     expected = objectFromFile('./test/assets/wallet2.json')
