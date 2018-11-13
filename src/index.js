@@ -76,20 +76,45 @@ const isGalaxy = ship =>
   Number.isInteger(ship) && ship >= 0 && ship < 256
 
 /**
- * Derive a 256-bit key from provided entropy via Argon2.
+ * Convert a hex-encoded secp256k1 public key into an Ethereum address.
  *
- * @param  {String}  entropy
- * @return {Promise<Object>} derived key
+ * @param  {String}  pub a 33-byte compressed and hex-encoded public key (i.e.,
+ *   including the leading parity byte)
+ * @return  {String}  the corresponding Ethereum address
  */
-const argon2u = entropy => argon2.hash({
-  pass: entropy,
-  salt: 'urbitkeygen',
-  type: argon2.types.Argon2u,
-  hashLen: 32,
-  parallelism: 4,
-  mem: 512000,
-  time: 1,
-})
+const addressFromSecp256k1Public = pub => {
+  const compressed = false
+  const uncompressed = secp256k1.publicKeyConvert(
+    Buffer.from(pub, 'hex'),
+    compressed
+  )
+  const chopped = uncompressed.slice(1) // chop parity byte
+  const hashed = keccak256(chopped)
+  const addr = addHexPrefix(hashed.slice(-20).toString('hex'))
+  return toChecksumAddress(addr)
+}
+
+/**
+ * Argon2 key derivation function, with parameters set as per UP8.
+ *
+ * The 'ship' argument is used to salt the provided entropy.
+ *
+ * @param  {Buffer}  entropy an entropy Buffer
+ * @param  {Number}  ship a 32-bit Urbit ship number
+ * @return {Promise<Uint8Array>} the derived master seed
+ */
+const argon2u = async (entropy, ship) => {
+  const a2u = await argon2.hash({
+    pass: entropy,
+    salt: `urbitkeygen${ship}`,
+    type: argon2.types.Argon2u,
+    hashLen: 32,
+    parallelism: 4,
+    mem: 512000,
+    time: 1,
+  })
+  return a2u.hash
+}
 
 /**
  * SHA-256 hash function.
@@ -103,101 +128,84 @@ const sha256 = async (...args) => {
 }
 
 /**
- * Derive a child seed from a parent.
+ * Derive a BIP39 mnemonic (UP8 child 'seed') for the given node type, using
+ * the provided master seed as entropy.
  *
- * @param  {Array, ArrayBuffer, Buffer, String}  seed a parent seed
- * @param  {String}  type the type of child seed to derive
- * @param  {Number}  ship the ship to derive the seed for
- * @param  {Number}  revision the revision number
- * @return {Promise<String>} the child seed
+ * @param  {Uint8Array}  master a master seed
+ * @param  {String}  type one of 'ownership', 'transfer', 'spawn', 'voting',
+ *   'management'
+ * @return  {Promise<String>}  a BIP39 mnemonic
+ *
  */
-const childSeedFromSeed = async config => {
-  const { seed, type, ship, revision } = config
-
-  const shipSalt =
-    ship === null || ship === undefined
-    ? '0'
-    : `${ship}`
-
-  const revSalt =
-    revision === null || revision === undefined
-    ? '0'
-    : `${revision}`
-
-  const salt = `${type}-${shipSalt}-${revSalt}`
-
-  const hash = await sha256(seed, salt)
-  return type !== CHILD_SEED_TYPES.NETWORK
-    ? bip39.entropyToMnemonic(hash)
-    : Buffer.from(hash).toString('hex')
+const deriveNodeSeed = async (master, type) => {
+  const hash = await sha256(master, type)
+  return bip39.entropyToMnemonic(hash)
 }
 
 /**
- * Create metadata for a BIP32 node.
+ * Derive a secp256k1 keypair and corresponding Ethereum address from a
+ * mnemonic and optional passphrase, according to UP8.
  *
- * @param  {String}  type type of node being derived
- * @param  {Number}  revision a revision number
- * @param  {Number}  ship a ship number
- * @return  {Object}
+ * @param  {String}  mnemonic a BIP39 mnemonic
+ * @param  {String}  passphrase an optional passphrase
+ * @return  {Object}  the keypair, BIP32 chain code, and Ethereum address
  */
-const nodeMetadata = (type, revision, ship) => ({
-  type: type,
-  revision: revision === undefined || revision === null ? 0 : revision,
-  ship: ship === undefined ? null : ship
-})
-
-/**
- * Derive a child BIP32 node from a parent seed.
- *
- * @param  {Array, ArrayBuffer, Buffer, String}  seed a parent seed
- * @param  {String}  type the type of child node to derive
- * @param  {Number}  ship the ship to derive the node for
- * @param  {Number}  revision the revision number
- * @return {Promise<Object>} the BIP32 child node
- */
-const childNodeFromSeed = async config => {
-  const { type, ship, revision, password } = config
-  const child = await childSeedFromSeed(config)
-  return {
-    meta: nodeMetadata(type, revision, ship),
-    seed: child,
-    keys: bip32NodeFromSeed(child, password)
-  }
-}
-
-/**
- * Derive a BIP32 master node -- supplemented with a corresponding Ethereum
- * address -- from a seed.
- *
- * @param  {String}  seed a BIP39 mnemonic
- * @param  {String}  password an optional password to use when generating the
- *   BIP39 seed
- * @return {Object} a BIP32 node
- */
-const bip32NodeFromSeed = (mnemonic, password) => {
-  const seed = bip39.mnemonicToSeed(mnemonic, password)
+const deriveNodeKeys = (mnemonic, passphrase) => {
+  const seed = bip39.mnemonicToSeed(mnemonic, passphrase)
   const hd = bip32.fromSeed(seed)
   const wallet = hd.derivePath("m/44'/60'/0'/0/0")
-
-  const publicKey = wallet.publicKey.toString('hex')
-  const privateKey = wallet.privateKey.toString('hex')
-  const chain = wallet.chainCode.toString('hex')
-  const address = addressFromSecp256k1Public(publicKey)
-
   return {
-    public: publicKey,
-    private: privateKey,
-    chain,
-    address
+    public: wallet.publicKey.toString('hex'),
+    private: wallet.privateKey.toString('hex'),
+    chain: wallet.chainCode.toString('hex'),
+    address: addressFromSecp256k1Public(wallet.publicKey.toString('hex'))
   }
 }
 
 /**
- * Derive Urbit network keypairs from a seed.  Matches ++pit:nu:crub:crypto
- * @param  {Buffer} seed     seed to derive from
- * @return {Object} resulting Urbit network keys
+ * Derive a child mnemonic and its associated secp256k1 keys from a master
+ * seed, given the provided child type and an optional passphrase.
+ *
+ * @param  {Uint8Array}  master a master seed
+ * @param  {String}  type one of 'ownership', 'transfer', 'spawn', 'voting',
+ *   'management'
+ * @param  {String}  passphrase an optional passphrase
+ * @return  {Promise<Object>}  the child seed and associated keys
  */
-const urbitKeysFromSeed = seed => {
+const deriveNode = async (master, type, passphrase) => {
+  const mnemonic = await deriveNodeSeed(master, type)
+  const keys = deriveNodeKeys(mnemonic, passphrase)
+  return {
+    seed: mnemonic,
+    keys: keys
+  }
+}
+
+/**
+ * Derive a network seed using the provided management mnemonic and optional
+ * passphrase.  A provided revision number is also used as a salt.
+ *
+ * @param  {String}  mnemonic the management mnemonic
+ * @param  {String}  passphrase an optional passphrase
+ * @param  {Number}  revision an optional revision number (defaults to 0)
+ * @retrurn  {Promise<String>}  the resulting hex-encoded network seed
+ */
+const deriveNetworkSeed = async (mnemonic, passphrase, revision) => {
+  const seed = bip39.mnemonicToSeed(mnemonic, passphrase)
+  const hash = await sha256(seed, CHILD_SEED_TYPES.NETWORK, `${revision}`)
+  return Buffer.from(hash).toString('hex')
+}
+
+/**
+ * Derive ed25519 Urbit network keys from the provided network seed.
+ *
+ * Note that this matches ++pit:nu:crub:crypto in zuse.
+ *
+ * @param  {String}  seed the hex-encoded network seed
+ * @return  {Object}  ed25519 crypt and auth keys
+ */
+const deriveNetworkKeys = hex => {
+  const seed = Buffer.from(hex, 'hex')
   let h = []
   nacl.lowlevel.crypto_hash(h, seed.reverse(), seed.length)
 
@@ -222,44 +230,33 @@ const urbitKeysFromSeed = seed => {
 }
 
 /**
- * Convert a hex-encoded secp256k1 public key into an Ethereum address.
+ * Derive a network seed and associated ed25519 keys from a management
+ * mnemonic, revision, and optional passphrase.
  *
- * @param  {String}  pub a 33-byte compressed and hex-encoded public key (i.e.,
- *   including the leading parity byte)
- * @return  {String}  the corresponding Ethereum address
+ * @param  {String}  mnemonic a management mnemonic
+ * @param  {Number}  revision a revision number
+ * @param  {String}  passphrase an optional passphrase
+ * @return  {Promise<Object>}  the network seed and associated keys
  */
-const addressFromSecp256k1Public = pub => {
-  const compressed = false
-  const uncompressed = secp256k1.publicKeyConvert(
-    Buffer.from(pub, 'hex'),
-    compressed
-  )
-  const chopped = uncompressed.slice(1) // chop parity byte
-  const hashed = keccak256(chopped)
-  const addr = addHexPrefix(hashed.slice(-20).toString('hex'))
-  return toChecksumAddress(addr)
-}
-
-/**
- * Convert a hex-encoded secp256k1 private key into an Ethereum address.
- * @param  {String}  priv a 32-byte hex-encoded private key
- * @return  {String}  the corresponding Ethereum address
- */
-const addressFromSecp256k1Private = priv => {
-  const pub = secp256k1.publicKeyCreate(Buffer.from(priv, 'hex'))
-  return addressFromSecp256k1Public(pub)
+const deriveNetworkInfo = async (mnemonic, revision, passphrase) => {
+  const seed = await deriveNetworkSeed(mnemonic, passphrase, revision)
+  const keys = deriveNetworkKeys(seed)
+  return {
+    seed: seed,
+    keys: keys
+  }
 }
 
 /**
  * Break a 384-bit ticket into three shards, any two of which can be used to
- * recover it.  If provided with a ticket of some other length, it simply
- * returns the ticket itself in an array.
+ * recover it.  Each shard is simply 2/3 of the ticket -- the first third,
+ * second third, and first and last thirds concatenated together, respectively.
  *
- * Each shard is simply 2/3 of the ticket -- the first third, second third, and
- * first and last thirds concatenated together.
+ * If provided with a ticket of some other length, it simply returns the ticket
+ * itself in an array.
  *
- * @param  {String} ticket a 384-bit @q ticket
- * @return {Array<String>}
+ * @param  {String}  ticket a 384-bit @q ticket
+ * @return {Array<String>}  the resulting shards
  */
 const shard = ticket => {
   const ticketHex = ob.patq2hex(ticket)
@@ -304,8 +301,7 @@ const shard = ticket => {
  */
 const combine = shards => {
   const nundef = shards.reduce((acc, shard) =>
-    acc + (shard === undefined ? 1 : 0), 0
-  )
+    acc + (shard === undefined ? 1 : 0), 0)
 
   if (nundef > 1) {
     throw new Error('combine: need at least two shards')
@@ -328,96 +324,64 @@ const combine = shards => {
   )
 }
 
-/**
- * Generate an Urbit HD wallet given the provided configuration.
- *
- * @param  {String}  ticket a 64, 128, or 384-bit @q master ticket
- * @param  {Number}  ship an optional ship number
- * @param  {String}  password a password used to salt generated seeds (default:
- *   null)
- * @param  {Number}  revision a revision number used as a salt (default: 0)
- * @param  {Bool}  boot if true, generate network keys for the provided ship
- *   (default: false)
- * @return  {Promise<Object>}
- */
 const generateWallet = async config => {
-  const { ticket } = config
-  const ship = 'ship' in config ? config.ship : null
-  const password = 'password' in config ? config.password : null
+  const { ticket, ship } = config
+
+  const passphrase = 'passphrase' in config ? config.passphrase : null
   const revision = 'revision' in config ? config.revision : 0
   const boot = 'boot' in config ? config.boot : false
 
-  const ticketHex = ob.patq2hex(ticket)
-  const ticketBuf = Buffer.from(ticketHex, 'hex')
-  const hashedTicket = await argon2u(ticketBuf)
-
   const shards = shard(ticket)
 
-  const masterSeed = hashedTicket.hash
+  const buf = Buffer.from(ob.patq2hex(ticket), 'hex')
 
   const meta = {
     generator: `urbit-key-generation-v${version}`
   }
 
-  const ownership = await childNodeFromSeed({
-      seed: masterSeed,
-      type: CHILD_SEED_TYPES.OWNERSHIP,
-      ship: ship,
-      revision: revision,
-      password: password
-    })
+  const masterSeed = await argon2u(buf, ship)
 
-  const transfer = await childNodeFromSeed({
-      seed: masterSeed,
-      type: CHILD_SEED_TYPES.TRANSFER,
-      ship: ship,
-      revision: revision,
-      password: password
-    })
+  const ownership = await deriveNode(
+    masterSeed,
+    CHILD_SEED_TYPES.OWNERSHIP,
+    passphrase
+  )
 
-  const spawn = await childNodeFromSeed({
-      seed: masterSeed,
-      type: CHILD_SEED_TYPES.SPAWN,
-      ship: ship,
-      revision: revision,
-      password: password
-    })
+  const transfer = await deriveNode(
+    masterSeed,
+    CHILD_SEED_TYPES.TRANSFER,
+    passphrase
+  )
+
+  const spawn = await deriveNode(
+    masterSeed,
+    CHILD_SEED_TYPES.SPAWN,
+    passphrase
+  )
 
   const voting =
     isGalaxy(ship)
-    ? await childNodeFromSeed({
-        seed: masterSeed,
-        type: CHILD_SEED_TYPES.VOTING,
-        ship: ship,
-        revision: revision,
-        password: password
-      })
+    ? await deriveNode(
+        masterSeed,
+        CHILD_SEED_TYPES.VOTING,
+        passphrase
+      )
     : {}
 
-  const management = await childNodeFromSeed({
-      seed: masterSeed,
-      type: CHILD_SEED_TYPES.MANAGEMENT,
-      ship: ship,
-      revision: revision,
-      password: password
-    })
+  const management = await deriveNode(
+    masterSeed,
+    CHILD_SEED_TYPES.MANAGEMENT,
+    passphrase
+  )
 
-  const network = {}
-
-  if (boot === true) {
-    let seed = await childSeedFromSeed({
-      seed: bip39.mnemonicToSeed(management.seed, password),
-      type: CHILD_SEED_TYPES.NETWORK,
-      ship: ship,
-      revision: revision
-    })
-
-    Object.assign(network, {
-      seed: seed,
-      keys: urbitKeysFromSeed(Buffer.from(seed, 'hex')),
-      meta: nodeMetadata(CHILD_SEED_TYPES.NETWORK, revision, ship)
-    })
-  }
+  const network =
+    boot === true
+    ? await deriveNetworkInfo(
+        management.seed,
+        revision,
+        passphrase
+      )
+    : {}
 
   return {
     meta: meta,
@@ -434,22 +398,23 @@ const generateWallet = async config => {
 
 module.exports = {
   generateWallet,
-  childSeedFromSeed,
-  childNodeFromSeed,
-  bip32NodeFromSeed,
-  urbitKeysFromSeed,
+  deriveNode,
+  deriveNodeSeed,
+  deriveNodeKeys,
+  deriveNetworkInfo,
+  deriveNetworkSeed,
+  deriveNetworkKeys,
   CHILD_SEED_TYPES,
   argon2u,
   shard,
   combine,
   addressFromSecp256k1Public,
-  addressFromSecp256k1Private,
 
   _isGalaxy: isGalaxy,
   _sha256: sha256,
   _keccak256: keccak256,
-  _nodeMetadata: nodeMetadata,
   _toChecksumAddress: toChecksumAddress,
   _addHexPrefix: addHexPrefix,
   _stripHexPrefix: stripHexPrefix
 }
+
