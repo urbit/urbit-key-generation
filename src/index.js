@@ -187,7 +187,7 @@ const deriveNode = async (master, type, passphrase) => {
  *
  * @param  {String}  mnemonic the management mnemonic
  * @param  {String}  passphrase an optional passphrase
- * @param  {Number}  revision an optional revision number (defaults to 0)
+ * @param  {Number}  revision a revision number
  * @retrurn  {Promise<String>}  the resulting hex-encoded network seed
  */
 const deriveNetworkSeed = async (mnemonic, passphrase, revision) => {
