@@ -9,7 +9,7 @@
   "scripts": {
     "test": "nyc mocha --reporter spec",
     "build": "mkdir -p dist && browserify src/index.js -s urbit-keygen > dist/index.js",
-    "prepublish": "npm run build"
+    "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "git",
@@ -30,7 +30,6 @@
     "bip39": "^2.5.0",
     "isomorphic-webcrypto": "^1.6.0",
     "keccak": "^1.4.0",
-    "lodash": "^4.17.11",
     "secp256k1": "^3.5.2",
     "tweetnacl": "^1.0.0",
     "urbit-ob": "^3.0.1"
@@ -41,6 +40,7 @@
     "ethereumjs-util": "^6.0.0",
     "fs-extra": "^7.0.0",
     "jsverify": "^0.8.3",
+    "lodash": "^4.17.11",
     "mocha": "^5.2.0",
     "nyc": "^13.1.0"
   }
