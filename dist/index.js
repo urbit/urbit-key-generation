@@ -57803,7 +57803,7 @@ module.exports={
   "scripts": {
     "test": "nyc mocha --reporter spec",
     "build": "mkdir -p dist && browserify src/index.js -s urbit-keygen > dist/index.js",
-    "prepublish": "npm run build"
+    "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "git",
@@ -58031,7 +58031,7 @@ const deriveNode = async (master, type, passphrase) => {
  *
  * @param  {String}  mnemonic the management mnemonic
  * @param  {String}  passphrase an optional passphrase
- * @param  {Number}  revision an optional revision number (defaults to 0)
+ * @param  {Number}  revision a revision number
  * @retrurn  {Promise<String>}  the resulting hex-encoded network seed
  */
 const deriveNetworkSeed = async (mnemonic, passphrase, revision) => {
@@ -58168,7 +58168,31 @@ const combine = shards => {
   )
 }
 
+/**
+ * Generate an Urbit HD wallet given the provided configuration.
+ *
+ * Expects an object with the following properties:
+ *
+ * @param  {String}  ticket a 64, 128, or 384-bit @q master ticket
+ * @param  {Number}  ship a 32-bit Urbit ship number
+ * @param  {String}  passphrase an optional passphrase to use when deriving
+ *   seeds from BIP39 mnemonics
+ * @param  {Number}  revision an optional revision number used to generate new
+ *   networking keys (defaults to 0)
+ * @param  {Bool}  boot if true, generates network keys for the provided ship
+ *   (defaults to false)
+ * @return  {Promise<Object>}
+ */
 const generateWallet = async config => {
+  /* istanbul ignore next */
+  if ('ticket' in config === false) {
+    throw new Error('generateWallet: no ticket provided')
+  }
+  /* istanbul ignore next */
+  if ('ship' in config === false) {
+    throw new Error('generateWallet: no ship provided')
+  }
+
   const { ticket, ship } = config
 
   const passphrase = 'passphrase' in config ? config.passphrase : null
