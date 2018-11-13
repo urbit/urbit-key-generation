@@ -324,6 +324,21 @@ const combine = shards => {
   )
 }
 
+/**
+ * Generate an Urbit HD wallet given the provided configuration.
+ *
+ * Expects an object with the following properties:
+ *
+ * @param  {String}  ticket a 64, 128, or 384-bit @q master ticket
+ * @param  {Number}  ship a 32-bit Urbit ship number
+ * @param  {String}  passphrase an optional passphrase to use when deriving
+ *   seeds from BIP39 mnemonics
+ * @param  {Number}  revision an optional revision number used to generate new
+ *   networking keys (defaults to 0)
+ * @param  {Bool}  boot if true, generates network keys for the provided ship
+ *   (defaults to false)
+ * @return  {Promise<Object>}
+ */
 const generateWallet = async config => {
   const { ticket, ship } = config
 
