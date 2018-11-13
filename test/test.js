@@ -19,7 +19,10 @@ const objectFromFile = (path) => {
 
 const replicate = (n, g) => jsc.tuple(new Array(n).fill(g))
 
-const seedBuffer256 = replicate(32, jsc.uint8)
+const buffer256 = replicate(32, jsc.uint8).smap(
+  arr => Buffer.from(arr),
+  buf => Array.from(buf)
+)
 
 const buffer384 = replicate(48, jsc.uint8).smap(
   arr => Buffer.from(arr),
@@ -30,7 +33,7 @@ const buffer384 = replicate(48, jsc.uint8).smap(
 
 describe('toChecksumAddress', () => {
   it('matches a reference implementation', () => {
-    let prop = jsc.forall(seedBuffer256, buf => {
+    let prop = jsc.forall(buffer256, buf => {
       let hashed = kg._keccak256(buf.toString('hex'))
       let addr = kg._addHexPrefix(hashed.slice(-20).toString('hex'))
       return util.toChecksumAddress(addr) === kg._toChecksumAddress(addr)
@@ -64,35 +67,54 @@ describe('isGalaxy', () => {
   })
 })
 
-describe('nodeMetadata', () => {
-  let types = lodash.values(kg.CHILD_SEED_TYPES)
-  let type = jsc.oneof(lodash.map(types, jsc.constant))
-  let revision = jsc.oneof(jsc.constant(undefined), jsc.uint8)
-  let ship = jsc.oneof(jsc.constant(undefined), jsc.uint32)
+describe('shard and combine', () => {
+  it('does not shard non-384-bit tickets', () => {
+    let ticket = '~doznec-marbud'
+    expect(kg.shard(ticket)).to.have.lengthOf(1)
+  })
 
-  it('produces an object with the expected properties', () => {
-    let prop = jsc.forall(jsc.tuple([type, revision, ship]), args => {
-      let typ = args[0]
-      let rev = args[1]
-      let shp = args[2]
+  it('shards 384-bit tickets', () => {
+    let ticket = '~wacfus-dabpex-danted-mosfep-pasrud-lavmer-nodtex-taslus-pactyp-milpub-pildeg-fornev-ralmed-dinfeb-fopbyr-sanbet-sovmyl-dozsut-mogsyx-mapwyc-sorrup-ricnec-marnys-lignex'
+    expect(kg.shard(ticket)).to.have.lengthOf(3)
+  })
 
-      let meta = kg._nodeMetadata(typ, rev, shp)
-      return 'type' in meta && 'revision' in meta && 'ship' in meta
+  it('produces valid shards', () => {
+    let prop = jsc.forall(buffer384, buf => {
+      let ticket = ob.hex2patq(buf.toString('hex'))
+      let shards = kg.shard(ticket)
+
+      return (
+        kg.combine([shards[0], shards[1], undefined]) === ticket &&
+        kg.combine([shards[0], undefined, shards[2]]) === ticket &&
+        kg.combine([undefined, shards[1], shards[2]]) === ticket
+      )
     })
 
     jsc.assert(prop)
   })
+
+  it('throws when insufficient shards', () => {
+    expect(() => kg.combine([undefined, undefined, undefined])).to.throw()
+  })
 })
 
 describe('argon2u', () => {
-  it('works as expected', async function() {
+  it('produces 32 bytelength hashes', async function() {
     this.timeout(10000)
 
-    let res = await kg.argon2u({entropy: 'my rad entropy'})
+    let res = await kg.argon2u('my rad entropy', 0)
 
     expect(res).to.not.be.undefined
-    expect('hash' in res).to.equal(true)
-    expect(res.hash).to.have.lengthOf(32)
+    expect(res).to.have.lengthOf(32)
+  })
+
+  it('uses the ship number as a salt', async function() {
+    this.timeout(10000)
+
+    let res0 = await kg.argon2u('my rad entropy', 0)
+    let res1 = await kg.argon2u('my rad entropy', 1)
+
+    expect(res0).to.not.equal(res1)
   })
 })
 
@@ -116,69 +138,37 @@ describe('sha256', () => {
   })
 })
 
-describe('childSeedFromSeed', () => {
-  let types = lodash.values(kg.CHILD_SEED_TYPES)
+
+describe('deriveNodeSeed', () => {
+  let types = Object.values(kg.CHILD_SEED_TYPES)
   let nonNetworkSeedType = jsc.oneof(
-    lodash.map(
-      lodash.filter(types, type => type !== kg.CHILD_SEED_TYPES.NETWORK),
-      jsc.constant
-    ))
+    types
+      .filter(type => type !== kg.CHILD_SEED_TYPES.NETWORK)
+      .map(jsc.constant)
+  )
 
   let config = jsc.record({
-    seed: seedBuffer256,
+    seed: buffer256,
     type: nonNetworkSeedType,
-    ship: jsc.oneof(jsc.uint32, jsc.constant(null)),
-    revision: jsc.oneof(jsc.uint8, jsc.constant(null)),
-    password: jsc.string
   })
 
   it('produces valid BIP39 mnemonics for non-network seeds', () => {
     let prop = jsc.forall(config, async cfg => {
-      let child = await kg.childSeedFromSeed(cfg)
+      let { seed, type } = cfg
+      let child = await kg.deriveNodeSeed(seed, type)
       return bip39.validateMnemonic(child)
     })
     jsc.assert(prop)
   })
 
-  it('uses the ship to salt the parent seed, when present', () => {
+  it('uses the seed type to salt the master seed', () => {
     let prop = jsc.forall(config, async cfg0 => {
-      let { seed, type, ship, revision } = cfg0
-      let cfg1 = { seed, type, ship: null, revision }
+      let { seed, type } = cfg0
 
-      let child0 = await kg.childSeedFromSeed(cfg0)
-      let child1 = await kg.childSeedFromSeed(cfg1)
+      let seed0 = await kg.deriveNodeSeed(seed, type)
+      let seed1 = await kg.deriveNodeSeed(seed, 'bollocks')
 
-      return lodash.isNull(ship)
-        ? lodash.isEqual(child0, child1) === true
-        : lodash.isEqual(child0, child1) === false
-    })
-
-    jsc.assert(prop)
-  })
-
-  it('uses the revision to salt the parent seed', () => {
-    let prop = jsc.forall(config, async cfg0 => {
-      let { seed, type, ship, revision } = cfg0
-      let cfg1 = { seed, type, ship, revision: 257 }
-
-      let child0 = await kg.childSeedFromSeed(cfg0)
-      let child1 = await kg.childSeedFromSeed(cfg1)
-
-      return lodash.isEqual(child0, child1) === false
-    })
-
-    jsc.assert(prop)
-  })
-
-  it('uses the seed type to salt the parent seed', () => {
-    let prop = jsc.forall(config, async cfg0 => {
-      let { seed, type, ship, revision } = cfg0
-      let cfg1 = { seed, type: 'bollocks', ship, revision }
-
-      let child0 = await kg.childSeedFromSeed(cfg0)
-      let child1 = await kg.childSeedFromSeed(cfg1)
-
-      return lodash.isEqual(child0, child1) === false
+      return lodash.isEqual(seed0, seed1) === false
     })
 
     jsc.assert(prop)
@@ -186,33 +176,21 @@ describe('childSeedFromSeed', () => {
 
   it('works as expected', async () => {
     let seed = Buffer.from('b2bdf8de8452b18f02195b6e7bfc82b900fbcc25681f07ae10f38f11e5af53af', 'hex')
-    let cfg = {
-      seed: seed,
-      type: 'management',
-      ship: 10,
-      revision: 0,
-    }
 
-    let child = await kg.childSeedFromSeed(cfg)
-    let mnemonic = 'forum equal youth afford sketch piece direct room clarify dumb autumn soon capable elegant nest cover lawn drive motion vault river athlete vicious blush'
+    let child = await kg.deriveNodeSeed(seed, 'management')
+    let mnemonic = 'bonus favorite swallow panther frequent random essence loop motion apology skull ginger subject exchange please series meadow tree latin smile bring process excite tornado'
 
     expect(child).to.equal(mnemonic)
 
-    cfg = {
-      seed: seed,
-      type: 'ownership',
-      ship: 10,
-      revision: 0,
-    }
-
-    child = await kg.childSeedFromSeed(cfg)
-    mnemonic = 'crime pistol actress sentence thunder tide consider estate robot lava arena undo nominee baby ladder opinion congress private print tube mango arrange father prison'
+    child = await kg.deriveNodeSeed(seed, 'ownership')
+    mnemonic = 'impact keep magnet two rice country girl jungle cabin mystery usual tree horn skull winter palace supreme reform sphere cabbage cry athlete puppy misery'
 
     expect(child).to.equal(mnemonic)
   })
+
 })
 
-describe('bip32NodeFromSeed', () => {
+describe('deriveNodeKeys', () => {
 
   const mnemonic = replicate(16, jsc.uint8).smap(
     bip39.entropyToMnemonic,
@@ -222,23 +200,37 @@ describe('bip32NodeFromSeed', () => {
   const VALID_PATH = "m/44'/60'/0'/0/0"
   const INVALID_PATH = "m/44'/60/0'/0/0"
 
-  it('derives by paths correctly', async function() {
-    this.timeout(10000)
-
+  it('derives by paths correctly', () => {
     let prop = jsc.forall(mnemonic, mnem => {
       let seed = bip39.mnemonicToSeed(mnem)
       let hd = bip32.fromSeed(seed)
       let wallet0 = hd.derivePath(VALID_PATH)
       let wallet1 = hd.derivePath(INVALID_PATH)
 
-      let node = kg.bip32NodeFromSeed(mnem)
+      let keys0 = {
+        public: wallet0.publicKey.toString('hex'),
+        private: wallet0.privateKey.toString('hex'),
+        chain: wallet0.chainCode.toString('hex'),
+        address: kg.addressFromSecp256k1Public(wallet0.publicKey.toString('hex'))
+      }
 
-      return wallet0.publicKey.toString('hex') === node.public
-        && wallet0.privateKey.toString('hex') === node.private
-        && wallet0.chainCode.toString('hex') === node.chain
-        && wallet1.publicKey.toString('hex') !== node.public
-        && wallet1.privateKey.toString('hex') !== node.private
-        && wallet1.chainCode.toString('hex') !== node.chain
+      let keys1 = {
+        public: wallet1.publicKey.toString('hex'),
+        private: wallet1.privateKey.toString('hex'),
+        chain: wallet1.chainCode.toString('hex'),
+        address: kg.addressFromSecp256k1Public(wallet1.publicKey.toString('hex'))
+      }
+
+      let node = kg.deriveNodeKeys(mnem)
+
+      return keys0.public === node.public
+        && keys0.private === node.private
+        && keys0.chain === node.chain
+        && keys0.address === node.address
+        && keys1.public !== node.public
+        && keys1.private !== node.private
+        && keys1.chain !== node.chain
+        && keys1.address !== node.address
     })
 
     jsc.assert(prop)
@@ -246,14 +238,15 @@ describe('bip32NodeFromSeed', () => {
 
   it('has the correct properties', () => {
     let prop = jsc.forall(mnemonic, mnem => {
-      let node = kg.bip32NodeFromSeed(mnem)
+      let node = kg.deriveNodeKeys(mnem)
 
-      return 'public' in node && 'private' in node && 'chain' in node
+      return 'public' in node && 'private' in node && 'chain' in node &&
+        'address' in node
     })
   })
 
   it('works as expected', () => {
-    let node = kg.bip32NodeFromSeed(
+    let node = kg.deriveNodeKeys(
       'market truck nice joke upper divide spot essay mosquito mushroom buzz undo'
     )
 
@@ -270,9 +263,11 @@ describe('bip32NodeFromSeed', () => {
 
     expect(lodash.isEqual(node, expected)).to.equal(true)
   })
+
 })
 
-describe('urbitKeysFromSeed', () => {
+
+describe('deriveNetworkKeys', () => {
   it('matches ++pit:nu:crub:crypto', () => {
     // to compare w/keygen-hoon:
     //
@@ -293,12 +288,12 @@ describe('urbitKeysFromSeed', () => {
     }
 
     let seed = Buffer.from('88359ba61d766e1c2ec9598831668d4233b0f8f58b29da8cf33d25b2590d62a0', 'hex')
-    let keys = kg.urbitKeysFromSeed(seed)
+    let keys = kg.deriveNetworkKeys(seed)
 
     expect(lodash.isEqual(keys, expected)).to.equal(true)
 
     seed = Buffer.from('52dc7422d68c0209610502e71009d6e9f054da2accafb612180c853f3f77d606', 'hex');
-    keys = kg.urbitKeysFromSeed(seed)
+    keys = kg.deriveNetworkKeys(seed)
 
     expected = {
       crypt:
@@ -318,7 +313,7 @@ describe('urbitKeysFromSeed', () => {
 
   it('contains the expected fields', () => {
     let prop = jsc.forall(jsc.string, str => {
-      let keys = kg.urbitKeysFromSeed(Buffer.from(str))
+      let keys = kg.deriveNetworkKeys(Buffer.from(str))
 
       return 'auth' in keys && 'crypt' in keys
         && 'public' in keys.auth && 'private' in keys.auth
@@ -330,39 +325,11 @@ describe('urbitKeysFromSeed', () => {
 })
 
 describe('ethereum addresses from keys', () => {
-  let config = jsc.record({
-    seed: seedBuffer256,
-    type: jsc.constant(kg.CHILD_SEED_TYPES.MANAGEMENT),
-    revision: jsc.uint8,
-    ship: jsc.uint32,
-    password: jsc.string
-  })
-
-  it('matches when derived from public or private secp256k1 keys', () => {
-    const secpConfig = lodash.cloneDeep(config)
-    secpConfig.type = jsc.oneof(
-        lodash.map(
-          lodash.filter(lodash.values(kg.CHILD_SEED_TYPES), type =>
-            type !== kg.CHILD_SEED_TYPES.NETWORK),
-          jsc.constant))
-
-    let matches = jsc.forall(secpConfig, async cfg => {
-      let node = await kg.childNodeFromSeed(cfg)
-      let addrPriv = kg.addressFromSecp256k1Private(node.keys.private)
-      let addrPub = kg.addressFromSecp256k1Public(node.keys.public)
-      return addrPriv === addrPub
-    })
-
-    jsc.assert(matches)
-  })
-
   it('derives correct addresses', () => {
     const checkAddress = config  => {
       let { epriv, epub, eaddr } = config
-      let fromPriv = kg.addressFromSecp256k1Private(epriv)
-      let fromPub  = kg.addressFromSecp256k1Public(epub)
+      let fromPub = kg.addressFromSecp256k1Public(epub)
 
-      expect(fromPriv === eaddr).to.equal(true)
       expect(fromPub === eaddr).to.equal(true)
     }
 
@@ -401,37 +368,6 @@ describe('ethereum addresses from keys', () => {
 
 })
 
-describe('shard', () => {
-  it('does not shard non-384-bit tickets', () => {
-    let ticket = '~doznec-marbud'
-    expect(kg.shard(ticket)).to.have.lengthOf(1)
-  })
-
-  it('shards 384-bit tickets', () => {
-    let ticket = '~wacfus-dabpex-danted-mosfep-pasrud-lavmer-nodtex-taslus-pactyp-milpub-pildeg-fornev-ralmed-dinfeb-fopbyr-sanbet-sovmyl-dozsut-mogsyx-mapwyc-sorrup-ricnec-marnys-lignex'
-    expect(kg.shard(ticket)).to.have.lengthOf(3)
-  })
-
-  it('produces valid shards', () => {
-    let prop = jsc.forall(buffer384, buf => {
-      let ticket = ob.hex2patq(buf.toString('hex'))
-      let shards = kg.shard(ticket)
-
-      return (
-        kg.combine([shards[0], shards[1], undefined]) === ticket &&
-        kg.combine([shards[0], undefined, shards[2]]) === ticket &&
-        kg.combine([undefined, shards[1], shards[2]]) === ticket
-      )
-    })
-
-    jsc.assert(prop)
-  })
-
-  it('throws when insufficient shards', () => {
-    expect(() => kg.combine([undefined, undefined, undefined])).to.throw()
-  })
-})
-
 describe('generateWallet', () => {
   it('generates wallets as expected', async function() {
     this.timeout(20000)
@@ -457,7 +393,8 @@ describe('generateWallet', () => {
 
     config = {
       ticket: '~wacfus-dabpex-danted-mosfep-pasrud-lavmer-nodtex-taslus-pactyp-milpub-pildeg-fornev-ralmed-dinfeb-fopbyr-sanbet-sovmyl-dozsut-mogsyx-mapwyc-sorrup-ricnec-marnys-lignex',
-      password: 'froot loops',
+      passphrase: 'froot loops',
+      ship: 222,
       revision: 6
     }
     wallet = await kg.generateWallet(config)
@@ -474,5 +411,5 @@ describe('generateWallet', () => {
     expect(lodash.isEqual(wallet, expected)).to.equal(true)
 
   })
-
 })
+

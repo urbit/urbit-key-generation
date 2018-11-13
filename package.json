@@ -9,7 +9,7 @@
   "scripts": {
     "test": "nyc mocha --reporter spec",
     "build": "mkdir -p dist && browserify src/index.js -s urbit-keygen > dist/index.js",
-    "prepublish": "npm run build"
+    "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "git",
@@ -37,10 +37,10 @@
   "devDependencies": {
     "browserify": "^16.2.3",
     "chai": "^4.2.0",
-    "lodash": "^4.17.11",
     "ethereumjs-util": "^6.0.0",
     "fs-extra": "^7.0.0",
     "jsverify": "^0.8.3",
+    "lodash": "^4.17.11",
     "mocha": "^5.2.0",
     "nyc": "^13.1.0"
   }
