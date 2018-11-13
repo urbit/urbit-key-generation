@@ -404,6 +404,7 @@ describe('generateWallet', () => {
 
     config = {
       ticket: '~doznec-marbud',
+      ship: 0
     }
     wallet = await kg.generateWallet(config)
     expected = objectFromFile('./test/assets/wallet3.json')
