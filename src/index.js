@@ -340,6 +340,15 @@ const combine = shards => {
  * @return  {Promise<Object>}
  */
 const generateWallet = async config => {
+  /* istanbul ignore next */
+  if ('ticket' in config === false) {
+    throw new Error('generateWallet: no ticket provided')
+  }
+  /* istanbul ignore next */
+  if ('ship' in config === false) {
+    throw new Error('generateWallet: no ship provided')
+  }
+
   const { ticket, ship } = config
 
   const passphrase = 'passphrase' in config ? config.passphrase : null
