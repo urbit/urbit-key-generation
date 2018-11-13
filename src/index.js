@@ -3,7 +3,6 @@ const bip32 = require('bip32')
 const bip39 = require('bip39')
 const crypto = require('isomorphic-webcrypto')
 const keccak = require('keccak')
-const lodash = require('lodash')
 const nacl = require('tweetnacl')
 const ob = require('urbit-ob')
 const secp256k1 = require('secp256k1')
@@ -59,12 +58,13 @@ const keccak256 = str =>
 const toChecksumAddress = (address) => {
   const addr = stripHexPrefix(address).toLowerCase()
   const hash = keccak256(addr).toString('hex')
-
-  return lodash.reduce(addr, (acc, char, idx) =>
+  const arr = Array.from(addr)
+  return arr.reduce((acc, char, idx) =>
     parseInt(hash[idx], 16) >= 8
       ? acc + char.toUpperCase()
       : acc + char,
-    '0x')
+    '0x'
+  )
 }
 
 /**
@@ -73,19 +73,7 @@ const toChecksumAddress = (address) => {
  * @return  {Bool}  true if galaxy, false otherwise
  */
 const isGalaxy = ship =>
-  lodash.isInteger(ship) && ship >= 0 && ship < 256
-
-/**
- * Encode a buffer as hex.
- * @param  {Buffer}  buffer
- * @return  {String}  hex-encoded buffer
- */
-const buf2hex = buffer => {
-  return Array.from(new Uint8Array(buffer))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('')
-}
-
+  Number.isInteger(ship) && ship >= 0 && ship < 256
 
 /**
  * Derive a 256-bit key from provided entropy via Argon2.
@@ -127,12 +115,12 @@ const childSeedFromSeed = async config => {
   const { seed, type, ship, revision } = config
 
   const shipSalt =
-    lodash.isNull(ship) || lodash.isUndefined(ship)
+    ship === null || ship === undefined
     ? '0'
     : `${ship}`
 
   const revSalt =
-    lodash.isNull(revision) || lodash.isUndefined(revision)
+    revision === null || revision === undefined
     ? '0'
     : `${revision}`
 
@@ -144,7 +132,6 @@ const childSeedFromSeed = async config => {
     : Buffer.from(hash).toString('hex')
 }
 
-
 /**
  * Create metadata for a BIP32 node.
  *
@@ -155,11 +142,9 @@ const childSeedFromSeed = async config => {
  */
 const nodeMetadata = (type, revision, ship) => ({
   type: type,
-  revision: lodash.isUndefined(revision) ? 0 : revision,
-  ship: lodash.isUndefined(ship) ? null : ship
+  revision: revision === undefined || revision === null ? 0 : revision,
+  ship: ship === undefined ? null : ship
 })
-
-
 
 /**
  * Derive a child BIP32 node from a parent seed.
@@ -180,8 +165,6 @@ const childNodeFromSeed = async config => {
   }
 }
 
-
-
 /**
  * Derive a BIP32 master node -- supplemented with a corresponding Ethereum
  * address -- from a seed.
@@ -196,9 +179,9 @@ const bip32NodeFromSeed = (mnemonic, password) => {
   const hd = bip32.fromSeed(seed)
   const wallet = hd.derivePath("m/44'/60'/0'/0/0")
 
-  const publicKey = buf2hex(wallet.publicKey)
-  const privateKey = buf2hex(wallet.privateKey)
-  const chain = buf2hex(wallet.chainCode)
+  const publicKey = wallet.publicKey.toString('hex')
+  const privateKey = wallet.privateKey.toString('hex')
+  const chain = wallet.chainCode.toString('hex')
   const address = addressFromSecp256k1Public(publicKey)
 
   return {
@@ -209,8 +192,6 @@ const bip32NodeFromSeed = (mnemonic, password) => {
   }
 }
 
-
-
 /**
  * Derive Urbit network keypairs from a seed.  Matches ++pit:nu:crub:crypto
  * @param  {Buffer} seed     seed to derive from
@@ -220,25 +201,25 @@ const urbitKeysFromSeed = seed => {
   let h = []
   nacl.lowlevel.crypto_hash(h, seed.reverse(), seed.length)
 
-  const c = h.slice(32)
-  const a = h.slice(0, 32)
+  const c = Buffer.from(h.slice(32))
+  const a = Buffer.from(h.slice(0, 32))
 
-  const crypt = nacl.sign.keyPair.fromSeed(Buffer.from(c))
-  const auth = nacl.sign.keyPair.fromSeed(Buffer.from(a))
+  const crypt = nacl.sign.keyPair.fromSeed(c)
+  const cpub  = Buffer.from(crypt.publicKey)
+  const auth = nacl.sign.keyPair.fromSeed(a)
+  const apub  = Buffer.from(auth.publicKey)
 
   return {
     crypt: {
-      private: buf2hex(c.reverse()),
-      public: buf2hex(crypt.publicKey.reverse())
+      private: c.reverse().toString('hex'),
+      public: cpub.reverse().toString('hex')
     },
     auth: {
-      private: buf2hex(a.reverse()),
-      public: buf2hex(auth.publicKey.reverse())
+      private: a.reverse().toString('hex'),
+      public: apub.reverse().toString('hex')
     }
   }
 }
-
-
 
 /**
  * Convert a hex-encoded secp256k1 public key into an Ethereum address.
@@ -259,8 +240,6 @@ const addressFromSecp256k1Public = pub => {
   return toChecksumAddress(addr)
 }
 
-
-
 /**
  * Convert a hex-encoded secp256k1 private key into an Ethereum address.
  * @param  {String}  priv a 32-byte hex-encoded private key
@@ -270,8 +249,6 @@ const addressFromSecp256k1Private = priv => {
   const pub = secp256k1.publicKeyCreate(Buffer.from(priv, 'hex'))
   return addressFromSecp256k1Public(pub)
 }
-
-
 
 /**
  * Break a 384-bit ticket into three shards, any two of which can be used to
@@ -298,8 +275,7 @@ const shard = ticket => {
     Buffer.concat([ ticketBuf.slice(0, 16), ticketBuf.slice(32) ])
   ]
 
-  const pq = lodash.map(shards,
-    shard => ob.hex2patq(shard.toString('hex')))
+  const pq = shards.map(shard => ob.hex2patq(shard.toString('hex')))
 
   const combinable =
     combine([pq[0], pq[1], undefined]) === ticket &&
@@ -316,8 +292,6 @@ const shard = ticket => {
   return pq
 }
 
-
-
 /**
  * Combine two of three shards to recompute the original secret.
  *
@@ -329,8 +303,9 @@ const shard = ticket => {
  * @return {String} the original secret
  */
 const combine = shards => {
-  const nundef = lodash.reduce(shards, (acc, shard) =>
-    acc + (lodash.isUndefined(shard) ? 1 : 0), 0)
+  const nundef = shards.reduce((acc, shard) =>
+    acc + (shard === undefined ? 1 : 0), 0
+  )
 
   if (nundef > 1) {
     throw new Error('combine: need at least two shards')
@@ -341,19 +316,17 @@ const combine = shards => {
   const s2 = shards[2]
 
   return ob.hex2patq(
-      lodash.isUndefined(s0) === false && lodash.isUndefined(s1) === false
+      s0 !== undefined && s1 !== undefined
     ? ob.patq2hex(s0).slice(0, 32) + ob.patq2hex(s1)
-    : lodash.isUndefined(s0) === false && lodash.isUndefined(s2) === false
+    : s0 !== undefined && s2 !== undefined
     ? ob.patq2hex(s0) + ob.patq2hex(s2).slice(32)
-    : lodash.isUndefined(s1) === false && lodash.isUndefined(s2) === false
+    : s1 !== undefined && s2 !== undefined
     ? ob.patq2hex(s2).slice(0, 32) + ob.patq2hex(s1)
     // above throw makes this unreachable
     /* istanbul ignore next */
     : undefined
   )
 }
-
-
 
 /**
  * Generate an Urbit HD wallet given the provided configuration.
@@ -439,7 +412,7 @@ const generateWallet = async config => {
       revision: revision
     })
 
-    lodash.assign(network, {
+    Object.assign(network, {
       seed: seed,
       keys: urbitKeysFromSeed(Buffer.from(seed, 'hex')),
       meta: nodeMetadata(CHILD_SEED_TYPES.NETWORK, revision, ship)

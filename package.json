@@ -30,7 +30,6 @@
     "bip39": "^2.5.0",
     "isomorphic-webcrypto": "^1.6.0",
     "keccak": "^1.4.0",
-    "lodash": "^4.17.11",
     "secp256k1": "^3.5.2",
     "tweetnacl": "^1.0.0",
     "urbit-ob": "^3.0.1"
@@ -38,6 +37,7 @@
   "devDependencies": {
     "browserify": "^16.2.3",
     "chai": "^4.2.0",
+    "lodash": "^4.17.11",
     "ethereumjs-util": "^6.0.0",
     "fs-extra": "^7.0.0",
     "jsverify": "^0.8.3",
