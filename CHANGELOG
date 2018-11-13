@@ -1,6 +1,6 @@
 # Changelog
 
-- 0.11.0 (2018-11-13)
+- 0.11.0 (2018-11-14)
     * Another significant refactor to match the updated UP 8 spec.  Gets rid
       of the per-BIP32 node ship salt and only uses the ship as a salt in
       argon2.  Uses revision numbers only to salt the network keys.
