@@ -14,7 +14,7 @@ Grab it from npm like so:
 npm install urbit-key-generation
 ```
 
-To include in your node project, simply
+To include in your node project, use:
 
 ``` javascript
 const kg = require('urbit-key-generation')
@@ -46,8 +46,8 @@ the following properties:
 * `ship`, an Urbit ship number between 0 and 2^32 - 1.
 * `password`, an optional password used to salt seeds derived from BIP39
   mnemonics.
-* `revision`, an optional number used to salt seeds derived from BIP39
-  mnemonics.  Defaults to `0`.
+* `revision`, an optional number used to salt network seeds derived from a
+  management seed.  Defaults to `0`.
 * `boot`, an optional flag that indicates whether or not to generate Urbit
   network keys for the provided ship.  Defaults to `false`.
 
