@@ -44,7 +44,7 @@ the following properties:
   appropriate `patq` functions from [urbit-ob][urbo] to create these from
   decimal or hex strings).
 * `ship`, an Urbit ship number between 0 and 2^32 - 1.
-* `password`, an optional password used to salt seeds derived from BIP39
+* `passphrase`, an optional passphrase used to salt seeds derived from BIP39
   mnemonics.
 * `revision`, an optional number used to salt network seeds derived from a
   management seed.  Defaults to `0`.
