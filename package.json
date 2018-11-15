@@ -7,7 +7,7 @@
     "src/index.js": "dist/index.js"
   },
   "scripts": {
-    "test": "nyc mocha --reporter spec",
+    "test": "nyc mocha --reporter spec test/test.js",
     "build": "mkdir -p dist && browserify src/index.js -s urbit-keygen > dist/index.js",
     "prepublishOnly": "npm run build"
   },
