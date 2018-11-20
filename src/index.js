@@ -122,7 +122,7 @@ const argon2u = async (entropy, ship) => {
  * @param  {Array, ArrayBuffer, Buffer, String} args any number of arguments
  * @return {Promise<ArrayBuffer>}  the hash, as bytes
  */
-const sha256 = async (...args) => {
+const sha256 = (...args) => {
   const buffer = Buffer.concat(args.map(Buffer.from))
   return crypto.subtle.digest({ name: 'SHA-256' }, buffer)
 }
