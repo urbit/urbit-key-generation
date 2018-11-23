@@ -193,7 +193,9 @@ const deriveNode = async (master, type, passphrase) => {
 const deriveNetworkSeed = async (mnemonic, passphrase, revision) => {
   const seed = bip39.mnemonicToSeed(mnemonic, passphrase)
   const hash = await sha256(seed, CHILD_SEED_TYPES.NETWORK, `${revision}`)
-  return Buffer.from(hash).toString('hex')
+  // SHA-256d on nonzero revisions to prevent length extension attacks
+  const dhash = revision === 0 ? hash : await sha256(hash)
+  return Buffer.from(dhash).toString('hex')
 }
 
 /**
