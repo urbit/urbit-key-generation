@@ -29,6 +29,11 @@ const buffer384 = replicate(48, jsc.uint8).smap(
   buf => Array.from(buf)
 )
 
+const mnemonic = replicate(16, jsc.uint8).smap(
+  bip39.entropyToMnemonic,
+  bip39.mnemonicToEntropy
+)
+
 // tests
 
 describe('toChecksumAddress', () => {
@@ -178,24 +183,19 @@ describe('deriveNodeSeed', () => {
     let seed = Buffer.from('b2bdf8de8452b18f02195b6e7bfc82b900fbcc25681f07ae10f38f11e5af53af', 'hex')
 
     let child = await kg.deriveNodeSeed(seed, 'management')
-    let mnemonic = 'bonus favorite swallow panther frequent random essence loop motion apology skull ginger subject exchange please series meadow tree latin smile bring process excite tornado'
+    let mnem = 'bonus favorite swallow panther frequent random essence loop motion apology skull ginger subject exchange please series meadow tree latin smile bring process excite tornado'
 
-    expect(child).to.equal(mnemonic)
+    expect(child).to.equal(mnem)
 
     child = await kg.deriveNodeSeed(seed, 'ownership')
-    mnemonic = 'impact keep magnet two rice country girl jungle cabin mystery usual tree horn skull winter palace supreme reform sphere cabbage cry athlete puppy misery'
+    mnem = 'impact keep magnet two rice country girl jungle cabin mystery usual tree horn skull winter palace supreme reform sphere cabbage cry athlete puppy misery'
 
-    expect(child).to.equal(mnemonic)
+    expect(child).to.equal(mnem)
   })
 
 })
 
 describe('deriveNodeKeys', () => {
-
-  const mnemonic = replicate(16, jsc.uint8).smap(
-    bip39.entropyToMnemonic,
-    bip39.mnemonicToEntropy
-  )
 
   const VALID_PATH = "m/44'/60'/0'/0/0"
   const INVALID_PATH = "m/44'/60/0'/0/0"
@@ -366,6 +366,28 @@ describe('ethereum addresses from keys', () => {
     checkAddress(config)
   })
 
+})
+
+describe('deriveNetworkSeed', () => {
+  let single = async (mnem, rev) => {
+    let seed = bip39.mnemonicToSeed(mnem)
+    let hash = await kg._sha256(seed, kg.CHILD_SEED_TYPES.NETWORK, `${rev}`)
+    return Buffer.from(hash).toString('hex')
+  }
+
+  let mnem = 'pitch purpose street child humor ability ginger twenty evoke art loyal duck'
+
+  it('uses SHA-256 on a zero revision number', async function() {
+    let sin = await single(mnem, 0)
+    let dub = await kg.deriveNetworkSeed(mnem, '', 0)
+    expect(sin).to.equal(dub)
+  })
+
+  it('uses SHA-256d on nonzero revision numbers', async function() {
+    let sin = await single(mnem, 1)
+    let dub = await kg.deriveNetworkSeed(mnem, '', 1)
+    expect(sin).to.not.equal(dub)
+  })
 })
 
 describe('generateWallet', () => {

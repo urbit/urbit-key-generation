@@ -188,12 +188,14 @@ const deriveNode = async (master, type, passphrase) => {
  * @param  {String}  mnemonic the management mnemonic
  * @param  {String}  passphrase an optional passphrase
  * @param  {Number}  revision a revision number
- * @retrurn  {Promise<String>}  the resulting hex-encoded network seed
+ * @return  {Promise<String>}  the resulting hex-encoded network seed
  */
 const deriveNetworkSeed = async (mnemonic, passphrase, revision) => {
   const seed = bip39.mnemonicToSeed(mnemonic, passphrase)
   const hash = await sha256(seed, CHILD_SEED_TYPES.NETWORK, `${revision}`)
-  return Buffer.from(hash).toString('hex')
+  // SHA-256d on nonzero revisions to prevent length extension attacks
+  const dhash = revision === 0 ? hash : await sha256(hash)
+  return Buffer.from(dhash).toString('hex')
 }
 
 /**
