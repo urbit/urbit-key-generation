@@ -1,5 +1,9 @@
 # Changelog
 
+- 0.12.1 (2019-01-12)
+    * Fixes a bug in our variadic SHA-256 implementation that led to problems
+      deriving network seeds when the revision number was greater than zero.
+
 - 0.12.0 (2018-11-24)
     * Use a double application of SHA-256 when deriving network seeds using
       nonzero revisions (prevents possible length-extension attacks).
