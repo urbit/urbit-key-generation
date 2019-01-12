@@ -388,6 +388,14 @@ describe('deriveNetworkSeed', () => {
     let dub = await kg.deriveNetworkSeed(mnem, '', 1)
     expect(sin).to.not.equal(dub)
   })
+
+  it('gives different output for nonzero revisions', async function() {
+    let one = await kg.deriveNetworkSeed(mnem, '', 1)
+    let two = await kg.deriveNetworkSeed(mnem, '', 2)
+    expect(one).to.not.equal(two)
+  })
+
+
 })
 
 describe('generateWallet', () => {
