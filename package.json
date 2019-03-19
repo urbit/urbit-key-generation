@@ -1,6 +1,6 @@
 {
   "name": "urbit-key-generation",
-  "version": "0.12.1",
+  "version": "0.13.0",
   "description": "Key derivation and HD wallet generation functions for Urbit.",
   "main": "src/index.js",
   "browser": {
@@ -32,7 +32,7 @@
     "keccak": "^1.4.0",
     "secp256k1": "^3.5.2",
     "tweetnacl": "^1.0.0",
-    "urbit-ob": "^3.0.1"
+    "urbit-ob": "^4.0.0"
   },
   "devDependencies": {
     "browserify": "^16.2.3",

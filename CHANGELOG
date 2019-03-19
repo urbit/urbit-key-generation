@@ -1,5 +1,9 @@
 # Changelog
 
+- 0.13.0 (2019-03-20)
+    * Uses an updated version of urbit-ob that corrects the bug described in
+      urbit/arvo#1105.
+
 - 0.12.1 (2019-01-12)
     * Fixes a bug in our variadic SHA-256 implementation that led to problems
       deriving network seeds when the revision number was greater than zero.
