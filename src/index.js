@@ -362,7 +362,9 @@ const generateWallet = async config => {
   const buf = Buffer.from(ob.patq2hex(ticket), 'hex')
 
   const meta = {
-    generator: `urbit-key-generation-v${version}`
+    generator: `urbit-key-generation-v${version}`,
+    ship: ship,
+    passphrase: passphrase
   }
 
   const masterSeed = await argon2u(buf, ship)
