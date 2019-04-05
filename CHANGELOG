@@ -1,5 +1,9 @@
 # Changelog
 
+- 0.14.0 (2019-04-05)
+    * Adds "origin" ship and optional passphrase metadata to generated
+      wallets.
+
 - 0.13.0 (2019-03-20)
     * Uses an updated version of urbit-ob that corrects the bug described in
       urbit/arvo#1105.
