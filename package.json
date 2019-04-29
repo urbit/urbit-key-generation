@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/urbit/keygen-js.git"
+    "url": "git+https://github.com/urbit/urbit-key-generation.git"
   },
   "keywords": [
     "urbit"
@@ -21,9 +21,9 @@
   "author": "Tlon",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/urbit/keygen-js/issues"
+    "url": "https://github.com/urbit/urbit-key-generation/issues"
   },
-  "homepage": "https://github.com/urbit/keygen-js#readme",
+  "homepage": "https://github.com/urbit/urbit-key-generation#readme",
   "dependencies": {
     "argon2-wasm": "^0.9.0",
     "bip32": "^1.0.2",
