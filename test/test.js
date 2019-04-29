@@ -6,6 +6,7 @@ const jsc = require('jsverify')
 const lodash = require('lodash')
 const ob = require('urbit-ob')
 const util = require('ethereumjs-util')
+const crypto = require('isomorphic-webcrypto')
 
 const kg = require('../src')
 
@@ -124,22 +125,38 @@ describe('argon2u', () => {
 })
 
 describe('sha256', () => {
+  const sha256 = (...args) => {
+    const buffer = Buffer.concat(args.map(x => Buffer.from(x)))
+    return crypto.subtle.digest({ name: 'SHA-256' }, buffer)
+  }
+
   it('produces 256-bit digests', () => {
-    let prop = jsc.forall(jsc.string, async str => {
-      let digest = await kg._sha256(str)
+    let prop = jsc.forall(jsc.string, str => {
+      let digest = kg._sha256(str)
       return digest.byteLength === 32
     })
     jsc.assert(prop)
   })
 
-  it('works as expected', async () => {
+  it('works as expected', () => {
     let helloHash =
       '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824'
 
-    let hash = await kg._sha256('hello')
+    let hash = kg._sha256('hello')
     let hashHex = Buffer.from(hash).toString('hex')
 
     expect(hashHex).to.equal(helloHash)
+  })
+
+  it('matches our old isomorphic-webcrypto-based implementation', () => {
+    let prop = jsc.forall(jsc.string, async str => {
+      let hash0 = kg._sha256(str)
+      let hash1 = await sha256(str)
+      let hex0 = Buffer.from(hash0).toString('hex')
+      let hex1 = Buffer.from(hash1).toString('hex')
+      return hex0 === hex1
+    })
+    jsc.assert(prop)
   })
 })
 
@@ -158,20 +175,20 @@ describe('deriveNodeSeed', () => {
   })
 
   it('produces valid BIP39 mnemonics for non-network seeds', () => {
-    let prop = jsc.forall(config, async cfg => {
+    let prop = jsc.forall(config, cfg => {
       let { seed, type } = cfg
-      let child = await kg.deriveNodeSeed(seed, type)
+      let child = kg.deriveNodeSeed(seed, type)
       return bip39.validateMnemonic(child)
     })
     jsc.assert(prop)
   })
 
   it('uses the seed type to salt the master seed', () => {
-    let prop = jsc.forall(config, async cfg0 => {
+    let prop = jsc.forall(config, cfg0 => {
       let { seed, type } = cfg0
 
-      let seed0 = await kg.deriveNodeSeed(seed, type)
-      let seed1 = await kg.deriveNodeSeed(seed, 'bollocks')
+      let seed0 = kg.deriveNodeSeed(seed, type)
+      let seed1 = kg.deriveNodeSeed(seed, 'bollocks')
 
       return lodash.isEqual(seed0, seed1) === false
     })
@@ -179,15 +196,15 @@ describe('deriveNodeSeed', () => {
     jsc.assert(prop)
   })
 
-  it('works as expected', async () => {
+  it('works as expected', () => {
     let seed = Buffer.from('b2bdf8de8452b18f02195b6e7bfc82b900fbcc25681f07ae10f38f11e5af53af', 'hex')
 
-    let child = await kg.deriveNodeSeed(seed, 'management')
+    let child = kg.deriveNodeSeed(seed, 'management')
     let mnem = 'bonus favorite swallow panther frequent random essence loop motion apology skull ginger subject exchange please series meadow tree latin smile bring process excite tornado'
 
     expect(child).to.equal(mnem)
 
-    child = await kg.deriveNodeSeed(seed, 'ownership')
+    child = kg.deriveNodeSeed(seed, 'ownership')
     mnem = 'impact keep magnet two rice country girl jungle cabin mystery usual tree horn skull winter palace supreme reform sphere cabbage cry athlete puppy misery'
 
     expect(child).to.equal(mnem)
@@ -369,29 +386,29 @@ describe('ethereum addresses from keys', () => {
 })
 
 describe('deriveNetworkSeed', () => {
-  let single = async (mnem, rev) => {
+  let single = (mnem, rev) => {
     let seed = bip39.mnemonicToSeed(mnem)
-    let hash = await kg._sha256(seed, kg.CHILD_SEED_TYPES.NETWORK, `${rev}`)
+    let hash = kg._sha256(seed, kg.CHILD_SEED_TYPES.NETWORK, `${rev}`)
     return Buffer.from(hash).toString('hex')
   }
 
   let mnem = 'pitch purpose street child humor ability ginger twenty evoke art loyal duck'
 
-  it('uses SHA-256 on a zero revision number', async function() {
-    let sin = await single(mnem, 0)
-    let dub = await kg.deriveNetworkSeed(mnem, '', 0)
+  it('uses SHA-256 on a zero revision number', function() {
+    let sin = single(mnem, 0)
+    let dub = kg.deriveNetworkSeed(mnem, '', 0)
     expect(sin).to.equal(dub)
   })
 
-  it('uses SHA-256d on nonzero revision numbers', async function() {
-    let sin = await single(mnem, 1)
-    let dub = await kg.deriveNetworkSeed(mnem, '', 1)
+  it('uses SHA-256d on nonzero revision numbers', function() {
+    let sin = single(mnem, 1)
+    let dub = kg.deriveNetworkSeed(mnem, '', 1)
     expect(sin).to.not.equal(dub)
   })
 
-  it('gives different output for nonzero revisions', async function() {
-    let one = await kg.deriveNetworkSeed(mnem, '', 1)
-    let two = await kg.deriveNetworkSeed(mnem, '', 2)
+  it('gives different output for nonzero revisions', function() {
+    let one = kg.deriveNetworkSeed(mnem, '', 1)
+    let two = kg.deriveNetworkSeed(mnem, '', 2)
     expect(one).to.not.equal(two)
   })
 

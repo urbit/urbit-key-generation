@@ -1,5 +1,10 @@
 # Changelog
 
+- 0.15.0 (2019-04-30)
+    * Slots out the isomorphic-webcrypto dependency in favour of js-sha256.
+      Several functions that would previously return promises now return
+      simple values instead.
+
 - 0.14.0 (2019-04-05)
     * Adds "origin" ship and optional passphrase metadata to generated
       wallets.
