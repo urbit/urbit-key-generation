@@ -1,7 +1,7 @@
 const argon2 = require('argon2-wasm')
 const bip32 = require('bip32')
 const bip39 = require('bip39')
-const crypto = require('isomorphic-webcrypto')
+const jssha256 = require('js-sha256')
 const keccak = require('keccak')
 const nacl = require('tweetnacl')
 const ob = require('urbit-ob')
@@ -120,11 +120,12 @@ const argon2u = async (entropy, ship) => {
  * SHA-256 hash function.
  *
  * @param  {Array, ArrayBuffer, Buffer, String} args any number of arguments
- * @return {Promise<ArrayBuffer>}  the hash, as bytes
+ * @return {<Buffer>}  the hash, as bytes
  */
 const sha256 = (...args) => {
   const buffer = Buffer.concat(args.map(x => Buffer.from(x)))
-  return crypto.subtle.digest({ name: 'SHA-256' }, buffer)
+  const hashed = jssha256.sha256.array(buffer)
+  return Buffer.from(hashed)
 }
 
 /**

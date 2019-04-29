@@ -6,6 +6,7 @@ const jsc = require('jsverify')
 const lodash = require('lodash')
 const ob = require('urbit-ob')
 const util = require('ethereumjs-util')
+const crypto = require('isomorphic-webcrypto')
 
 const kg = require('../src')
 
@@ -124,22 +125,38 @@ describe('argon2u', () => {
 })
 
 describe('sha256', () => {
+  const sha256 = (...args) => {
+    const buffer = Buffer.concat(args.map(x => Buffer.from(x)))
+    return crypto.subtle.digest({ name: 'SHA-256' }, buffer)
+  }
+
   it('produces 256-bit digests', () => {
-    let prop = jsc.forall(jsc.string, async str => {
-      let digest = await kg._sha256(str)
+    let prop = jsc.forall(jsc.string, str => {
+      let digest = kg._sha256(str)
       return digest.byteLength === 32
     })
     jsc.assert(prop)
   })
 
-  it('works as expected', async () => {
+  it('works as expected', () => {
     let helloHash =
       '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824'
 
-    let hash = await kg._sha256('hello')
+    let hash = kg._sha256('hello')
     let hashHex = Buffer.from(hash).toString('hex')
 
     expect(hashHex).to.equal(helloHash)
+  })
+
+  it('matches our old isomorphic-webcrypto-based implementation', () => {
+    let prop = jsc.forall(jsc.string, async str => {
+      let hash0 = kg._sha256(str)
+      let hash1 = await sha256(str)
+      let hex0 = Buffer.from(hash0).toString('hex')
+      let hex1 = Buffer.from(hash1).toString('hex')
+      return hex0 === hex1
+    })
+    jsc.assert(prop)
   })
 })
 
