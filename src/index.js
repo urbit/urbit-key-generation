@@ -120,7 +120,7 @@ const argon2u = async (entropy, ship) => {
  * SHA-256 hash function.
  *
  * @param  {Array, ArrayBuffer, Buffer, String} args any number of arguments
- * @return {<Buffer>}  the hash, as bytes
+ * @return {Buffer}  the hash, as bytes
  */
 const sha256 = (...args) => {
   const buffer = Buffer.concat(args.map(x => Buffer.from(x)))
@@ -135,11 +135,11 @@ const sha256 = (...args) => {
  * @param  {Uint8Array}  master a master seed
  * @param  {String}  type one of 'ownership', 'transfer', 'spawn', 'voting',
  *   'management'
- * @return  {Promise<String>}  a BIP39 mnemonic
+ * @return  {String}  a BIP39 mnemonic
  *
  */
-const deriveNodeSeed = async (master, type) => {
-  const hash = await sha256(master, type)
+const deriveNodeSeed = (master, type) => {
+  const hash = sha256(master, type)
   return bip39.entropyToMnemonic(hash)
 }
 
@@ -171,10 +171,10 @@ const deriveNodeKeys = (mnemonic, passphrase) => {
  * @param  {String}  type one of 'ownership', 'transfer', 'spawn', 'voting',
  *   'management'
  * @param  {String}  passphrase an optional passphrase
- * @return  {Promise<Object>}  the child seed and associated keys
+ * @return  {Object}  the child seed and associated keys
  */
-const deriveNode = async (master, type, passphrase) => {
-  const mnemonic = await deriveNodeSeed(master, type)
+const deriveNode = (master, type, passphrase) => {
+  const mnemonic = deriveNodeSeed(master, type)
   const keys = deriveNodeKeys(mnemonic, passphrase)
   return {
     seed: mnemonic,
@@ -189,14 +189,14 @@ const deriveNode = async (master, type, passphrase) => {
  * @param  {String}  mnemonic the management mnemonic
  * @param  {String}  passphrase an optional passphrase
  * @param  {Number}  revision a revision number
- * @return  {Promise<String>}  the resulting hex-encoded network seed
+ * @return  {String}  the resulting hex-encoded network seed
  */
-const deriveNetworkSeed = async (mnemonic, passphrase, revision) => {
+const deriveNetworkSeed = (mnemonic, passphrase, revision) => {
   const seed = bip39.mnemonicToSeed(mnemonic, passphrase)
-  const hash = await sha256(seed, CHILD_SEED_TYPES.NETWORK, `${revision}`)
+  const hash = sha256(seed, CHILD_SEED_TYPES.NETWORK, `${revision}`)
   // SHA-256d on nonzero revisions to prevent length extension attacks
-  const dhash = revision === 0 ? hash : await sha256(hash)
-  return Buffer.from(dhash).toString('hex')
+  const dhash = revision === 0 ? hash : sha256(hash)
+  return dhash.toString('hex')
 }
 
 /**
@@ -239,10 +239,10 @@ const deriveNetworkKeys = hex => {
  * @param  {String}  mnemonic a management mnemonic
  * @param  {Number}  revision a revision number
  * @param  {String}  passphrase an optional passphrase
- * @return  {Promise<Object>}  the network seed and associated keys
+ * @return  {Object}  the network seed and associated keys
  */
-const deriveNetworkInfo = async (mnemonic, revision, passphrase) => {
-  const seed = await deriveNetworkSeed(mnemonic, passphrase, revision)
+const deriveNetworkInfo = (mnemonic, revision, passphrase) => {
+  const seed = deriveNetworkSeed(mnemonic, passphrase, revision)
   const keys = deriveNetworkKeys(seed)
   return {
     seed: seed,
@@ -370,19 +370,19 @@ const generateWallet = async config => {
 
   const masterSeed = await argon2u(buf, ship)
 
-  const ownership = await deriveNode(
+  const ownership = deriveNode(
     masterSeed,
     CHILD_SEED_TYPES.OWNERSHIP,
     passphrase
   )
 
-  const transfer = await deriveNode(
+  const transfer = deriveNode(
     masterSeed,
     CHILD_SEED_TYPES.TRANSFER,
     passphrase
   )
 
-  const spawn = await deriveNode(
+  const spawn = deriveNode(
     masterSeed,
     CHILD_SEED_TYPES.SPAWN,
     passphrase
@@ -390,14 +390,14 @@ const generateWallet = async config => {
 
   const voting =
     isGalaxy(ship)
-    ? await deriveNode(
+    ? deriveNode(
         masterSeed,
         CHILD_SEED_TYPES.VOTING,
         passphrase
       )
     : {}
 
-  const management = await deriveNode(
+  const management = deriveNode(
     masterSeed,
     CHILD_SEED_TYPES.MANAGEMENT,
     passphrase
@@ -405,7 +405,7 @@ const generateWallet = async config => {
 
   const network =
     boot === true
-    ? await deriveNetworkInfo(
+    ? deriveNetworkInfo(
         management.seed,
         revision,
         passphrase
