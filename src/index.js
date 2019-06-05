@@ -328,6 +328,41 @@ const combine = shards => {
 }
 
 /**
+ * Generate just the ownership branch of an Urbit HD wallet given the
+ * provided configuration.
+ *
+ * Expects an object with the following properties:
+ *
+ * @param  {String}  ticket a 64, 128, or 384-bit @q master ticket
+ * @param  {Number}  ship a 32-bit Urbit ship number
+ * @param  {String}  passphrase an optional passphrase to use when deriving
+ *   seeds from BIP39 mnemonics
+ * @return  {Promise<Object>}
+ */
+const generateOwnershipWallet = async config => {
+  /* istanbul ignore next */
+  if ('ticket' in config === false) {
+    throw new Error('generateWallet: no ticket provided')
+  }
+  /* istanbul ignore next */
+  if ('ship' in config === false) {
+    throw new Error('generateWallet: no ship provided')
+  }
+
+  const { ticket, ship } = config
+  const passphrase = 'passphrase' in config ? config.passphrase : null
+
+  const buf = Buffer.from(ob.patq2hex(ticket), 'hex')
+  const masterSeed = await argon2u(buf, ship)
+
+  return deriveNode(
+    masterSeed,
+    CHILD_SEED_TYPES.OWNERSHIP,
+    passphrase
+  );
+}
+
+/**
  * Generate an Urbit HD wallet given the provided configuration.
  *
  * Expects an object with the following properties:
@@ -427,6 +462,7 @@ const generateWallet = async config => {
 
 module.exports = {
   generateWallet,
+  generateOwnershipWallet,
   deriveNode,
   deriveNodeSeed,
   deriveNodeKeys,

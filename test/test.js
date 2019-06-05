@@ -415,6 +415,52 @@ describe('deriveNetworkSeed', () => {
 
 })
 
+describe('generateOwnershipWallet', () => {
+  it('generates wallets as expected', async function() {
+    this.timeout(20000)
+
+    let config = {
+      ticket: '~doznec-marbud',
+      ship: 1
+    }
+    let wallet = await kg.generateOwnershipWallet(config)
+    let expected = objectFromFile('./test/assets/wallet0.json')
+
+    expect(lodash.isEqual(wallet, expected.ownership)).to.equal(true)
+
+    config = {
+      ticket: '~marbud-tidsev-litsut-hidfep',
+      ship: 65012,
+      boot: true
+    }
+    wallet = await kg.generateOwnershipWallet(config)
+    expected = objectFromFile('./test/assets/wallet1.json')
+
+    expect(lodash.isEqual(wallet, expected.ownership)).to.equal(true)
+
+    config = {
+      ticket: '~wacfus-dabpex-danted-mosfep-pasrud-lavmer-nodtex-taslus-pactyp-milpub-pildeg-fornev-ralmed-dinfeb-fopbyr-sanbet-sovmyl-dozsut-mogsyx-mapwyc-sorrup-ricnec-marnys-lignex',
+      passphrase: 'froot loops',
+      ship: 222,
+      revision: 6
+    }
+    wallet = await kg.generateOwnershipWallet(config)
+    expected = objectFromFile('./test/assets/wallet2.json')
+
+    expect(lodash.isEqual(wallet, expected.ownership)).to.equal(true)
+
+    config = {
+      ticket: '~doznec-marbud',
+      ship: 0
+    }
+    wallet = await kg.generateOwnershipWallet(config)
+    expected = objectFromFile('./test/assets/wallet3.json')
+
+    expect(lodash.isEqual(wallet, expected.ownership)).to.equal(true)
+
+  })
+})
+
 describe('generateWallet', () => {
   it('generates wallets as expected', async function() {
     this.timeout(20000)
