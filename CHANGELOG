@@ -1,5 +1,11 @@
 # Changelog
 
+- 0.16.0 (2019-06-05)
+    * Adds a 'generateOwnershipWallet' function that only generates the
+      ownership subtree of the full HD wallet.  Compared to the full wallet,
+      this shaves off about ~400ms in cases where we're only interested in the
+      ownership keys.
+
 - 0.15.0 (2019-04-30)
     * Slots out the isomorphic-webcrypto dependency in favour of js-sha256.
       Several functions that would previously return promises now return
