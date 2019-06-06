@@ -8,6 +8,7 @@
   },
   "scripts": {
     "test": "nyc mocha --reporter spec test/test.js",
+    "lint": "eslint src/",
     "build": "mkdir -p dist && browserify src/index.js -s urbit-keygen > dist/index.js",
     "prepublishOnly": "npm run build"
   },
@@ -37,9 +38,10 @@
   "devDependencies": {
     "browserify": "^16.2.3",
     "chai": "^4.2.0",
+    "eslint": "^5.16.0",
     "ethereumjs-util": "^6.0.0",
-    "isomorphic-webcrypto": "^1.6.1",
     "fs-extra": "^7.0.0",
+    "isomorphic-webcrypto": "^1.6.1",
     "jsverify": "^0.8.3",
     "lodash": "^4.17.11",
     "mocha": "^5.2.0",

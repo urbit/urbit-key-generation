@@ -4,3 +4,7 @@ node_js:
 cache:
   directories:
     - "node_modules"
+
+scripts:
+  - npm run lint
+  - npm run test
