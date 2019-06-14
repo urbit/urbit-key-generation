@@ -1,6 +1,6 @@
 # urbit-key-generation
 
-[![Build Status](https://secure.travis-ci.org/urbit/keygen-js.png)](http://travis-ci.org/urbit/keygen-js)
+[![Build Status](https://secure.travis-ci.org/urbit/urbit-key-generation.png)](http://travis-ci.org/urbit/urbit-key-generation)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![npm](https://img.shields.io/npm/v/urbit-key-generation.svg)](https://www.npmjs.com/package/urbit-key-generation)
 
