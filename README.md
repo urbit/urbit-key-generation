@@ -64,6 +64,12 @@ let config = {
 let wallet = await generateWallet(config)
 ```
 
+## Security
+
+Tlon runs a [bug bounty program][bugs].  If you believe you've discovered a
+vulnerability anywhere in this implementation, you can disclose it privately to
+[security@tlon.io][sect].
+
 ## Dev
 
 Before making a PR, you should create an updated browser bundle (generated via
@@ -74,4 +80,5 @@ You can run the test suite with a simple `npm test`.
 [urbo]: https://www.npmjs.com/package/urbit-ob
 [roll]: https://rollupjs.org/guide/en
 [rpnr]: https://github.com/rollup/rollup-plugin-node-resolve
-
+[bugs]: https://urbit.org/bounty/
+[sect]: mailto:security@tlon.io
