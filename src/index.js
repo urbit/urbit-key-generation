@@ -9,6 +9,11 @@ const secp256k1 = require('secp256k1')
 
 const { version } = require('../package.json')
 
+const GALAXY_MIN = 0x00000000
+const GALAXY_MAX = 0x000000ff
+const PLANET_MIN = 0x00010000
+const PLANET_MAX = 0xffffffff
+
 const CHILD_SEED_TYPES = {
   OWNERSHIP: 'ownership',
   TRANSFER: 'transfer',
