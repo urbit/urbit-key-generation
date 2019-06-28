@@ -78,7 +78,7 @@ const toChecksumAddress = (address) => {
  * @return  {Bool}  true if galaxy, false otherwise
  */
 const isGalaxy = ship =>
-  Number.isInteger(ship) && ship >= 0 && ship < 256
+  Number.isInteger(ship) && ship >= GALAXY_MIN && ship <= GALAXY_MAX
 
 /**
  * Check if a ship is a planet.
@@ -86,7 +86,7 @@ const isGalaxy = ship =>
  * @return  {Bool}  true if planet, false otherwise
  */
 const isPlanet = ship =>
-  Number.isInteger(ship) && ship >= 65536 && ship < 4294967296
+  Number.isInteger(ship) && ship >= PLANET_MIN && ship <= PLANET_MAX
 
 /**
  * Convert a hex-encoded secp256k1 public key into an Ethereum address.
@@ -492,6 +492,7 @@ module.exports = {
   addressFromSecp256k1Public,
 
   _isGalaxy: isGalaxy,
+  _isPlanet: isPlanet,
   _sha256: sha256,
   _keccak256: keccak256,
   _toChecksumAddress: toChecksumAddress,
