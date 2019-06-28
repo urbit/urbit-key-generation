@@ -430,8 +430,8 @@ const generateWallet = async config => {
     passphrase
   )
 
-  const spawn = 
-    !isPlanet(ship)
+  const spawn =
+      !isPlanet(ship)
     ? deriveNode(
         masterSeed,
         CHILD_SEED_TYPES.SPAWN,
@@ -440,7 +440,7 @@ const generateWallet = async config => {
     : {}
 
   const voting =
-    isGalaxy(ship)
+      isGalaxy(ship)
     ? deriveNode(
         masterSeed,
         CHILD_SEED_TYPES.VOTING,
@@ -455,7 +455,7 @@ const generateWallet = async config => {
   )
 
   const network =
-    boot === true
+      boot === true
     ? deriveNetworkInfo(
         management.seed,
         revision,
