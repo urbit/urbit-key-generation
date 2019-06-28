@@ -44,6 +44,14 @@ const main = async () => {
   wallet = await kg.generateWallet(config)
 
   write(wallet, 3)
+
+  config = {
+    ticket: '~doznec-marbud',
+    ship: 0x00ffffff
+  }
+  wallet = await kg.generateWallet(config)
+
+  write(wallet, 4)
 }
 
 main()

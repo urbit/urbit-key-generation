@@ -73,6 +73,21 @@ describe('isGalaxy', () => {
   })
 })
 
+describe('isPlanet', () => {
+  const planets = jsc.integer(0x00010000, 0xffffffff)
+  const nonplanets = jsc.integer(0x00000000, 0x0000ffff)
+
+  it('identifies planets correctly', () => {
+    let prop = jsc.forall(planets, kg._isPlanet)
+    jsc.assert(prop)
+  })
+
+  it('identifies non-planets correctly', () => {
+    let prop = jsc.forall(nonplanets, ship => kg._isPlanet(ship) === false)
+    jsc.assert(prop)
+  })
+})
+
 describe('shard and combine', () => {
   it('does not shard non-384-bit tickets', () => {
     let ticket = '~doznec-marbud'
@@ -501,6 +516,15 @@ describe('generateWallet', () => {
     }
     wallet = await kg.generateWallet(config)
     expected = objectFromFile('./test/assets/wallet3.json')
+
+    expect(lodash.isEqual(wallet, expected)).to.equal(true)
+
+    config = {
+      ticket: '~doznec-marbud',
+      ship: 0x00ffffff
+    }
+    wallet = await kg.generateWallet(config)
+    expected = objectFromFile('./test/assets/wallet4.json')
 
     expect(lodash.isEqual(wallet, expected)).to.equal(true)
 
