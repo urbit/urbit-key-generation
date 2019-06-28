@@ -76,6 +76,14 @@ const isGalaxy = ship =>
   Number.isInteger(ship) && ship >= 0 && ship < 256
 
 /**
+ * Check if a ship is a planet.
+ * @param  {Number}  ship
+ * @return  {Bool}  true if planet, false otherwise
+ */
+const isPlanet = ship =>
+  Number.isInteger(ship) && ship >= 65536 && ship < 4294967296
+
+/**
  * Convert a hex-encoded secp256k1 public key into an Ethereum address.
  *
  * @param  {String}  pub a 33-byte compressed and hex-encoded public key (i.e.,
@@ -417,11 +425,14 @@ const generateWallet = async config => {
     passphrase
   )
 
-  const spawn = deriveNode(
-    masterSeed,
-    CHILD_SEED_TYPES.SPAWN,
-    passphrase
-  )
+  const spawn = 
+    !isPlanet(ship)
+    ? deriveNode(
+        masterSeed,
+        CHILD_SEED_TYPES.SPAWN,
+        passphrase
+      )
+    : {}
 
   const voting =
     isGalaxy(ship)
