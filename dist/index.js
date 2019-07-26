@@ -27206,33 +27206,39 @@ utils.intFromLE = intFromLE;
 
 },{"bn.js":19,"minimalistic-assert":77,"minimalistic-crypto-utils":78}],48:[function(require,module,exports){
 module.exports={
-  "_from": "elliptic@^6.2.3",
+  "_args": [
+    [
+      "elliptic@6.4.1",
+      "/Users/gavinatkinson/Tlon/urbit-key-generation"
+    ]
+  ],
+  "_from": "elliptic@6.4.1",
   "_id": "elliptic@6.4.1",
   "_inBundle": false,
   "_integrity": "sha512-BsXLz5sqX8OHcsh7CqBMztyXARmGQ3LWPtGjJi6DiJHq5C/qvi9P3OqgswKSDftbu8+IoI/QDTAm2fFnQ9SZSQ==",
   "_location": "/elliptic",
   "_phantomChildren": {},
   "_requested": {
-    "type": "range",
+    "type": "version",
     "registry": true,
-    "raw": "elliptic@^6.2.3",
+    "raw": "elliptic@6.4.1",
     "name": "elliptic",
     "escapedName": "elliptic",
-    "rawSpec": "^6.2.3",
+    "rawSpec": "6.4.1",
     "saveSpec": null,
-    "fetchSpec": "^6.2.3"
+    "fetchSpec": "6.4.1"
   },
   "_requiredBy": [
     "/@trust/keyto",
     "/@trust/webcrypto",
     "/browserify-sign",
     "/create-ecdh",
-    "/secp256k1"
+    "/secp256k1",
+    "/tiny-secp256k1"
   ],
   "_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.4.1.tgz",
-  "_shasum": "c2d0b7776911b86722c632c3c06c60f2f819939a",
-  "_spec": "elliptic@^6.2.3",
-  "_where": "/Users/jtobin/projects/urbit/keygen-js/node_modules/secp256k1",
+  "_spec": "6.4.1",
+  "_where": "/Users/gavinatkinson/Tlon/urbit-key-generation",
   "author": {
     "name": "Fedor Indutny",
     "email": "fedor@indutny.com"
@@ -27240,7 +27246,6 @@ module.exports={
   "bugs": {
     "url": "https://github.com/indutny/elliptic/issues"
   },
-  "bundleDependencies": false,
   "dependencies": {
     "bn.js": "^4.4.0",
     "brorand": "^1.0.1",
@@ -27250,7 +27255,6 @@ module.exports={
     "minimalistic-assert": "^1.0.0",
     "minimalistic-crypto-utils": "^1.0.0"
   },
-  "deprecated": false,
   "description": "EC cryptography",
   "devDependencies": {
     "brfs": "^1.4.3",
@@ -30366,7 +30370,7 @@ module.exports = Keccak
 /**
  * @license
  * Lodash <https://lodash.com/>
- * Copyright JS Foundation and other contributors <https://js.foundation/>
+ * Copyright OpenJS Foundation and other contributors <https://openjsf.org/>
  * Released under MIT license <https://lodash.com/license>
  * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
  * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -30377,7 +30381,7 @@ module.exports = Keccak
   var undefined;
 
   /** Used as the semantic version number. */
-  var VERSION = '4.17.11';
+  var VERSION = '4.17.15';
 
   /** Used as the size to enable large array optimizations. */
   var LARGE_ARRAY_SIZE = 200;
@@ -33036,16 +33040,10 @@ module.exports = Keccak
         value.forEach(function(subValue) {
           result.add(baseClone(subValue, bitmask, customizer, subValue, value, stack));
         });
-
-        return result;
-      }
-
-      if (isMap(value)) {
+      } else if (isMap(value)) {
         value.forEach(function(subValue, key) {
           result.set(key, baseClone(subValue, bitmask, customizer, key, value, stack));
         });
-
-        return result;
       }
 
       var keysFunc = isFull
@@ -33969,8 +33967,8 @@ module.exports = Keccak
         return;
       }
       baseFor(source, function(srcValue, key) {
+        stack || (stack = new Stack);
         if (isObject(srcValue)) {
-          stack || (stack = new Stack);
           baseMergeDeep(object, source, key, srcIndex, baseMerge, customizer, stack);
         }
         else {
@@ -35787,7 +35785,7 @@ module.exports = Keccak
       return function(number, precision) {
         number = toNumber(number);
         precision = precision == null ? 0 : nativeMin(toInteger(precision), 292);
-        if (precision) {
+        if (precision && nativeIsFinite(number)) {
           // Shift with exponential notation to avoid floating-point issues.
           // See [MDN](https://mdn.io/round#Examples) for more details.
           var pair = (toString(number) + 'e').split('e'),
@@ -36970,7 +36968,7 @@ module.exports = Keccak
     }
 
     /**
-     * Gets the value at `key`, unless `key` is "__proto__".
+     * Gets the value at `key`, unless `key` is "__proto__" or "constructor".
      *
      * @private
      * @param {Object} object The object to query.
@@ -36978,6 +36976,10 @@ module.exports = Keccak
      * @returns {*} Returns the property value.
      */
     function safeGet(object, key) {
+      if (key === 'constructor' && typeof object[key] === 'function') {
+        return;
+      }
+
       if (key == '__proto__') {
         return;
       }
@@ -40778,6 +40780,7 @@ module.exports = Keccak
           }
           if (maxing) {
             // Handle invocations in a tight loop.
+            clearTimeout(timerId);
             timerId = setTimeout(timerExpired, wait);
             return invokeFunc(lastCallTime);
           }
@@ -45164,9 +45167,12 @@ module.exports = Keccak
       , 'g');
 
       // Use a sourceURL for easier debugging.
+      // The sourceURL gets injected into the source that's eval-ed, so be careful
+      // with lookup (in case of e.g. prototype pollution), and strip newlines if any.
+      // A newline wouldn't be a valid sourceURL anyway, and it'd enable code injection.
       var sourceURL = '//# sourceURL=' +
-        ('sourceURL' in options
-          ? options.sourceURL
+        (hasOwnProperty.call(options, 'sourceURL')
+          ? (options.sourceURL + '').replace(/[\r\n]/g, ' ')
           : ('lodash.templateSources[' + (++templateCounter) + ']')
         ) + '\n';
 
@@ -45199,7 +45205,9 @@ module.exports = Keccak
 
       // If `variable` is not specified wrap a with-statement around the generated
       // code to add the data object to the top of the scope chain.
-      var variable = options.variable;
+      // Like with sourceURL, we take care to not check the option's prototype,
+      // as this configuration is a code injection vector.
+      var variable = hasOwnProperty.call(options, 'variable') && options.variable;
       if (!variable) {
         source = 'with (obj) {\n' + source + '\n}\n';
       }
@@ -47404,10 +47412,11 @@ module.exports = Keccak
     baseForOwn(LazyWrapper.prototype, function(func, methodName) {
       var lodashFunc = lodash[methodName];
       if (lodashFunc) {
-        var key = (lodashFunc.name + ''),
-            names = realNames[key] || (realNames[key] = []);
-
-        names.push({ 'name': methodName, 'func': lodashFunc });
+        var key = lodashFunc.name + '';
+        if (!hasOwnProperty.call(realNames, key)) {
+          realNames[key] = [];
+        }
+        realNames[key].push({ 'name': methodName, 'func': lodashFunc });
       }
     });
 
@@ -56842,7 +56851,8 @@ lyrtesmudnytbyrsenwegfyrmurtelreptegpecnelnevfes\
 `
 
 const patp2syls = name =>
-  name.replace(/[\^~-]/g,'').match(/.{1,3}/g)
+     name.replace(/[\^~-]/g,'').match(/.{1,3}/g)
+  || []
 
 const splitAt = (index, str) => [str.slice(0, index), str.slice(index)]
 
@@ -57150,13 +57160,12 @@ const isValidPat = name => {
     throw new Error('isValidPat: non-string input')
   }
 
-  const syls = patp2syls(name)
-
   const leadingTilde = name.slice(0, 1) === '~'
 
-  if (leadingTilde === false) {
+  if (leadingTilde === false || name.length < 4) {
     return false
   } else {
+    const syls = patp2syls(name)
     const wrongLength = syls.length % 2 !== 0 && syls.length !== 1
     const sylsExist = lodash.reduce(syls, (acc, syl, index) =>
       acc &&
@@ -57738,6 +57747,7 @@ module.exports={
   },
   "scripts": {
     "test": "nyc mocha --reporter spec test/test.js",
+    "lint": "eslint src/",
     "build": "mkdir -p dist && browserify src/index.js -s urbit-keygen > dist/index.js",
     "prepublishOnly": "npm run build"
   },
@@ -57762,16 +57772,17 @@ module.exports={
     "keccak": "^1.4.0",
     "secp256k1": "^3.5.2",
     "tweetnacl": "^1.0.0",
-    "urbit-ob": "^4.0.0"
+    "urbit-ob": "^4.0.1"
   },
   "devDependencies": {
     "browserify": "^16.2.3",
     "chai": "^4.2.0",
+    "eslint": "^5.16.0",
     "ethereumjs-util": "^6.0.0",
-    "isomorphic-webcrypto": "^1.6.1",
     "fs-extra": "^7.0.0",
+    "isomorphic-webcrypto": "^1.6.1",
     "jsverify": "^0.8.3",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.15",
     "mocha": "^5.2.0",
     "nyc": "^13.1.0"
   }
@@ -57789,6 +57800,11 @@ const ob = require('urbit-ob')
 const secp256k1 = require('secp256k1')
 
 const { version } = require('../package.json')
+
+const GALAXY_MIN = 0x00000000
+const GALAXY_MAX = 0x000000ff
+const PLANET_MIN = 0x00010000
+const PLANET_MAX = 0xffffffff
 
 const CHILD_SEED_TYPES = {
   OWNERSHIP: 'ownership',
@@ -57854,7 +57870,15 @@ const toChecksumAddress = (address) => {
  * @return  {Bool}  true if galaxy, false otherwise
  */
 const isGalaxy = ship =>
-  Number.isInteger(ship) && ship >= 0 && ship < 256
+  Number.isInteger(ship) && ship >= GALAXY_MIN && ship <= GALAXY_MAX
+
+/**
+ * Check if a ship is a planet.
+ * @param  {Number}  ship
+ * @return  {Bool}  true if planet, false otherwise
+ */
+const isPlanet = ship =>
+  Number.isInteger(ship) && ship >= PLANET_MIN && ship <= PLANET_MAX
 
 /**
  * Convert a hex-encoded secp256k1 public key into an Ethereum address.
@@ -58198,14 +58222,17 @@ const generateWallet = async config => {
     passphrase
   )
 
-  const spawn = deriveNode(
-    masterSeed,
-    CHILD_SEED_TYPES.SPAWN,
-    passphrase
-  )
+  const spawn =
+      !isPlanet(ship)
+    ? deriveNode(
+        masterSeed,
+        CHILD_SEED_TYPES.SPAWN,
+        passphrase
+      )
+    : {}
 
   const voting =
-    isGalaxy(ship)
+      isGalaxy(ship)
     ? deriveNode(
         masterSeed,
         CHILD_SEED_TYPES.VOTING,
@@ -58220,7 +58247,7 @@ const generateWallet = async config => {
   )
 
   const network =
-    boot === true
+      boot === true
     ? deriveNetworkInfo(
         management.seed,
         revision,
@@ -58257,6 +58284,7 @@ module.exports = {
   addressFromSecp256k1Public,
 
   _isGalaxy: isGalaxy,
+  _isPlanet: isPlanet,
   _sha256: sha256,
   _keccak256: keccak256,
   _toChecksumAddress: toChecksumAddress,
