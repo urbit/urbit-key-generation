@@ -27206,33 +27206,39 @@ utils.intFromLE = intFromLE;
 
 },{"bn.js":19,"minimalistic-assert":77,"minimalistic-crypto-utils":78}],48:[function(require,module,exports){
 module.exports={
-  "_from": "elliptic@^6.2.3",
+  "_args": [
+    [
+      "elliptic@6.4.1",
+      "/Users/gavinatkinson/Tlon/urbit-key-generation"
+    ]
+  ],
+  "_from": "elliptic@6.4.1",
   "_id": "elliptic@6.4.1",
   "_inBundle": false,
   "_integrity": "sha512-BsXLz5sqX8OHcsh7CqBMztyXARmGQ3LWPtGjJi6DiJHq5C/qvi9P3OqgswKSDftbu8+IoI/QDTAm2fFnQ9SZSQ==",
   "_location": "/elliptic",
   "_phantomChildren": {},
   "_requested": {
-    "type": "range",
+    "type": "version",
     "registry": true,
-    "raw": "elliptic@^6.2.3",
+    "raw": "elliptic@6.4.1",
     "name": "elliptic",
     "escapedName": "elliptic",
-    "rawSpec": "^6.2.3",
+    "rawSpec": "6.4.1",
     "saveSpec": null,
-    "fetchSpec": "^6.2.3"
+    "fetchSpec": "6.4.1"
   },
   "_requiredBy": [
     "/@trust/keyto",
     "/@trust/webcrypto",
     "/browserify-sign",
     "/create-ecdh",
-    "/secp256k1"
+    "/secp256k1",
+    "/tiny-secp256k1"
   ],
   "_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.4.1.tgz",
-  "_shasum": "c2d0b7776911b86722c632c3c06c60f2f819939a",
-  "_spec": "elliptic@^6.2.3",
-  "_where": "/Users/jtobin/projects/urbit/keygen-js/node_modules/secp256k1",
+  "_spec": "6.4.1",
+  "_where": "/Users/gavinatkinson/Tlon/urbit-key-generation",
   "author": {
     "name": "Fedor Indutny",
     "email": "fedor@indutny.com"
@@ -27240,7 +27246,6 @@ module.exports={
   "bugs": {
     "url": "https://github.com/indutny/elliptic/issues"
   },
-  "bundleDependencies": false,
   "dependencies": {
     "bn.js": "^4.4.0",
     "brorand": "^1.0.1",
@@ -27250,7 +27255,6 @@ module.exports={
     "minimalistic-assert": "^1.0.0",
     "minimalistic-crypto-utils": "^1.0.0"
   },
-  "deprecated": false,
   "description": "EC cryptography",
   "devDependencies": {
     "brfs": "^1.4.3",
@@ -57738,8 +57742,10 @@ module.exports={
   },
   "scripts": {
     "test": "nyc mocha --reporter spec test/test.js",
+    "lint": "eslint src/",
     "build": "mkdir -p dist && browserify src/index.js -s urbit-keygen > dist/index.js",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "exportWallet": "node ./tools/exportwallet.js"
   },
   "repository": {
     "type": "git",
@@ -57767,9 +57773,10 @@ module.exports={
   "devDependencies": {
     "browserify": "^16.2.3",
     "chai": "^4.2.0",
+    "eslint": "^5.16.0",
     "ethereumjs-util": "^6.0.0",
-    "isomorphic-webcrypto": "^1.6.1",
     "fs-extra": "^7.0.0",
+    "isomorphic-webcrypto": "^1.6.1",
     "jsverify": "^0.8.3",
     "lodash": "^4.17.11",
     "mocha": "^5.2.0",
@@ -57789,6 +57796,11 @@ const ob = require('urbit-ob')
 const secp256k1 = require('secp256k1')
 
 const { version } = require('../package.json')
+
+const GALAXY_MIN = 0x00000000
+const GALAXY_MAX = 0x000000ff
+const PLANET_MIN = 0x00010000
+const PLANET_MAX = 0xffffffff
 
 const CHILD_SEED_TYPES = {
   OWNERSHIP: 'ownership',
@@ -57854,7 +57866,15 @@ const toChecksumAddress = (address) => {
  * @return  {Bool}  true if galaxy, false otherwise
  */
 const isGalaxy = ship =>
-  Number.isInteger(ship) && ship >= 0 && ship < 256
+  Number.isInteger(ship) && ship >= GALAXY_MIN && ship <= GALAXY_MAX
+
+/**
+ * Check if a ship is a planet.
+ * @param  {Number}  ship
+ * @return  {Bool}  true if planet, false otherwise
+ */
+const isPlanet = ship =>
+  Number.isInteger(ship) && ship >= PLANET_MIN && ship <= PLANET_MAX
 
 /**
  * Convert a hex-encoded secp256k1 public key into an Ethereum address.
@@ -58176,11 +58196,16 @@ const generateWallet = async config => {
 
   const shards = shard(ticket)
 
+  const patp = ob.patp(ship)
+
   const buf = Buffer.from(ob.patq2hex(ticket), 'hex')
 
   const meta = {
     generator: `urbit-key-generation-v${version}`,
     ship: ship,
+    patp: patp,
+    tier: ob.clan(patp),
+    bip32DerivationPath: `m/44'/60'/0'/0/0`,
     passphrase: passphrase
   }
 
@@ -58198,14 +58223,17 @@ const generateWallet = async config => {
     passphrase
   )
 
-  const spawn = deriveNode(
-    masterSeed,
-    CHILD_SEED_TYPES.SPAWN,
-    passphrase
-  )
+  const spawn =
+      !isPlanet(ship)
+    ? deriveNode(
+        masterSeed,
+        CHILD_SEED_TYPES.SPAWN,
+        passphrase
+      )
+    : {}
 
   const voting =
-    isGalaxy(ship)
+      isGalaxy(ship)
     ? deriveNode(
         masterSeed,
         CHILD_SEED_TYPES.VOTING,
@@ -58220,7 +58248,7 @@ const generateWallet = async config => {
   )
 
   const network =
-    boot === true
+      boot === true
     ? deriveNetworkInfo(
         management.seed,
         revision,
@@ -58257,13 +58285,13 @@ module.exports = {
   addressFromSecp256k1Public,
 
   _isGalaxy: isGalaxy,
+  _isPlanet: isPlanet,
   _sha256: sha256,
   _keccak256: keccak256,
   _toChecksumAddress: toChecksumAddress,
   _addHexPrefix: addHexPrefix,
   _stripHexPrefix: stripHexPrefix
 }
-
 
 }).call(this,require("buffer").Buffer)
 },{"../package.json":134,"argon2-wasm":3,"bip32":8,"bip39":9,"buffer":26,"js-sha256":68,"keccak":69,"secp256k1":103,"tweetnacl":122,"urbit-ob":128}]},{},[135])(135)

@@ -23,6 +23,9 @@ const CHILD_SEED_TYPES = {
   NETWORK: 'network'
 }
 
+const DERIVATION_PATH = "m/44'/60'/0'/0/0"
+
+
 /**
  * Add a hex prefix to a string, if one isn't already present.
  *
@@ -167,7 +170,7 @@ const deriveNodeSeed = (master, type) => {
 const deriveNodeKeys = (mnemonic, passphrase) => {
   const seed = bip39.mnemonicToSeed(mnemonic, passphrase)
   const hd = bip32.fromSeed(seed)
-  const wallet = hd.derivePath("m/44'/60'/0'/0/0")
+  const wallet = hd.derivePath(DERIVATION_PATH)
   return {
     public: wallet.publicKey.toString('hex'),
     private: wallet.privateKey.toString('hex'),
@@ -408,11 +411,16 @@ const generateWallet = async config => {
 
   const shards = shard(ticket)
 
+  const patp = ob.patp(ship)
+
   const buf = Buffer.from(ob.patq2hex(ticket), 'hex')
 
   const meta = {
     generator: `urbit-key-generation-v${version}`,
     ship: ship,
+    patp: patp,
+    tier: ob.clan(patp),
+    derivationPath: DERIVATION_PATH,
     passphrase: passphrase
   }
 
@@ -499,4 +507,3 @@ module.exports = {
   _addHexPrefix: addHexPrefix,
   _stripHexPrefix: stripHexPrefix
 }
-

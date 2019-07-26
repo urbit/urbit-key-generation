@@ -10,7 +10,8 @@
     "test": "nyc mocha --reporter spec test/test.js",
     "lint": "eslint src/",
     "build": "mkdir -p dist && browserify src/index.js -s urbit-keygen > dist/index.js",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "exportWallet": "node ./tools/exportwallet.js"
   },
   "repository": {
     "type": "git",
