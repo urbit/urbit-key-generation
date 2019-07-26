@@ -57811,6 +57811,9 @@ const CHILD_SEED_TYPES = {
   NETWORK: 'network'
 }
 
+const DERIVATION_PATH = "m/44'/60'/0'/0/0"
+
+
 /**
  * Add a hex prefix to a string, if one isn't already present.
  *
@@ -57955,7 +57958,7 @@ const deriveNodeSeed = (master, type) => {
 const deriveNodeKeys = (mnemonic, passphrase) => {
   const seed = bip39.mnemonicToSeed(mnemonic, passphrase)
   const hd = bip32.fromSeed(seed)
-  const wallet = hd.derivePath("m/44'/60'/0'/0/0")
+  const wallet = hd.derivePath(DERIVATION_PATH)
   return {
     public: wallet.publicKey.toString('hex'),
     private: wallet.privateKey.toString('hex'),
@@ -58205,7 +58208,7 @@ const generateWallet = async config => {
     ship: ship,
     patp: patp,
     tier: ob.clan(patp),
-    bip32DerivationPath: `m/44'/60'/0'/0/0`,
+    derivationPath: DERIVATION_PATH,
     passphrase: passphrase
   }
 
@@ -58259,13 +58262,13 @@ const generateWallet = async config => {
   return {
     meta: meta,
     ticket: ticket,
-    shards: shards,
-    ownership: ownership,
-    transfer: transfer,
-    spawn: spawn,
-    voting: voting,
-    management: management,
-    network: network
+    shards: { type:'SHARDS', ...shards },
+    ownership: { type:'OWNERSHIP', ...ownership },
+    transfer: { type:'TRANSFER', ...transfer },
+    spawn: { type:'SPAWN', ...spawn },
+    voting: { type:'VOTING', ...voting },
+    management: { type:'MANAGEMENT', ...management },
+    network: { type:'NETWORK', ...network },
   }
 }
 

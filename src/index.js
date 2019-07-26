@@ -474,13 +474,13 @@ const generateWallet = async config => {
   return {
     meta: meta,
     ticket: ticket,
-    shards: shards,
-    ownership: ownership,
-    transfer: transfer,
-    spawn: spawn,
-    voting: voting,
-    management: management,
-    network: network
+    shards: { type:'SHARDS', ...shards },
+    ownership: { type:'OWNERSHIP', ...ownership },
+    transfer: { type:'TRANSFER', ...transfer },
+    spawn: { type:'SPAWN', ...spawn },
+    voting: { type:'VOTING', ...voting },
+    management: { type:'MANAGEMENT', ...management },
+    network: { type:'NETWORK', ...network },
   }
 }
 
