@@ -44,7 +44,7 @@
     "fs-extra": "^7.0.0",
     "isomorphic-webcrypto": "^1.6.1",
     "jsverify": "^0.8.3",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.15",
     "mocha": "^5.2.0",
     "nyc": "^13.1.0"
   }
