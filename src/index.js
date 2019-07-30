@@ -193,6 +193,7 @@ const deriveNode = (master, type, passphrase) => {
   const mnemonic = deriveNodeSeed(master, type)
   const keys = deriveNodeKeys(mnemonic, passphrase)
   return {
+    type: type,
     seed: mnemonic,
     keys: keys
   }
@@ -261,6 +262,7 @@ const deriveNetworkInfo = (mnemonic, revision, passphrase) => {
   const seed = deriveNetworkSeed(mnemonic, passphrase, revision)
   const keys = deriveNetworkKeys(seed)
   return {
+    type: CHILD_SEED_TYPES.NETWORK,
     seed: seed,
     keys: keys
   }
@@ -371,11 +373,13 @@ const generateOwnershipWallet = async config => {
   const buf = Buffer.from(ob.patq2hex(ticket), 'hex')
   const masterSeed = await argon2u(buf, ship)
 
-  return deriveNode(
+  const node = deriveNode(
     masterSeed,
     CHILD_SEED_TYPES.OWNERSHIP,
     passphrase
   );
+
+  return { type: CHILD_SEED_TYPES.OWNERSHIP, ...node }
 }
 
 /**
@@ -474,13 +478,13 @@ const generateWallet = async config => {
   return {
     meta: meta,
     ticket: ticket,
-    shards: { type:'SHARDS', ...shards },
-    ownership: { type:'OWNERSHIP', ...ownership },
-    transfer: { type:'TRANSFER', ...transfer },
-    spawn: { type:'SPAWN', ...spawn },
-    voting: { type:'VOTING', ...voting },
-    management: { type:'MANAGEMENT', ...management },
-    network: { type:'NETWORK', ...network },
+    shards: shards,
+    ownership: ownership,
+    transfer: transfer,
+    spawn: spawn,
+    voting: voting,
+    management: management,
+    network: network,
   }
 }
 

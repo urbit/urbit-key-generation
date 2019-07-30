@@ -1,6 +1,6 @@
 {
   "name": "urbit-key-generation",
-  "version": "0.16.0",
+  "version": "0.16.1",
   "description": "Key derivation and HD wallet generation functions for Urbit.",
   "main": "src/index.js",
   "browser": {
@@ -11,7 +11,7 @@
     "lint": "eslint src/",
     "build": "mkdir -p dist && browserify src/index.js -s urbit-keygen > dist/index.js",
     "prepublishOnly": "npm run build",
-    "exportWallet": "node ./tools/exportwallet.js"
+    "generateTestWallets": "node ./test/generate_test_wallets"
   },
   "repository": {
     "type": "git",

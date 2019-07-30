@@ -530,4 +530,3 @@ describe('generateWallet', () => {
 
   })
 })
-
