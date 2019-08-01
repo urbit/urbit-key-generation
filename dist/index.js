@@ -56851,8 +56851,7 @@ lyrtesmudnytbyrsenwegfyrmurtelreptegpecnelnevfes\
 `
 
 const patp2syls = name =>
-     name.replace(/[\^~-]/g,'').match(/.{1,3}/g)
-  || []
+  name.replace(/[\^~-]/g,'').match(/.{1,3}/g)
 
 const splitAt = (index, str) => [str.slice(0, index), str.slice(index)]
 
@@ -57160,12 +57159,13 @@ const isValidPat = name => {
     throw new Error('isValidPat: non-string input')
   }
 
+  const syls = patp2syls(name)
+
   const leadingTilde = name.slice(0, 1) === '~'
 
-  if (leadingTilde === false || name.length < 4) {
+  if (leadingTilde === false) {
     return false
   } else {
-    const syls = patp2syls(name)
     const wrongLength = syls.length % 2 !== 0 && syls.length !== 1
     const sylsExist = lodash.reduce(syls, (acc, syl, index) =>
       acc &&
@@ -57783,7 +57783,7 @@ module.exports={
     "fs-extra": "^7.0.0",
     "isomorphic-webcrypto": "^1.6.1",
     "jsverify": "^0.8.3",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.15",
     "mocha": "^5.2.0",
     "nyc": "^13.1.0"
   }
@@ -58172,7 +58172,7 @@ const generateOwnershipWallet = async config => {
     passphrase
   );
 
-  return { type: CHILD_SEED_TYPES.OWNERSHIP, ...node }
+  return node
 }
 
 /**

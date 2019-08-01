@@ -379,7 +379,7 @@ const generateOwnershipWallet = async config => {
     passphrase
   );
 
-  return { type: CHILD_SEED_TYPES.OWNERSHIP, ...node }
+  return node
 }
 
 /**
