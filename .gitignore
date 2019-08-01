@@ -3,4 +3,5 @@ node_modules
 coverage/
 .nyc_output/
 release.sh
-
+tools/bin/*
+/dist

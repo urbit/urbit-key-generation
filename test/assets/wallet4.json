@@ -1,1 +1,47 @@
-{"meta":{"generator":"urbit-key-generation-v0.16.0","ship":16777215,"passphrase":null},"ticket":"~doznec-marbud","shards":["~doznec-marbud"],"ownership":{"seed":"coast pill lecture express front endless arctic swarm escape impose slush trust trigger churn culture tag direct net amount comic shoot way climb blur","keys":{"public":"0295e082f661ce064a122062774cdd0c2134630c239c8b6cfdd49326046e683365","private":"71324704dcfd8f7055ab769c7e088ba3132f117f03015559ff38757b6470a49d","chain":"d935695eb84a2ade4895504a9f8099ba4461e29b71eefce6a7b02044a1db7507","address":"0x660a9C8Ac75C045977a161D132453a19B37edc3a"}},"transfer":{"seed":"wage whale pet dynamic fitness enjoy invite liar weekend essay mimic clinic giant state expose earth clever magnet donate engage frozen discover aspect unusual","keys":{"public":"029d251de1c1418f4a077eb7227766178d62d4d39ebec1df7d6c9788219f6c5485","private":"ad62eeaec38fc01efcfacfce49593335d8ac1c1d673bd0cb497c1438cba04ff7","chain":"a1218d22e78209abab87bc77e7ce7514f55759e9cb40556b5c31d6a68ec8b88c","address":"0x7eB950D9440BA05C30Eab84A75F75A5A8FDf3EaB"}},"spawn":{},"voting":{},"management":{"seed":"convince globe olive leaf avocado angry prefer describe phone almost survey dolphin dice toy glove fortune obvious hat viable provide whip silver uphold sick","keys":{"public":"03e883d28c888d6958f52591017342ce130f1179a44566c027aadf4a973b42149c","private":"10fb7c39f91f2c69810b70d8a031df95002d59ed29bfbd4355d205042c7c3c83","chain":"5762263c73ec78e3ef354beac7136c64d7825c4fce07d42dca1f9ed868401ebd","address":"0x87C573C4d5f98DbFFCb2F0AB482c38C904Fe2AC0"}},"network":{}}
+{
+ "meta": {
+  "generator": "urbit-key-generation-v0.16.1",
+  "ship": 16777215,
+  "patp": "~taswen-dabmyr",
+  "tier": "planet",
+  "derivationPath": "m/44'/60'/0'/0/0",
+  "passphrase": null
+ },
+ "ticket": "~doznec-marbud",
+ "shards": [
+  "~doznec-marbud"
+ ],
+ "ownership": {
+  "type": "ownership",
+  "seed": "coast pill lecture express front endless arctic swarm escape impose slush trust trigger churn culture tag direct net amount comic shoot way climb blur",
+  "keys": {
+   "public": "0295e082f661ce064a122062774cdd0c2134630c239c8b6cfdd49326046e683365",
+   "private": "71324704dcfd8f7055ab769c7e088ba3132f117f03015559ff38757b6470a49d",
+   "chain": "d935695eb84a2ade4895504a9f8099ba4461e29b71eefce6a7b02044a1db7507",
+   "address": "0x660a9C8Ac75C045977a161D132453a19B37edc3a"
+  }
+ },
+ "transfer": {
+  "type": "transfer",
+  "seed": "wage whale pet dynamic fitness enjoy invite liar weekend essay mimic clinic giant state expose earth clever magnet donate engage frozen discover aspect unusual",
+  "keys": {
+   "public": "029d251de1c1418f4a077eb7227766178d62d4d39ebec1df7d6c9788219f6c5485",
+   "private": "ad62eeaec38fc01efcfacfce49593335d8ac1c1d673bd0cb497c1438cba04ff7",
+   "chain": "a1218d22e78209abab87bc77e7ce7514f55759e9cb40556b5c31d6a68ec8b88c",
+   "address": "0x7eB950D9440BA05C30Eab84A75F75A5A8FDf3EaB"
+  }
+ },
+ "spawn": {},
+ "voting": {},
+ "management": {
+  "type": "management",
+  "seed": "convince globe olive leaf avocado angry prefer describe phone almost survey dolphin dice toy glove fortune obvious hat viable provide whip silver uphold sick",
+  "keys": {
+   "public": "03e883d28c888d6958f52591017342ce130f1179a44566c027aadf4a973b42149c",
+   "private": "10fb7c39f91f2c69810b70d8a031df95002d59ed29bfbd4355d205042c7c3c83",
+   "chain": "5762263c73ec78e3ef354beac7136c64d7825c4fce07d42dca1f9ed868401ebd",
+   "address": "0x87C573C4d5f98DbFFCb2F0AB482c38C904Fe2AC0"
+  }
+ },
+ "network": {}
+}

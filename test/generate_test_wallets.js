@@ -1,10 +1,10 @@
 const fs = require('fs')
-const kg = require('../src')
+const kg = require('../dist/index')
 
 const write = (wal, num) => {
   fs.writeFile(
-    `./assets/wallet${num}.json`,
-    JSON.stringify(wal),
+    `${__dirname}/assets/wallet${num}.json`,
+    JSON.stringify(wal, null, ' '),
     _ => console.log('written')
   )
 }

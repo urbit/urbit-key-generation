@@ -1,1 +1,67 @@
-{"meta":{"generator":"urbit-key-generation-v0.16.0","ship":222,"passphrase":"froot loops"},"ticket":"~wacfus-dabpex-danted-mosfep-pasrud-lavmer-nodtex-taslus-pactyp-milpub-pildeg-fornev-ralmed-dinfeb-fopbyr-sanbet-sovmyl-dozsut-mogsyx-mapwyc-sorrup-ricnec-marnys-lignex","shards":["~wacfus-dabpex-danted-mosfep-pasrud-lavmer-nodtex-taslus-pactyp-milpub-pildeg-fornev-ralmed-dinfeb-fopbyr-sanbet","~pactyp-milpub-pildeg-fornev-ralmed-dinfeb-fopbyr-sanbet-sovmyl-dozsut-mogsyx-mapwyc-sorrup-ricnec-marnys-lignex","~wacfus-dabpex-danted-mosfep-pasrud-lavmer-nodtex-taslus-sovmyl-dozsut-mogsyx-mapwyc-sorrup-ricnec-marnys-lignex"],"ownership":{"seed":"ability hill trap old orbit sing fine fashion tragic remove danger absurd outer bid settle winter frown element present member manage zebra loud leopard","keys":{"public":"03d19876565f736853d8156e174704442ab40b9356d33ade656ea3086aa710529d","private":"260e06d990dc30263970c38c89b62facb6cf57c17eaf7851c3f5b1b305419343","chain":"c4c41425e999901a2880599db75d480c1bfaa297fc5489421442d01aaa968781","address":"0xbb17CABE07087492C06dCdeAECe0269FB0CB8152"}},"transfer":{"seed":"vacant solid basic aware educate tenant oyster nephew ride supreme penalty involve heart surface chase evil victory warfare steak column female frown advice armor","keys":{"public":"03864adf54567d15c14d0a15ab042ed1d1475441e2a83734de8b05f191dbf1cbc1","private":"186c750a0814d0ca8c44bab3dafc448976b154338b30b6043e5425843d7aff60","chain":"e145948363006fdcb9f57f64f7c92558ed753e1cf20249f9d3d6b2fcf2fa2260","address":"0x671955ced96Fe5a1aA8C6eCaC9e00A06B33Cc75D"}},"spawn":{"seed":"unhappy cash hero strategy mirror enemy grid stadium seminar lift program ranch tone real rare system fabric laundry rough sketch color chimney hire convince","keys":{"public":"030fc2cd534d395c26b5cfb26ff4b1e78d3eec07f161b2d055a71126077756c0eb","private":"f40f9d638bfb9d7b12dcf7bbec4e0a30c11cdf4c4b28d184fcdb9c6ad8ba1d21","chain":"50bf0b5eb40a5e7b883262e5b6b6cf57f94f05782f44989eeb4026c91620e77c","address":"0xD587816977C17FEBC98B961E343071Ad6C5B095b"}},"voting":{"seed":"banana behind oval toast type abstract area polar sample document argue problem innocent pear include rack ready kangaroo panic salt arctic topic field again","keys":{"public":"032c2ff8dc9621c5938cf628d7c15efcb073e7160ccf2e4e790bfe4bc0b9ecde5b","private":"ab56e962047eed194b5113b09aa810e2a2aa738b5d0c7111b75719b6fbd1f3ca","chain":"0a0dd3144a95b26b9072feab561d8e2955d9554ab56f175e2590820229aad733","address":"0xf04bb390E8903462cc422eEC0B62138Fc2884a97"}},"management":{"seed":"pact range install display tower curve remind click detail ecology like debate luggage bless scissors taste sun leaf flash inhale myth finish vapor father","keys":{"public":"023725de9eedaa86dacb1fa81984b1ca7df8efb9f69f9ac65133b11c40e7566266","private":"2506beb73e2631ce8025f93288819095f6d9c7e61b764840911365c3218d3fa3","chain":"c816c30bc2e3fdf83e3a94efa58480290eca0d59b2964fc30d3c31a3e854edeb","address":"0x3aBa995d54922075305c97edE6A9e9ec5644DD66"}},"network":{}}
+{
+ "meta": {
+  "generator": "urbit-key-generation-v0.16.1",
+  "ship": 222,
+  "patp": "~ryl",
+  "tier": "galaxy",
+  "derivationPath": "m/44'/60'/0'/0/0",
+  "passphrase": "froot loops"
+ },
+ "ticket": "~wacfus-dabpex-danted-mosfep-pasrud-lavmer-nodtex-taslus-pactyp-milpub-pildeg-fornev-ralmed-dinfeb-fopbyr-sanbet-sovmyl-dozsut-mogsyx-mapwyc-sorrup-ricnec-marnys-lignex",
+ "shards": [
+  "~wacfus-dabpex-danted-mosfep-pasrud-lavmer-nodtex-taslus-pactyp-milpub-pildeg-fornev-ralmed-dinfeb-fopbyr-sanbet",
+  "~pactyp-milpub-pildeg-fornev-ralmed-dinfeb-fopbyr-sanbet-sovmyl-dozsut-mogsyx-mapwyc-sorrup-ricnec-marnys-lignex",
+  "~wacfus-dabpex-danted-mosfep-pasrud-lavmer-nodtex-taslus-sovmyl-dozsut-mogsyx-mapwyc-sorrup-ricnec-marnys-lignex"
+ ],
+ "ownership": {
+  "type": "ownership",
+  "seed": "ability hill trap old orbit sing fine fashion tragic remove danger absurd outer bid settle winter frown element present member manage zebra loud leopard",
+  "keys": {
+   "public": "03d19876565f736853d8156e174704442ab40b9356d33ade656ea3086aa710529d",
+   "private": "260e06d990dc30263970c38c89b62facb6cf57c17eaf7851c3f5b1b305419343",
+   "chain": "c4c41425e999901a2880599db75d480c1bfaa297fc5489421442d01aaa968781",
+   "address": "0xbb17CABE07087492C06dCdeAECe0269FB0CB8152"
+  }
+ },
+ "transfer": {
+  "type": "transfer",
+  "seed": "vacant solid basic aware educate tenant oyster nephew ride supreme penalty involve heart surface chase evil victory warfare steak column female frown advice armor",
+  "keys": {
+   "public": "03864adf54567d15c14d0a15ab042ed1d1475441e2a83734de8b05f191dbf1cbc1",
+   "private": "186c750a0814d0ca8c44bab3dafc448976b154338b30b6043e5425843d7aff60",
+   "chain": "e145948363006fdcb9f57f64f7c92558ed753e1cf20249f9d3d6b2fcf2fa2260",
+   "address": "0x671955ced96Fe5a1aA8C6eCaC9e00A06B33Cc75D"
+  }
+ },
+ "spawn": {
+  "type": "spawn",
+  "seed": "unhappy cash hero strategy mirror enemy grid stadium seminar lift program ranch tone real rare system fabric laundry rough sketch color chimney hire convince",
+  "keys": {
+   "public": "030fc2cd534d395c26b5cfb26ff4b1e78d3eec07f161b2d055a71126077756c0eb",
+   "private": "f40f9d638bfb9d7b12dcf7bbec4e0a30c11cdf4c4b28d184fcdb9c6ad8ba1d21",
+   "chain": "50bf0b5eb40a5e7b883262e5b6b6cf57f94f05782f44989eeb4026c91620e77c",
+   "address": "0xD587816977C17FEBC98B961E343071Ad6C5B095b"
+  }
+ },
+ "voting": {
+  "type": "voting",
+  "seed": "banana behind oval toast type abstract area polar sample document argue problem innocent pear include rack ready kangaroo panic salt arctic topic field again",
+  "keys": {
+   "public": "032c2ff8dc9621c5938cf628d7c15efcb073e7160ccf2e4e790bfe4bc0b9ecde5b",
+   "private": "ab56e962047eed194b5113b09aa810e2a2aa738b5d0c7111b75719b6fbd1f3ca",
+   "chain": "0a0dd3144a95b26b9072feab561d8e2955d9554ab56f175e2590820229aad733",
+   "address": "0xf04bb390E8903462cc422eEC0B62138Fc2884a97"
+  }
+ },
+ "management": {
+  "type": "management",
+  "seed": "pact range install display tower curve remind click detail ecology like debate luggage bless scissors taste sun leaf flash inhale myth finish vapor father",
+  "keys": {
+   "public": "023725de9eedaa86dacb1fa81984b1ca7df8efb9f69f9ac65133b11c40e7566266",
+   "private": "2506beb73e2631ce8025f93288819095f6d9c7e61b764840911365c3218d3fa3",
+   "chain": "c816c30bc2e3fdf83e3a94efa58480290eca0d59b2964fc30d3c31a3e854edeb",
+   "address": "0x3aBa995d54922075305c97edE6A9e9ec5644DD66"
+  }
+ },
+ "network": {}
+}

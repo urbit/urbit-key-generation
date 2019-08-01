@@ -23,6 +23,8 @@ const CHILD_SEED_TYPES = {
   NETWORK: 'network'
 }
 
+const DERIVATION_PATH = "m/44'/60'/0'/0/0"
+
 /**
  * Add a hex prefix to a string, if one isn't already present.
  *
@@ -167,7 +169,7 @@ const deriveNodeSeed = (master, type) => {
 const deriveNodeKeys = (mnemonic, passphrase) => {
   const seed = bip39.mnemonicToSeed(mnemonic, passphrase)
   const hd = bip32.fromSeed(seed)
-  const wallet = hd.derivePath("m/44'/60'/0'/0/0")
+  const wallet = hd.derivePath(DERIVATION_PATH)
   return {
     public: wallet.publicKey.toString('hex'),
     private: wallet.privateKey.toString('hex'),
@@ -190,6 +192,7 @@ const deriveNode = (master, type, passphrase) => {
   const mnemonic = deriveNodeSeed(master, type)
   const keys = deriveNodeKeys(mnemonic, passphrase)
   return {
+    type: type,
     seed: mnemonic,
     keys: keys
   }
@@ -258,6 +261,7 @@ const deriveNetworkInfo = (mnemonic, revision, passphrase) => {
   const seed = deriveNetworkSeed(mnemonic, passphrase, revision)
   const keys = deriveNetworkKeys(seed)
   return {
+    type: CHILD_SEED_TYPES.NETWORK,
     seed: seed,
     keys: keys
   }
@@ -368,11 +372,13 @@ const generateOwnershipWallet = async config => {
   const buf = Buffer.from(ob.patq2hex(ticket), 'hex')
   const masterSeed = await argon2u(buf, ship)
 
-  return deriveNode(
+  const node = deriveNode(
     masterSeed,
     CHILD_SEED_TYPES.OWNERSHIP,
     passphrase
   );
+
+  return node
 }
 
 /**
@@ -408,11 +414,17 @@ const generateWallet = async config => {
 
   const shards = shard(ticket)
 
+  const patp = ob.patp(ship)
+  const tier = ob.clan(patp)
+
   const buf = Buffer.from(ob.patq2hex(ticket), 'hex')
 
   const meta = {
     generator: `urbit-key-generation-v${version}`,
     ship: ship,
+    patp: patp,
+    tier: tier,
+    derivationPath: DERIVATION_PATH,
     passphrase: passphrase
   }
 
@@ -472,7 +484,7 @@ const generateWallet = async config => {
     spawn: spawn,
     voting: voting,
     management: management,
-    network: network
+    network: network,
   }
 }
 
@@ -499,4 +511,3 @@ module.exports = {
   _addHexPrefix: addHexPrefix,
   _stripHexPrefix: stripHexPrefix
 }
-

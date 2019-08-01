@@ -57739,7 +57739,7 @@ module.exports = {
 },{"bs58check":25,"buffer":26}],134:[function(require,module,exports){
 module.exports={
   "name": "urbit-key-generation",
-  "version": "0.16.0",
+  "version": "0.16.1",
   "description": "Key derivation and HD wallet generation functions for Urbit.",
   "main": "src/index.js",
   "browser": {
@@ -57749,7 +57749,8 @@ module.exports={
     "test": "nyc mocha --reporter spec test/test.js",
     "lint": "eslint src/",
     "build": "mkdir -p dist && browserify src/index.js -s urbit-keygen > dist/index.js",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "generateTestWallets": "node ./test/generate_test_wallets"
   },
   "repository": {
     "type": "git",
@@ -57814,6 +57815,9 @@ const CHILD_SEED_TYPES = {
   MANAGEMENT: 'management',
   NETWORK: 'network'
 }
+
+const DERIVATION_PATH = "m/44'/60'/0'/0/0"
+
 
 /**
  * Add a hex prefix to a string, if one isn't already present.
@@ -57959,7 +57963,7 @@ const deriveNodeSeed = (master, type) => {
 const deriveNodeKeys = (mnemonic, passphrase) => {
   const seed = bip39.mnemonicToSeed(mnemonic, passphrase)
   const hd = bip32.fromSeed(seed)
-  const wallet = hd.derivePath("m/44'/60'/0'/0/0")
+  const wallet = hd.derivePath(DERIVATION_PATH)
   return {
     public: wallet.publicKey.toString('hex'),
     private: wallet.privateKey.toString('hex'),
@@ -57982,6 +57986,7 @@ const deriveNode = (master, type, passphrase) => {
   const mnemonic = deriveNodeSeed(master, type)
   const keys = deriveNodeKeys(mnemonic, passphrase)
   return {
+    type: type,
     seed: mnemonic,
     keys: keys
   }
@@ -58050,6 +58055,7 @@ const deriveNetworkInfo = (mnemonic, revision, passphrase) => {
   const seed = deriveNetworkSeed(mnemonic, passphrase, revision)
   const keys = deriveNetworkKeys(seed)
   return {
+    type: CHILD_SEED_TYPES.NETWORK,
     seed: seed,
     keys: keys
   }
@@ -58160,11 +58166,13 @@ const generateOwnershipWallet = async config => {
   const buf = Buffer.from(ob.patq2hex(ticket), 'hex')
   const masterSeed = await argon2u(buf, ship)
 
-  return deriveNode(
+  const node = deriveNode(
     masterSeed,
     CHILD_SEED_TYPES.OWNERSHIP,
     passphrase
   );
+
+  return node
 }
 
 /**
@@ -58200,11 +58208,16 @@ const generateWallet = async config => {
 
   const shards = shard(ticket)
 
+  const patp = ob.patp(ship)
+
   const buf = Buffer.from(ob.patq2hex(ticket), 'hex')
 
   const meta = {
     generator: `urbit-key-generation-v${version}`,
     ship: ship,
+    patp: patp,
+    tier: ob.clan(patp),
+    derivationPath: DERIVATION_PATH,
     passphrase: passphrase
   }
 
@@ -58264,7 +58277,7 @@ const generateWallet = async config => {
     spawn: spawn,
     voting: voting,
     management: management,
-    network: network
+    network: network,
   }
 }
 
@@ -58291,7 +58304,6 @@ module.exports = {
   _addHexPrefix: addHexPrefix,
   _stripHexPrefix: stripHexPrefix
 }
-
 
 }).call(this,require("buffer").Buffer)
 },{"../package.json":134,"argon2-wasm":3,"bip32":8,"bip39":9,"buffer":26,"js-sha256":68,"keccak":69,"secp256k1":103,"tweetnacl":122,"urbit-ob":128}]},{},[135])(135)
