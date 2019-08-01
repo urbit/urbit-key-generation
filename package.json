@@ -3,9 +3,7 @@
   "version": "0.16.1",
   "description": "Key derivation and HD wallet generation functions for Urbit.",
   "main": "src/index.js",
-  "browser": {
-    "src/index.js": "dist/index.js"
-  },
+  "browser": "dist/index.js",
   "scripts": {
     "test": "nyc mocha --reporter spec test/test.js",
     "lint": "eslint src/",
