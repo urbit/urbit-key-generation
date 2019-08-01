@@ -25,7 +25,6 @@ const CHILD_SEED_TYPES = {
 
 const DERIVATION_PATH = "m/44'/60'/0'/0/0"
 
-
 /**
  * Add a hex prefix to a string, if one isn't already present.
  *
@@ -416,6 +415,7 @@ const generateWallet = async config => {
   const shards = shard(ticket)
 
   const patp = ob.patp(ship)
+  const tier = ob.clan(patp)
 
   const buf = Buffer.from(ob.patq2hex(ticket), 'hex')
 
@@ -423,7 +423,7 @@ const generateWallet = async config => {
     generator: `urbit-key-generation-v${version}`,
     ship: ship,
     patp: patp,
-    tier: ob.clan(patp),
+    tier: tier,
     derivationPath: DERIVATION_PATH,
     passphrase: passphrase
   }
