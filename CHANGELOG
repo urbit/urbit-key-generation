@@ -1,5 +1,9 @@
 # Changelog
 
+- 0.16.1 (2019-08-07)
+    * Adds patp, ship tier, and BIP32 derivation path metadata to generated
+      wallets.
+
 - 0.16.0 (2019-06-05)
     * Adds a 'generateOwnershipWallet' function that only generates the
       ownership subtree of the full HD wallet.  Compared to the full wallet,
