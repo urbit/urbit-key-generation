@@ -3,11 +3,13 @@
   "version": "0.16.1",
   "description": "Key derivation and HD wallet generation functions for Urbit.",
   "main": "src/index.js",
-  "browser": "dist/index.js",
+"browser": {
+  "src/index.js": "dist/index.js"
+},
   "scripts": {
     "test": "nyc mocha --reporter spec test/test.js",
     "lint": "eslint src/",
-    "build": "mkdir -p dist && browserify src/index.js -s urbit-keygen > dist/index.js",
+    "build": "mkdir -p dist && browserify src/index.js -s urbit-keygen > dist/index.js --verbose",
     "prepublishOnly": "npm run build",
     "generateTestWallets": "node ./test/generate_test_wallets"
   },

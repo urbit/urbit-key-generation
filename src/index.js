@@ -420,7 +420,9 @@ const generateWallet = async config => {
   const buf = Buffer.from(ob.patq2hex(ticket), 'hex')
 
   const meta = {
-    generator: `urbit-key-generation-v${version}`,
+    generatorName: `urbit-key-generation`,
+    generatorVersion: version,
+    proposalNumber: `UP8`,
     ship: ship,
     patp: patp,
     tier: tier,

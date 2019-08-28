@@ -1,6 +1,8 @@
 {
  "meta": {
-  "generator": "urbit-key-generation-v0.16.1",
+  "generatorName": "urbit-key-generation",
+  "generatorVersion": "0.16.1",
+  "proposalNumber": "UP8",
   "ship": 65012,
   "patp": "~matbyr",
   "tier": "star",
