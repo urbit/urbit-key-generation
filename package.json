@@ -9,7 +9,7 @@
   "scripts": {
     "test": "nyc mocha --reporter spec test/test.js",
     "lint": "eslint src/",
-    "build": "mkdir -p dist && browserify src/index.js -s urbit-keygen > dist/index.js --verbose",
+    "build": "mkdir -p dist && browserify src/index.js -s urbit-keygen > dist/index.js",
     "prepublishOnly": "npm run build",
     "generateTestWallets": "node ./test/generate_test_wallets"
   },
