@@ -1,7 +1,7 @@
 {
  "meta": {
   "generatorName": "urbit-key-generation",
-  "generatorVersion": "0.16.1",
+  "generatorVersion": "0.16.2",
   "proposalNumber": "UP8",
   "ship": 1,
   "patp": "~nec",
