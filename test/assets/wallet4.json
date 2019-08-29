@@ -1,8 +1,10 @@
 {
  "meta": {
-  "generatorName": "urbit-key-generation",
-  "generatorVersion": "0.16.2",
-  "proposalNumber": "UP8",
+  "generator": {
+   "name": "urbit-key-generation",
+   "version": "0.16.2"
+  },
+  "spec": "UP8",
   "ship": 16777215,
   "patp": "~taswen-dabmyr",
   "tier": "planet",
