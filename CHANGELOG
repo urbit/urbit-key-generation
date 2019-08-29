@@ -1,5 +1,13 @@
 # Changelog
 
+- 0.17.0 (2019-08-29)
+    * Restructures wallet metadata for easier consumption downstream.  The
+      'generator' attribute now consists of the generator's name and version
+      separately, in an object.
+
+      Also adds a 'spec' attribute to metadata to indicate what wallet
+      definition is being targeted.
+
 - 0.16.1 (2019-08-07)
     * Adds patp, ship tier, and BIP32 derivation path metadata to generated
       wallets.
