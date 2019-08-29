@@ -1,5 +1,5 @@
 const fs = require('fs')
-const kg = require('../dist/index')
+const kg = require('../src/index')
 
 const write = (wal, num) => {
   fs.writeFile(

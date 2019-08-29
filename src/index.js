@@ -7,7 +7,7 @@ const nacl = require('tweetnacl')
 const ob = require('urbit-ob')
 const secp256k1 = require('secp256k1')
 
-const { version } = require('../package.json')
+const { version, name } = require('../package.json')
 
 const GALAXY_MIN = 0x00000000
 const GALAXY_MAX = 0x000000ff
@@ -420,7 +420,11 @@ const generateWallet = async config => {
   const buf = Buffer.from(ob.patq2hex(ticket), 'hex')
 
   const meta = {
-    generator: `urbit-key-generation-v${version}`,
+    generator: {
+      name: name,
+      version: version,
+    },
+    spec: "UP8",
     ship: ship,
     patp: patp,
     tier: tier,
