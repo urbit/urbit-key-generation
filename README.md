@@ -80,5 +80,5 @@ You can run the test suite with a simple `npm test`.
 [urbo]: https://www.npmjs.com/package/urbit-ob
 [roll]: https://rollupjs.org/guide/en
 [rpnr]: https://github.com/rollup/rollup-plugin-node-resolve
-[bugs]: https://urbit.org/bounty/
+[bugs]: https://urbit.org/bounties/
 [sect]: mailto:security@tlon.io
