@@ -1,5 +1,9 @@
 # Changelog
 
+- 0.17.1 (2019-09-05)
+    * A tweak to .gitignore inadvertently caused npm to ignore the browser
+      build on the last version publish -- this fixes that issue.
+
 - 0.17.0 (2019-08-29)
     * Restructures wallet metadata for easier consumption downstream.  The
       'generator' attribute now consists of the generator's name and version
