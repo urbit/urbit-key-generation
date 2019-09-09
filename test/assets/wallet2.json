@@ -2,7 +2,7 @@
  "meta": {
   "generator": {
    "name": "urbit-key-generation",
-   "version": "0.17.2"
+   "version": "0.17.3"
   },
   "spec": "UP8",
   "ship": 222,

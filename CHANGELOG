@@ -1,5 +1,8 @@
 # Changelog
 
+- 0.17.3 (2019-09-09)
+    * Updates 'urbit-ob' to a version with a corrected browser build.
+
 - 0.17.2 (2019-09-09)
     * The 'browser' field was specified incorrectly [1].  This patches it up
       so that the hint for the 'urbit-key-generation' module is now the
