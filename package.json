@@ -9,7 +9,7 @@
   "scripts": {
     "test": "nyc mocha --reporter spec test/test.js",
     "lint": "eslint src/",
-    "build": "mkdir -p dist && browserify src/index.js -s urbit-key-generation > dist/index.js",
+    "build": "mkdir -p dist && browserify src/index.js -s urbit-key-generation > dist/index.js && rollup -c rollup.config.js",
     "prepublishOnly": "npm run build",
     "generateTestWallets": "node ./test/generate_test_wallets"
   },
@@ -46,6 +46,12 @@
     "jsverify": "^0.8.3",
     "lodash": "^4.17.15",
     "mocha": "^5.2.0",
-    "nyc": "^14.1.1"
+    "nyc": "^14.1.1",
+    "rollup": "^1.21.2",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-json": "^4.0.0",
+    "rollup-plugin-node-builtins": "^2.1.2",
+    "rollup-plugin-node-globals": "^1.4.0",
+    "rollup-plugin-node-resolve": "^5.2.0"
   }
 }
