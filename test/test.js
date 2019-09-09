@@ -232,7 +232,9 @@ describe('deriveNodeKeys', () => {
   const VALID_PATH = "m/44'/60'/0'/0/0"
   const INVALID_PATH = "m/44'/60/0'/0/0"
 
-  it('derives by paths correctly', () => {
+  it('derives by paths correctly', async function() {
+    this.timeout(20000)
+
     let prop = jsc.forall(mnemonic, mnem => {
       let seed = bip39.mnemonicToSeed(mnem)
       let hd = bip32.fromSeed(seed)
