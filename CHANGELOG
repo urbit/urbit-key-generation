@@ -1,5 +1,12 @@
 # Changelog
 
+- 0.17.2 (2019-09-09)
+    * The 'browser' field was specified incorrectly [1].  This patches it up
+      so that the hint for the 'urbit-key-generation' module is now the
+      bundle at ./dist/index.js.
+
+      [1]: https://github.com/defunctzombie/package-browser-field-spec
+
 - 0.17.1 (2019-09-05)
     * A tweak to .gitignore inadvertently caused npm to ignore the browser
       build on the last version publish -- this fixes that issue.
