@@ -48,6 +48,25 @@ const stripHexPrefix = hex =>
   : hex
 
 /**
+ * Hex string into Buffer, accounting for leading 0x and missing leading zeroes,
+ * crashing if hex is invalid.
+ *
+ * @param  {String} hex
+ * @return  {Buffer}
+ */
+const hexToBuffer = hex => {
+  let cleanHex = stripHexPrefix(hex)
+  if (typeof cleanHex === 'string' && (cleanHex.length % 2) === 1) {
+    cleanHex = '0' + cleanHex
+  }
+  const buf = Buffer.from(cleanHex, 'hex')
+  if (cleanHex.length !== 0 && buf.length === 0) {
+    throw new Error('invalid hex string: ' + hex)
+  }
+  return buf
+}
+
+/**
  * Keccak-256 hash function.
  *
  * @param  {String}  str
@@ -100,7 +119,7 @@ const isPlanet = ship =>
 const addressFromSecp256k1Public = pub => {
   const compressed = false
   const uncompressed = secp256k1.publicKeyConvert(
-    Buffer.from(pub, 'hex'),
+    hexToBuffer(pub),
     compressed
   )
   const chopped = uncompressed.slice(1) // chop parity byte
@@ -224,7 +243,7 @@ const deriveNetworkSeed = (mnemonic, passphrase, revision) => {
  * @return  {Object}  ed25519 crypt and auth keys
  */
 const deriveNetworkKeys = hex => {
-  const seed = Buffer.from(hex, 'hex')
+  const seed = hexToBuffer(hex)
   let h = []
   nacl.lowlevel.crypto_hash(h, seed.reverse(), seed.length)
 
@@ -280,7 +299,7 @@ const deriveNetworkInfo = (mnemonic, revision, passphrase) => {
  */
 const shard = ticket => {
   const ticketHex = ob.patq2hex(ticket)
-  const ticketBuf = Buffer.from(ticketHex, 'hex')
+  const ticketBuf = hexToBuffer(ticketHex)
 
   if (ticketBuf.length !== 48) {
     return [ ticket ]
@@ -369,7 +388,7 @@ const generateOwnershipWallet = async config => {
   const { ticket, ship } = config
   const passphrase = 'passphrase' in config ? config.passphrase : null
 
-  const buf = Buffer.from(ob.patq2hex(ticket), 'hex')
+  const buf = hexToBuffer(ob.patq2hex(ticket))
   const masterSeed = await argon2u(buf, ship)
 
   const node = deriveNode(
@@ -417,7 +436,7 @@ const generateWallet = async config => {
   const patp = ob.patp(ship)
   const tier = ob.clan(patp)
 
-  const buf = Buffer.from(ob.patq2hex(ticket), 'hex')
+  const buf = hexToBuffer(ob.patq2hex(ticket))
 
   const meta = {
     generator: {
