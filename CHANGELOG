@@ -1,5 +1,9 @@
 # Changelog
 
+- 0.17.4 (2019-11-07)
+    * Fixes a bug in which invalid hex strings could produce valid, but
+      identical, network keys. (#85)
+
 - 0.17.3 (2019-09-09)
     * Updates 'urbit-ob' to a version with a corrected browser build.
 
