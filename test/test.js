@@ -346,8 +346,8 @@ describe('deriveNetworkKeys', () => {
   })
 
   it('contains the expected fields', () => {
-    let prop = jsc.forall(jsc.string, str => {
-      let keys = kg.deriveNetworkKeys(Buffer.from(str))
+    let prop = jsc.forall(jsc.nat, int => {
+      let keys = kg.deriveNetworkKeys(int.toString(16))
 
       return 'auth' in keys && 'crypt' in keys
         && 'public' in keys.auth && 'private' in keys.auth
@@ -355,6 +355,15 @@ describe('deriveNetworkKeys', () => {
     })
 
     jsc.assert(prop, { tests: 50 })
+  })
+
+  it('crashes for invalid hex, but counts empty as valid', () => {
+    try {
+      kg.deriveNetworkKeys('invalid')
+    } catch(e) {
+      expect(e.message.slice(0, 18)).to.equal('invalid hex string')
+    }
+    kg.deriveNetworkKeys('')
   })
 })
 
