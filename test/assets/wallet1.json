@@ -8,7 +8,6 @@
   "ship": 65012,
   "patp": "~matbyr",
   "tier": "star",
-  "derivationPath": "m/44'/60'/0'/0/0",
   "passphrase": null
  },
  "ticket": "~marbud-tidsev-litsut-hidfep",
@@ -23,7 +22,8 @@
    "private": "0907827f77090a9d2e718f671e7885672bd9242acbc7e6071ccfbaf0c30a2939",
    "chain": "d6cb6883c4432813cc5ca9215147ea9482ea4cc9000d44a1ace6c9314782bf6b",
    "address": "0x088fd4200d6671c395c9A1d31d07B6dbC416bA80"
-  }
+  },
+  "derivationPath": "m/44'/60'/0'/0/0"
  },
  "transfer": {
   "type": "transfer",
@@ -33,7 +33,8 @@
    "private": "b5dc5724c0725a37a85f9a8bd55cd3f663127c72ead835c4733af8d10ebe396d",
    "chain": "80d12b9c5f15525869826ad91da1549bd5a860655f4d33035a56c9aa5d8aa8d4",
    "address": "0x0ce3C04FfF81238f59c89CD33aB9BDf054108E25"
-  }
+  },
+  "derivationPath": "m/44'/60'/0'/0/0"
  },
  "spawn": {
   "type": "spawn",
@@ -43,7 +44,8 @@
    "private": "3085571dbbce342db2104a0a7684cf6bab9958f6ac03eb495638e2abeb261251",
    "chain": "19da8efe9f290ea848b34835c3eaab378ed782592a67de87bc772c93e50f7915",
    "address": "0xdb278Eb8332Bd905f008E784865f88bcf82adFdF"
-  }
+  },
+  "derivationPath": "m/44'/60'/0'/0/0"
  },
  "voting": {},
  "management": {
@@ -54,7 +56,8 @@
    "private": "eb3cde2908010f018a9fb0ec9566209d38a29bf5ad3e42fea3932e5bee337519",
    "chain": "b883c3f71d40172117b4e260563fc048313a07407774c621812eae20349847a3",
    "address": "0xC3dF999B5424D27dF3035B58e9e3Ffd86692eb6D"
-  }
+  },
+  "derivationPath": "m/44'/60'/0'/0/0"
  },
  "network": {
   "type": "network",
@@ -69,5 +72,16 @@
     "public": "25bd0bb620181c1c80f807a04bb7d7701711bdf6793ddbf9ed49d6f03fbba34f"
    }
   }
+ },
+ "bitcoin": {
+  "type": "bitcoin",
+  "seed": "slow north orange movie govern genre oil jaguar what science curve bright love capital finger purpose rally cotton orient junk enforce affair gospel february",
+  "keys": {
+   "public": "03214967c646f97d115e0f457eae3fcfd2dde6cfc631510f8da9a9fe275e34eec3",
+   "private": "d4002cce24bb7bf97452555ae0381af9b9411655237e62d20ce983f78677eaec",
+   "chain": "d3a2399de336d8f9c81853ba1ddb8961b8b323a7f10caf8e32552dd0e7d185b4",
+   "address": "0x9Fa6fBfB0a60075aB635DDd4c55145CC00f03577"
+  },
+  "derivationPath": "m/84'/0'/0'"
  }
 }

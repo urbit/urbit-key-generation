@@ -8,7 +8,6 @@
   "ship": 16777215,
   "patp": "~taswen-dabmyr",
   "tier": "planet",
-  "derivationPath": "m/44'/60'/0'/0/0",
   "passphrase": null
  },
  "ticket": "~doznec-marbud",
@@ -23,7 +22,8 @@
    "private": "71324704dcfd8f7055ab769c7e088ba3132f117f03015559ff38757b6470a49d",
    "chain": "d935695eb84a2ade4895504a9f8099ba4461e29b71eefce6a7b02044a1db7507",
    "address": "0x660a9C8Ac75C045977a161D132453a19B37edc3a"
-  }
+  },
+  "derivationPath": "m/44'/60'/0'/0/0"
  },
  "transfer": {
   "type": "transfer",
@@ -33,7 +33,8 @@
    "private": "ad62eeaec38fc01efcfacfce49593335d8ac1c1d673bd0cb497c1438cba04ff7",
    "chain": "a1218d22e78209abab87bc77e7ce7514f55759e9cb40556b5c31d6a68ec8b88c",
    "address": "0x7eB950D9440BA05C30Eab84A75F75A5A8FDf3EaB"
-  }
+  },
+  "derivationPath": "m/44'/60'/0'/0/0"
  },
  "spawn": {},
  "voting": {},
@@ -45,7 +46,19 @@
    "private": "10fb7c39f91f2c69810b70d8a031df95002d59ed29bfbd4355d205042c7c3c83",
    "chain": "5762263c73ec78e3ef354beac7136c64d7825c4fce07d42dca1f9ed868401ebd",
    "address": "0x87C573C4d5f98DbFFCb2F0AB482c38C904Fe2AC0"
-  }
+  },
+  "derivationPath": "m/44'/60'/0'/0/0"
  },
- "network": {}
+ "network": {},
+ "bitcoin": {
+  "type": "bitcoin",
+  "seed": "distance scrub profit exotic boat cupboard false angle bubble walk special mutual bar agent august marriage auto thing example coast knock advance lend jewel",
+  "keys": {
+   "public": "025c01294e594d281dc23e67c35baba0f8b5aa60edf839b4d83ade0cb8b65bfcd3",
+   "private": "f38475c01eaa758d40955ecadb72b9f3b63942995812ab9a44571015f52245bc",
+   "chain": "8b8d75c783a69b1d21cc77d56ea4db6b910ccc269a1d14c57c5c2cbebd29944b",
+   "address": "0xDa670a5CB725ea0910622241c90b7D5A691A4eb3"
+  },
+  "derivationPath": "m/84'/0'/0'"
+ }
 }

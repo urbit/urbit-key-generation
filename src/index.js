@@ -20,10 +20,12 @@ const CHILD_SEED_TYPES = {
   SPAWN: 'spawn',
   VOTING: 'voting',
   MANAGEMENT: 'management',
-  NETWORK: 'network'
+  NETWORK: 'network',
+  BITCOIN: 'bitcoin'
 }
 
 const DERIVATION_PATH = "m/44'/60'/0'/0/0"
+const BTC_DERIVATION_PATH = "m/84'/0'/0'"
 
 /**
  * Add a hex prefix to a string, if one isn't already present.
@@ -113,7 +115,7 @@ const isPlanet = ship =>
  * Convert a hex-encoded secp256k1 public key into an Ethereum address.
  *
  * @param  {String}  pub a 33-byte compressed and hex-encoded public key (i.e.,
- *   including the leading parity byte)
+ *                   including the leading parity byte)
  * @return  {String}  the corresponding Ethereum address
  */
 const addressFromSecp256k1Public = pub => {
@@ -168,7 +170,7 @@ const sha256 = (...args) => {
  *
  * @param  {Uint8Array}  master a master seed
  * @param  {String}  type one of 'ownership', 'transfer', 'spawn', 'voting',
- *   'management'
+ *                   'management', 'bitcoin'
  * @return  {String}  a BIP39 mnemonic
  *
  */
@@ -182,13 +184,14 @@ const deriveNodeSeed = (master, type) => {
  * mnemonic and optional passphrase, according to UP8.
  *
  * @param  {String}  mnemonic a BIP39 mnemonic
+ * @param  {String}  derivationPath wallet derivation path
  * @param  {String}  passphrase an optional passphrase
  * @return  {Object}  the keypair, BIP32 chain code, and Ethereum address
  */
-const deriveNodeKeys = (mnemonic, passphrase) => {
+const deriveNodeKeys = (mnemonic, derivationPath, passphrase) => {
   const seed = bip39.mnemonicToSeed(mnemonic, passphrase)
   const hd = bip32.fromSeed(seed)
-  const wallet = hd.derivePath(DERIVATION_PATH)
+  const wallet = hd.derivePath(derivationPath)
   return {
     public: wallet.publicKey.toString('hex'),
     private: wallet.privateKey.toString('hex'),
@@ -203,17 +206,19 @@ const deriveNodeKeys = (mnemonic, passphrase) => {
  *
  * @param  {Uint8Array}  master a master seed
  * @param  {String}  type one of 'ownership', 'transfer', 'spawn', 'voting',
- *   'management'
+ *                   'management', 'bitcoin'
+ * @param  {String}  derivationPath wallet derivation path
  * @param  {String}  passphrase an optional passphrase
  * @return  {Object}  the child seed and associated keys
  */
-const deriveNode = (master, type, passphrase) => {
+const deriveNode = (master, type, derivationPath, passphrase) => {
   const mnemonic = deriveNodeSeed(master, type)
-  const keys = deriveNodeKeys(mnemonic, passphrase)
+  const keys = deriveNodeKeys(mnemonic, derivationPath, passphrase)
   return {
     type: type,
     seed: mnemonic,
-    keys: keys
+    keys: keys,
+    derivationPath: derivationPath
   }
 }
 
@@ -332,9 +337,10 @@ const shard = ticket => {
  * Combine two of three shards to recompute the original secret.
  *
  * @param  {Array<String>} shards an array of shards, in their appropriate
- *   order; use 'undefined' to mark a missing shard, e.g.
+ *                         order; use 'undefined' to mark a missing shard,
+ *                         e.g.
  *
- *   > combine([shard0, undefined, shard2])
+ *                         > combine([shard0, undefined, shard2])
  *
  * @return {String} the original secret
  */
@@ -372,7 +378,7 @@ const combine = shards => {
  * @param  {String}  ticket a 64, 128, or 384-bit @q master ticket
  * @param  {Number}  ship a 32-bit Urbit ship number
  * @param  {String}  passphrase an optional passphrase to use when deriving
- *   seeds from BIP39 mnemonics
+ *                   seeds from BIP39 mnemonics
  * @return  {Promise<Object>}
  */
 const generateOwnershipWallet = async config => {
@@ -394,6 +400,7 @@ const generateOwnershipWallet = async config => {
   const node = deriveNode(
     masterSeed,
     CHILD_SEED_TYPES.OWNERSHIP,
+    DERIVATION_PATH,
     passphrase
   );
 
@@ -408,11 +415,11 @@ const generateOwnershipWallet = async config => {
  * @param  {String}  ticket a 64, 128, or 384-bit @q master ticket
  * @param  {Number}  ship a 32-bit Urbit ship number
  * @param  {String}  passphrase an optional passphrase to use when deriving
- *   seeds from BIP39 mnemonics
+ *                   seeds from BIP39 mnemonics
  * @param  {Number}  revision an optional revision number used to generate new
- *   networking keys (defaults to 0)
+ *                   networking keys (defaults to 0)
  * @param  {Bool}  boot if true, generates network keys for the provided ship
- *   (defaults to false)
+ *                 (defaults to false)
  * @return  {Promise<Object>}
  */
 const generateWallet = async config => {
@@ -447,7 +454,6 @@ const generateWallet = async config => {
     ship: ship,
     patp: patp,
     tier: tier,
-    derivationPath: DERIVATION_PATH,
     passphrase: passphrase
   }
 
@@ -456,12 +462,14 @@ const generateWallet = async config => {
   const ownership = deriveNode(
     masterSeed,
     CHILD_SEED_TYPES.OWNERSHIP,
+    DERIVATION_PATH,
     passphrase
   )
 
   const transfer = deriveNode(
     masterSeed,
     CHILD_SEED_TYPES.TRANSFER,
+    DERIVATION_PATH,
     passphrase
   )
 
@@ -470,6 +478,7 @@ const generateWallet = async config => {
     ? deriveNode(
         masterSeed,
         CHILD_SEED_TYPES.SPAWN,
+        DERIVATION_PATH,
         passphrase
       )
     : {}
@@ -479,6 +488,7 @@ const generateWallet = async config => {
     ? deriveNode(
         masterSeed,
         CHILD_SEED_TYPES.VOTING,
+        DERIVATION_PATH,
         passphrase
       )
     : {}
@@ -486,6 +496,7 @@ const generateWallet = async config => {
   const management = deriveNode(
     masterSeed,
     CHILD_SEED_TYPES.MANAGEMENT,
+    DERIVATION_PATH,
     passphrase
   )
 
@@ -498,6 +509,13 @@ const generateWallet = async config => {
       )
     : {}
 
+  const bitcoin = deriveNode(
+    masterSeed,
+    CHILD_SEED_TYPES.BITCOIN,
+    BTC_DERIVATION_PATH,
+    passphrase
+  )
+
   return {
     meta: meta,
     ticket: ticket,
@@ -508,6 +526,7 @@ const generateWallet = async config => {
     voting: voting,
     management: management,
     network: network,
+    bitcoin: bitcoin,
   }
 }
 

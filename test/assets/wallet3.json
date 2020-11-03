@@ -8,7 +8,6 @@
   "ship": 0,
   "patp": "~zod",
   "tier": "galaxy",
-  "derivationPath": "m/44'/60'/0'/0/0",
   "passphrase": null
  },
  "ticket": "~doznec-marbud",
@@ -23,7 +22,8 @@
    "private": "4c0f81cb5dd2a9ed8a4889f51acd8e7e0c2ba9c21812e6d3ffc1fa1ba7671196",
    "chain": "44d4f022a669e0ac8c52a4205ed54a8ba75d097bb7a039bf0e6e426a795294d3",
    "address": "0x6118BB3C800aa245Bd200B3Ad04034C1dbF7EB39"
-  }
+  },
+  "derivationPath": "m/44'/60'/0'/0/0"
  },
  "transfer": {
   "type": "transfer",
@@ -33,7 +33,8 @@
    "private": "5bfd551ef0319dd0b89341f5e70c6f0863720ac7b7526d7982420201cbc603a3",
    "chain": "2fe3cc603758eed5075597451e6597b7819103b1bf05a780c27e316fd3dbd5d3",
    "address": "0x0f5bf720c2A15525596142E3fEB3745e8052d40c"
-  }
+  },
+  "derivationPath": "m/44'/60'/0'/0/0"
  },
  "spawn": {
   "type": "spawn",
@@ -43,7 +44,8 @@
    "private": "c7b98276ff59aa68740c01717aacd934678b06b7c6e48e187628612825ea41cd",
    "chain": "a173bc981d83b6c8aa3efa4c5a2237305ff9ff1fd90181110974bb3ef98e2ef5",
    "address": "0xb4EF14026E324e0e947c7FDd785e2CE0A93071f1"
-  }
+  },
+  "derivationPath": "m/44'/60'/0'/0/0"
  },
  "voting": {
   "type": "voting",
@@ -53,7 +55,8 @@
    "private": "4597db00a024d12971b39c49decb7b0f3d2279057f0802e58b5d33916ba60057",
    "chain": "34fff073b80138f0d0382c132ce6b376f9ddc90fc80ff0fab4c71d53b8e412f3",
    "address": "0xE2d393BC191e355509b7ed63f979Ec37F8dC5Dea"
-  }
+  },
+  "derivationPath": "m/44'/60'/0'/0/0"
  },
  "management": {
   "type": "management",
@@ -63,7 +66,19 @@
    "private": "e1a16180151ec7ba8e39876d1dd5cb8c5e877892aec2954b03d48793489ea908",
    "chain": "2e86853950d6c3eb72a601aab65eadea925e2815ebc8783d1e91f21ec8131ce0",
    "address": "0x9A11B329b05dC6b203dfB8e11b3b4e10Ad651FD4"
-  }
+  },
+  "derivationPath": "m/44'/60'/0'/0/0"
  },
- "network": {}
+ "network": {},
+ "bitcoin": {
+  "type": "bitcoin",
+  "seed": "lens mutual swamp scrub knife lake stone visa doctor medal calm close version shrimp leisure fun install away wool eight mesh world fire reform",
+  "keys": {
+   "public": "037498eb5dbf648935c2adcb7a2e4f88a98d15adc281b8c2960cc868797139118f",
+   "private": "0d26143a17fc6c4d2870df98f37714ab5956c4dba8c1b81bfdc91e40b0ebc3d0",
+   "chain": "cf2dc7b071ce7f0f814f5e548e3d905a15de6c60d211d40c642d7a801786dd32",
+   "address": "0xDc53b171fe438E05daA824DED2F663811f6c8837"
+  },
+  "derivationPath": "m/84'/0'/0'"
+ }
 }
