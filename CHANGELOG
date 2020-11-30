@@ -1,5 +1,8 @@
 # Changelog
 
+- 0.18.0 (2020-11-30)
+    * Adds a BIP32 bitcoin branch to derived wallets. (#92)
+
 - 0.17.4 (2019-11-07)
     * Fixes a bug in which invalid hex strings could produce valid, but
       identical, network keys. (#85)
