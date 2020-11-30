@@ -255,7 +255,7 @@ describe('deriveNodeKeys', () => {
         address: kg.addressFromSecp256k1Public(wallet1.publicKey.toString('hex'))
       }
 
-      let node = kg.deriveNodeKeys(mnem)
+      let node = kg.deriveNodeKeys(mnem, VALID_PATH)
 
       return keys0.public === node.public
         && keys0.private === node.private
@@ -272,7 +272,7 @@ describe('deriveNodeKeys', () => {
 
   it('has the correct properties', () => {
     let prop = jsc.forall(mnemonic, mnem => {
-      let node = kg.deriveNodeKeys(mnem)
+      let node = kg.deriveNodeKeys(mnem, VALID_PATH)
 
       return 'public' in node && 'private' in node && 'chain' in node &&
         'address' in node
@@ -281,7 +281,8 @@ describe('deriveNodeKeys', () => {
 
   it('works as expected', () => {
     let node = kg.deriveNodeKeys(
-      'market truck nice joke upper divide spot essay mosquito mushroom buzz undo'
+      'market truck nice joke upper divide spot essay mosquito mushroom buzz undo',
+      VALID_PATH
     )
 
     let expected = {
