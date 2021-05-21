@@ -73,14 +73,21 @@
    }
   }
  },
- "bitcoin": {
-  "type": "bitcoin",
-  "seed": "slow north orange movie govern genre oil jaguar what science curve bright love capital finger purpose rally cotton orient junk enforce affair gospel february",
+ "bitcoinTestnet": {
+  "type": "bitcoinTestnet",
+  "seed": "episode cruise lift goose parrot video believe remain skirt void flip rose teach satoshi volume wasp medal click brain bounce clarify copy castle off",
   "keys": {
-   "public": "03214967c646f97d115e0f457eae3fcfd2dde6cfc631510f8da9a9fe275e34eec3",
-   "private": "d4002cce24bb7bf97452555ae0381af9b9411655237e62d20ce983f78677eaec",
-   "chain": "d3a2399de336d8f9c81853ba1ddb8961b8b323a7f10caf8e32552dd0e7d185b4",
-   "address": "0x9Fa6fBfB0a60075aB635DDd4c55145CC00f03577"
+   "xpub": "vpub5SLqN2bLY4WeZPZLr6YWV73pzk671iNLPHexEeFLbZcF4mY3f4NRRrAkF1M1SCXGLV2oprLReK288PmM94K2yusqnLZDMd13RDEXakFEXxP",
+   "xprv": "vprv9DMUxX4ShgxMLuUsk51W7y76SiFccFeV24jMSFqj3E5GByCu7X4At3rGPkmqJAekNiKUjj4DGwpjLiRiqJnzftkRZjSUgbBYVf5CNi7MRMk"
+  },
+  "derivationPath": "m/84'/1'/0'"
+ },
+ "bitcoinMainnet": {
+  "type": "bitcoinMainnet",
+  "seed": "faith crystal laptop fruit fix neck subject pupil involve rug provide uncle hard brick thing lucky habit nest achieve pet hand marriage entry nasty",
+  "keys": {
+   "xpub": "zpub6jftahH18ngZwUpdczLZ7A9sUz3nwukvEit1oN9TsWcLKZpGgpbwET854HfFoQPSSNxs8Fr1ZJbR6DhoxiKQGgHerBJUFs26scFRxbUes57",
+   "xprv": "zprvAWgYBBk7JR8GizkAWxoYk2D8vxDJYT34sVxQzyjrKB5MSmV89HHggeobD2U2LjVLdGTcNkbHeEDNfP11JQ7aipQc6rzjcHLP6W3TRjBGXU5"
   },
   "derivationPath": "m/84'/0'/0'"
  }

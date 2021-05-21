@@ -70,14 +70,21 @@
   "derivationPath": "m/44'/60'/0'/0/0"
  },
  "network": {},
- "bitcoin": {
-  "type": "bitcoin",
-  "seed": "bicycle notice subway museum eagle hurry delay crisp fly leg face scrub crystal page skull increase donor female island menu bomb fatal sight arrest",
+ "bitcoinTestnet": {
+  "type": "bitcoinTestnet",
+  "seed": "tired brave lumber tape prosper drip easily record ahead slush decorate sad candy talent tongue flat sea wave act topic off client under unhappy",
   "keys": {
-   "public": "03ad243f02d01cd80027ba8b6f1e5b1d1c6827ba640b12d553b87a1525f1da0e2a",
-   "private": "3a0850b4a0e97df904d8542b81301efb900a55e9e7070adb6d88ad3ef0411ff9",
-   "chain": "6050f757474eb52e13f5eb61855d25c8c73f6e87074cd887475b386f4a159320",
-   "address": "0x0fDc84Ce48C0b24951843A2c2b36AB0ebE653199"
+   "xpub": "vpub5SLqN2bLY4WeZvwp5RovVJrdBuYjLR3eyLsA4iQ2QR4UH8bsQvCLNbSNQBuEPDsTZxnUpB5iZsDNbaGs9Kg8zWzHVkDJL3PT9rYt5iYUemq",
+   "xprv": "vprv9DMUxX4ShgxMMSsLyQGv8AutdsiEvxKoc7wZGKzQr5XVQLGisNt5po7tYuDa9SKs8AjjAWW9GSHVt9vyHbZTqeKqWUFRP7Rjc1kvjhhFYz1"
+  },
+  "derivationPath": "m/84'/1'/0'"
+ },
+ "bitcoinMainnet": {
+  "type": "bitcoinMainnet",
+  "seed": "same early fiction spare labor pottery little heart hold credit off absurd innocent license differ filter move predict detail abstract patrol calm park onion",
+  "keys": {
+   "xpub": "zpub6jftahH18ngZwGTqw1Sf95EfJxxbmKgeF2tVr4ASUrL5yq8R18Yxd3Phz1Fx4XxzopoUjohrgiFbVzVSKmNkJdjTyakiXR4LrrGygwq1qW7",
+   "xprv": "zprvAWgYBBk7JR8GinPNpyuemwHvkw87Mrxnsoxu3fkpvWo772oGTbEi5F5E8isNtg6AjW2hEWG9P1imFWHQMcoB5tz2hwNreEixmJQQsHwcZLg"
   },
   "derivationPath": "m/84'/0'/0'"
  }
