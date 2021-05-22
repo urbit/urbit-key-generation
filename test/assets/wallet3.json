@@ -70,14 +70,21 @@
   "derivationPath": "m/44'/60'/0'/0/0"
  },
  "network": {},
- "bitcoin": {
-  "type": "bitcoin",
-  "seed": "lens mutual swamp scrub knife lake stone visa doctor medal calm close version shrimp leisure fun install away wool eight mesh world fire reform",
+ "bitcoinTestnet": {
+  "type": "bitcoinTestnet",
+  "seed": "enjoy addict piece dutch salad pause lottery can nothing episode sword swift avoid stand shove exotic decade shift sword monster cargo sniff endless fiscal",
   "keys": {
-   "public": "037498eb5dbf648935c2adcb7a2e4f88a98d15adc281b8c2960cc868797139118f",
-   "private": "0d26143a17fc6c4d2870df98f37714ab5956c4dba8c1b81bfdc91e40b0ebc3d0",
-   "chain": "cf2dc7b071ce7f0f814f5e548e3d905a15de6c60d211d40c642d7a801786dd32",
-   "address": "0xDc53b171fe438E05daA824DED2F663811f6c8837"
+   "xpub": "vpub5SLqN2bLY4WeYRx1Hv9jzvCwn5d41xjHieua4UjXjkfCVY9hLCJ9KxYNfYdbpEz8YEwPsERZvag2eRZy5wLvE3GTZdqGsQtGUeBf87xYauF",
+   "xprv": "vprv9DMUxX4ShgxMKwsYBtcjdnGDE3nZcW1SMRyyG6KvBR8DcjpYneytnADtpErGp1zkz19h54G19BBGEjpQu5ZLaRKAdymukxzvLrkFZGbW3ng"
+  },
+  "derivationPath": "m/84'/1'/0'"
+ },
+ "bitcoinMainnet": {
+  "type": "bitcoinMainnet",
+  "seed": "unknown garbage robot nominee inspire option ivory solution museum artist cannon ribbon police bean bargain illegal basic suspect rain spice elevator rubber library lucky",
+  "keys": {
+   "xpub": "zpub6jftahH18ngZxoscgq6pw7c7JBUawsWS4pJq93541uyiFbqGgdAZkdDiyKP2gphr2UHQGEjSb7WC7SBFubRu7X61xS2fGxyUHKS5ZqVghrX",
+   "xprv": "zprvAWgYBBk7JR8GkKo9aoZpZyfNk9e6YQnahbPELefSTaSjNoW895rKCpuF83Mex4vAqB5iyzSQBZEwEG1EPtfZgGDacXoM7xrqCDHTPRKfJer"
   },
   "derivationPath": "m/84'/0'/0'"
  }

@@ -50,14 +50,21 @@
   "derivationPath": "m/44'/60'/0'/0/0"
  },
  "network": {},
- "bitcoin": {
-  "type": "bitcoin",
-  "seed": "distance scrub profit exotic boat cupboard false angle bubble walk special mutual bar agent august marriage auto thing example coast knock advance lend jewel",
+ "bitcoinTestnet": {
+  "type": "bitcoinTestnet",
+  "seed": "forest proof claim cross plate ghost ancient scheme among twin nominee leaf grass matter empower inner pledge taxi keen message ordinary absorb spike shy",
   "keys": {
-   "public": "025c01294e594d281dc23e67c35baba0f8b5aa60edf839b4d83ade0cb8b65bfcd3",
-   "private": "f38475c01eaa758d40955ecadb72b9f3b63942995812ab9a44571015f52245bc",
-   "chain": "8b8d75c783a69b1d21cc77d56ea4db6b910ccc269a1d14c57c5c2cbebd29944b",
-   "address": "0xDa670a5CB725ea0910622241c90b7D5A691A4eb3"
+   "xpub": "vpub5SLqN2bLY4Wea2zBQGWPQwVaGWxMscFFcCD8UG6Ch9mmE1TYBkCqmWKuLDedZQfqZNWDHzy8N8aVQmYckxtDAmW65ezqVQXDmwyvp7SFpj3",
+   "xprv": "vprv9DMUxX4ShgxMMYuiJEyP3oYqiV7sU9XQEyHXfsgb8pEnMD8PeCtbDi1RUvaaXAxaFCVfqFv6Cvd9j4kj2TS5QeKwZPbdbxXmwiF35xcGKxc"
+  },
+  "derivationPath": "m/84'/1'/0'"
+ },
+ "bitcoinMainnet": {
+  "type": "bitcoinMainnet",
+  "seed": "check coin skull scan title trophy nasty garage design issue modify soft peasant mail shiver trash account table voice satoshi lock tornado ankle tennis",
+  "keys": {
+   "xpub": "zpub6jftahH18ngZxLbPdzyftYy9LmcYVXS7w6Xyob7hnegvp77oELps6dP3gvgS9Q7Vi7ujtuHstnJtw562sZMnQMknmgaLxrimYnpYUBFq29W",
+   "xprv": "zprvAWgYBBk7JR8GjrWvXySfXR2Qnjn464iGZscP1Ci6EK9wwJnegoWcYq4ZqdiUkWiK6pxpMiHiB1Ho9LFWzke2TD8NV3guTRYS276TFhapmix"
   },
   "derivationPath": "m/84'/0'/0'"
  }

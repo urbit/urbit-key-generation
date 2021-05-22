@@ -6,6 +6,7 @@ const keccak = require('keccak')
 const nacl = require('tweetnacl')
 const ob = require('urbit-ob')
 const secp256k1 = require('secp256k1')
+const bs58check = require('bs58check')
 
 const { version, name } = require('../package.json')
 
@@ -21,11 +22,96 @@ const CHILD_SEED_TYPES = {
   VOTING: 'voting',
   MANAGEMENT: 'management',
   NETWORK: 'network',
-  BITCOIN: 'bitcoin'
+  BITCOIN_MAINNET: 'bitcoinMainnet',
+  BITCOIN_TESTNET: 'bitcoinTestnet'
 }
 
 const DERIVATION_PATH = "m/44'/60'/0'/0/0"
-const BTC_DERIVATION_PATH = "m/84'/0'/0'"
+const BTC_MAINNET_DERIVATION_PATH = "m/84'/0'/0'"
+const BTC_TESTNET_DERIVATION_PATH = "m/84'/1'/0'"
+
+const BITCOIN_MAINNET_INFO = {
+  messagePrefix: '\x18Bitcoin Signed Message:\n',
+  bech32: 'bc',
+  bip32: {
+    public: 0x0488b21e,
+    private: 0x0488ade4,
+  },
+  pubKeyHash: 0x00,
+  scriptHash: 0x05,
+  wif: 0x80,
+}
+
+const BITCOIN_TESTNET_INFO = {
+  messagePrefix: '\x18Bitcoin Signed Message:\n',
+  bech32: 'tb',
+  bip32: {
+    public: 0x043587cf,
+    private: 0x04358394,
+  },
+  pubKeyHash: 0x6f,
+  scriptHash: 0xc4,
+  wif: 0xef,
+}
+
+/**
+ * Modifies a base58 serialized bitcoin BIP 32 xpub to a
+ * BIP 84 vpub (testnet).
+ *
+ * @param  {String}  xpub
+ * @return  {String}
+ */
+function xpubToVpub(xpub) {
+  return modifyVersionBytes(xpub, '045f1cf6')
+}
+
+/**
+ * Modifies a base58 serialized bitcoin BIP 32 xprv to a
+ * BIP 84 vprv (testnet).
+ *
+ * @param  {String}  xpub
+ * @return  {String}
+ */
+function xprvToVprv(xpub) {
+  return modifyVersionBytes(xpub, '045f18bc')
+}
+
+/**
+ * Modifies a base58 serialized bitcoin BIP 32 xpub to a
+ * BIP 84 zpub (mainnet).
+ *
+ * @param  {String}  xpub
+ * @return  {String}
+ */
+function xpubToZpub(xpub) {
+  return modifyVersionBytes(xpub, '04b24746')
+}
+
+/**
+ * Modifies a base58 serialized bitcoin BIP 32 xprv to a
+ * BIP 84 zprv (mainnet).
+ *
+ * @param  {String}  xpub
+ * @return  {String}
+ */
+function xprvToZprv(xpub) {
+  return modifyVersionBytes(xpub, '04b2430c')
+}
+
+/**
+ * Modifies the version bytes of a base58 (as per BIP32) serialized bitcoin
+ * extended public key or extended private key.
+ *
+ * @param  {String}  xpub
+ * @param  {String}  hex
+ * @return  {String}
+ */
+const modifyVersionBytes = (xpub, hex) => {
+  var data = bs58check.decode(xpub)
+  data = data.slice(4)
+  data = Buffer.concat([Buffer.from(hex, 'hex'), data])
+  return bs58check.encode(data)
+}
 
 /**
  * Add a hex prefix to a string, if one isn't already present.
@@ -170,7 +256,7 @@ const sha256 = (...args) => {
  *
  * @param  {Uint8Array}  master a master seed
  * @param  {String}  type one of 'ownership', 'transfer', 'spawn', 'voting',
- *                   'management', 'bitcoin'
+ *                   'management', 'bitcoinTestnet', 'bitcoinMainnet'
  * @return  {String}  a BIP39 mnemonic
  *
  */
@@ -206,7 +292,7 @@ const deriveNodeKeys = (mnemonic, derivationPath, passphrase) => {
  *
  * @param  {Uint8Array}  master a master seed
  * @param  {String}  type one of 'ownership', 'transfer', 'spawn', 'voting',
- *                   'management', 'bitcoin'
+ *                   'management', 'bitcoinTestnet', 'bitcoinMainnet'
  * @param  {String}  derivationPath wallet derivation path
  * @param  {String}  passphrase an optional passphrase
  * @return  {Object}  the child seed and associated keys
@@ -509,12 +595,50 @@ const generateWallet = async config => {
       )
     : {}
 
-  const bitcoin = deriveNode(
+  const bitcoinTestnet = deriveNode(
     masterSeed,
-    CHILD_SEED_TYPES.BITCOIN,
-    BTC_DERIVATION_PATH,
+    CHILD_SEED_TYPES.BITCOIN_TESTNET,
+    BTC_TESTNET_DERIVATION_PATH,
     passphrase
   )
+
+  bitcoinTestnet.keys =
+    {
+      xpub: xpubToVpub(
+        bip32.fromPublicKey(Buffer.from(bitcoinTestnet.keys.public, 'hex'),
+                            Buffer.from(bitcoinTestnet.keys.chain, 'hex'),
+                            BITCOIN_TESTNET_INFO)
+          .toBase58()
+      ),
+      xprv: xprvToVprv(
+        bip32.fromPrivateKey(Buffer.from(bitcoinTestnet.keys.private, 'hex'),
+                             Buffer.from(bitcoinTestnet.keys.chain, 'hex'),
+                             BITCOIN_TESTNET_INFO)
+          .toBase58()
+      )
+    }
+
+  const bitcoinMainnet = deriveNode(
+    masterSeed,
+    CHILD_SEED_TYPES.BITCOIN_MAINNET,
+    BTC_MAINNET_DERIVATION_PATH,
+    passphrase
+  )
+
+  bitcoinMainnet.keys =
+    {
+      xpub: xpubToZpub(
+        bip32.fromPublicKey(Buffer.from(bitcoinMainnet.keys.public, 'hex'),
+                            Buffer.from(bitcoinMainnet.keys.chain, 'hex'),
+                            BITCOIN_MAINNET_INFO)
+          .toBase58()
+      ),
+      xprv: xprvToZprv(
+        bip32.fromPrivateKey(Buffer.from(bitcoinMainnet.keys.private, 'hex'),
+                             Buffer.from(bitcoinMainnet.keys.chain, 'hex'),
+                             BITCOIN_MAINNET_INFO)
+          .toBase58())
+    }
 
   return {
     meta: meta,
@@ -526,7 +650,8 @@ const generateWallet = async config => {
     voting: voting,
     management: management,
     network: network,
-    bitcoin: bitcoin,
+    bitcoinTestnet: bitcoinTestnet,
+    bitcoinMainnet: bitcoinMainnet
   }
 }
 
