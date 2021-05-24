@@ -1,5 +1,16 @@
 # Changelog
 
+- 0.19.0 (2021-05-24)
+    * Adds bitcoin testnet support. (#97)
+
+      Note two backwards-incompatible changes:
+
+      * The 'bitcoin' branch is now replaced by 'bitcoinMainnet' and
+        'bitcoinTestnet' branches.
+
+      * The 'keys' branches now contain only 'xpub' and 'xprv' entries,
+        instead of the former 'public', 'private', 'chain', and 'address'.
+
 - 0.18.0 (2020-11-30)
     * Adds a BIP32 bitcoin branch to derived wallets. (#92)
 
