@@ -471,6 +471,7 @@ const shas = (buf, salt) =>
   shax(xor(salt, shax(buf)))
 
 const xor = (a, b) => {
+  /* istanbul ignore if */
   if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
     console.log('a', a)
     console.log('b', b)
@@ -492,6 +493,12 @@ const shaf = (buf, salt) => {
   return xor(front, back)
 }
 
+/**
+ * Generate a +code from a keypair.
+ *
+ * @param {Object} pair
+ * @return {String}
+ */
 const generateCode = pair => {
   const ring = hex2buf(createRing(pair))
   const salt = hex2buf('73736170') // salt is the noun %pass
@@ -732,6 +739,8 @@ module.exports = {
   shard,
   combine,
   addressFromSecp256k1Public,
+  generateCode,
+  generateKeyfile,
 
   _isGalaxy: isGalaxy,
   _isPlanet: isPlanet,
