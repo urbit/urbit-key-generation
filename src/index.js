@@ -451,25 +451,22 @@ const combine = shards => {
   )
 }
 
+/**
+ * Create ring from keypair.
+ *
+ * @param {Object} pair
+ * @return {String}
+ */
 const createRing = pair =>
   pair.crypt.private + pair.auth.private + NETWORK_KEY_CURVE_PARAMETER
 
-const shax = buf => {
-  const hashed = jssha256.sha256.array(buf)
-  return Buffer.from(hashed)
-}
-
-const hex2buf = hex =>
-	Buffer.from(hex, 'hex').reverse()
-
-const buf2hex = buf =>
-  Buffer.from(buf)
-    .reverse()
-    .toString('hex')
-
-const shas = (buf, salt) =>
-  shax(xor(salt, shax(buf)))
-
+/**
+ * Bytewise buffer XOR.
+ *
+ * @param {Buffer} a
+ * @param {Buffer} b
+ * @return {Uint8Array}
+ */
 const xor = (a, b) => {
   /* istanbul ignore if */
   if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
@@ -485,14 +482,6 @@ const xor = (a, b) => {
   return result
 }
 
-const shaf = (buf, salt) => {
-  const result = shas(buf, salt)
-  const halfway = result.length / 2
-  const front = result.slice(0, halfway)
-  const back = result.slice(halfway, result.length)
-  return xor(front, back)
-}
-
 /**
  * Generate a +code from a keypair.
  *
@@ -500,9 +489,28 @@ const shaf = (buf, salt) => {
  * @return {String}
  */
 const generateCode = pair => {
+  const hex2buf = hex =>
+    Buffer.from(hex, 'hex').reverse()
+
+  const buf2hex = buf =>
+    Buffer.from(buf)
+      .reverse()
+      .toString('hex')
+
+  const shaf = (buf, salt) => {
+    const shas = (buf, salt) =>
+      sha256(xor(salt, sha256(buf)))
+
+    const result = shas(buf, salt)
+    const halfway = result.length / 2
+    const front = result.slice(0, halfway)
+    const back = result.slice(halfway, result.length)
+    return xor(front, back)
+  }
+
   const ring = hex2buf(createRing(pair))
   const salt = hex2buf('73736170') // salt is the noun %pass
-  const hash = shax(ring)
+  const hash = sha256(ring)
   const result = shaf(hash, salt)
   const half = result.slice(0, result.length / 2)
 
