@@ -6,6 +6,9 @@ const keccak = require('keccak')
 const nacl = require('tweetnacl')
 const ob = require('urbit-ob')
 const secp256k1 = require('secp256k1')
+const noun = require('./nockjs/noun')
+const serial = require('./nockjs/serial')
+const BN = require('bn.js')
 
 const { version, name } = require('../package.json')
 
@@ -53,6 +56,8 @@ const BITCOIN_TESTNET_INFO = {
   wif: 0xef,
 }
 
+const NETWORK_KEY_CURVE_PARAMETER = '42'
+
 /**
  * Add a hex prefix to a string, if one isn't already present.
  *
@@ -92,6 +97,57 @@ const hexToBuffer = hex => {
     throw new Error('invalid hex string: ' + hex)
   }
   return buf
+}
+
+/**
+ * Base-64 encode a buffer.
+ *
+ * @param  {Buffer}  buf
+ * @return  {String}
+ */
+const b64 = buf => {
+  let hex = buf.reverse().toString('hex')
+  let n = new BN(hex, 'hex')
+  let c = []
+  while (1 === n.cmpn(0)) {
+    c.push(n.andln(0x3f))
+    n = n.shrn(6)
+  }
+
+  const trans = j =>
+    10 > j
+    ? j + 48
+    : 36 > j
+    ? j + 87
+    : 62 > j
+    ? j + 29
+    : 62 === j
+    ? 45
+    : 126
+
+  return (
+    '0w' +
+    c.reduce(
+      (a, b, i) =>
+        String.fromCharCode(trans(b)) + (i && 0 === i % 5 ? '.' : '') + a,
+      ''
+    )
+  )
+}
+
+/**
+ * Jam a noun.
+ *
+ * @param  {Noun}  seed
+ * @return  {Buffer}
+ */
+const jam = seed => {
+  const hex = serial
+    .jam(seed)
+    .toString()
+    .slice(2)
+  const pad = hex.length % 2 === 0 ? hex : '0' + hex
+  return Buffer.from(pad, 'hex').reverse()
 }
 
 /**
@@ -393,6 +449,31 @@ const combine = shards => {
     /* istanbul ignore next */
     : undefined
   )
+}
+
+/**
+ * Generate a keyfile corresponding to a keypair, point, and revision.
+ *
+ * @param {Object} pair
+ * @param {Number} point
+ * @param {Number} revision
+ * @return {String}
+ */
+const generateKeyfile = (pair, point, revision) => {
+
+  const ring  =
+    pair.crypt.private + pair.auth.private + NETWORK_KEY_CURVE_PARAMETER
+
+  const bnsec = new BN(ring, 'hex')
+
+  const sed = noun.dwim(
+    noun.Atom.fromInt(point),
+    noun.Atom.fromInt(revision),
+    noun.Atom.fromString(bnsec.toString()),
+    noun.Atom.yes
+  )
+
+  return b64(jam(sed))
 }
 
 /**
