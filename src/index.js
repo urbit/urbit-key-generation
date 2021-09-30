@@ -451,6 +451,57 @@ const combine = shards => {
   )
 }
 
+const createRing = pair =>
+  pair.crypt.private + pair.auth.private + NETWORK_KEY_CURVE_PARAMETER
+
+const shax = buf => {
+  const hashed = jssha256.sha256.array(buf)
+  return Buffer.from(hashed)
+}
+
+const hex2buf = hex =>
+	Buffer.from(hex, 'hex').reverse()
+
+const buf2hex = buf =>
+  Buffer.from(buf)
+    .reverse()
+    .toString('hex')
+
+const shas = (buf, salt) =>
+  shax(xor(salt, shax(buf)))
+
+const xor = (a, b) => {
+  if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
+    console.log('a', a)
+    console.log('b', b)
+    throw new Error('only xor buffers!')
+  }
+  const length = Math.max(a.byteLength, b.byteLength)
+  const result = new Uint8Array(length)
+  for (let i = 0; i < length; i++) {
+    result[i] = a[i] ^ b[i];
+  }
+  return result
+}
+
+const shaf = (buf, salt) => {
+  const result = shas(buf, salt)
+  const halfway = result.length / 2
+  const front = result.slice(0, halfway)
+  const back = result.slice(halfway, result.length)
+  return xor(front, back)
+}
+
+const generateCode = pair => {
+  const ring = hex2buf(createRing(pair))
+  const salt = hex2buf('73736170') // salt is the noun %pass
+  const hash = shax(ring)
+  const result = shaf(hash, salt)
+  const half = result.slice(0, result.length / 2)
+
+  return ob.hex2patp(buf2hex(half)).slice(1)
+}
+
 /**
  * Generate a keyfile corresponding to a keypair, point, and revision.
  *
@@ -460,10 +511,7 @@ const combine = shards => {
  * @return {String}
  */
 const generateKeyfile = (pair, point, revision) => {
-
-  const ring  =
-    pair.crypt.private + pair.auth.private + NETWORK_KEY_CURVE_PARAMETER
-
+  const ring = createRing(pair)
   const bnsec = new BN(ring, 'hex')
 
   const sed = noun.dwim(
