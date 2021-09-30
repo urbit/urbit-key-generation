@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 /* keys can be any noun, values aren't constrained */
 
 function Slot() {

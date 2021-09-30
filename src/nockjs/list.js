@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 var noun = require('./noun.js'),
     Cell = noun.Cell,
     zero = noun.Atom.yes;

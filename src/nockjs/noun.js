@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 var BigInteger = require('jsbn').BigInteger;
 
 function Noun() {

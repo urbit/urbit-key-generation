@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 var noun    = require('./noun.js'),
     list    = require('./list.js'),
     Cell    = noun.Cell,

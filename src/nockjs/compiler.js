@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 var noun = require('./noun.js'),
     NounMap = require('./hamt.js').NounMap,
     list = require('./list.js'),
@@ -121,7 +122,7 @@ Nock.prototype.constructor = Nock;
 
 Nock.prototype.toJs = function() {
   var f = this.formula;
-  var targetCode = "(" + f + ".hasOwnProperty('target') ? " + f + 
+  var targetCode = "(" + f + ".hasOwnProperty('target') ? " + f +
     ".target : (" + f + ".target = context.compile(" + this.formula + ")))";
   return this.tail ?
     "context.trampoline(" + targetCode + ", " + this.subject + ")" :
@@ -195,7 +196,7 @@ Kick.prototype.toJs = function() {
            "}" +
            "if ( bat.hasOwnProperty('arms') ) {" +
              "arms = bat.arms;" +
-             "has = arms.hasOwnProperty('" + axis + "');" + 
+             "has = arms.hasOwnProperty('" + axis + "');" +
            "}" +
            "else arms = bat.arms = {};" +
            "tgt = (has ? arms['" + axis + "'] : (arms['" + axis + "'] = context.compile(" +

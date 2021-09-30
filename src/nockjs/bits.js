@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 var noun = require('./noun.js'),
     BigInteger = require('jsbn').BigInteger,
     zero = noun.Atom.yes,
