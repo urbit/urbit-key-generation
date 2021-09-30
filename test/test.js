@@ -301,6 +301,37 @@ describe('deriveNodeKeys', () => {
 
 })
 
+describe('generateCode', () => {
+  it('generates the correct +code', () => {
+    let seed = Buffer.from('88359ba61d766e1c2ec9598831668d4233b0f8f58b29da8cf33d25b2590d62a0', 'hex')
+    let keys = kg.deriveNetworkKeys(seed)
+    let code = kg.generateCode(keys)
+    let expected = 'fonnyd-namryd-davhep-figter'
+    expect(lodash.isEqual(code, expected)).to.equal(true)
+  })
+})
+
+describe('generateKeyfile', () => {
+  it('generates the correct +code', () => {
+    let seed = Buffer.from('88359ba61d766e1c2ec9598831668d4233b0f8f58b29da8cf33d25b2590d62a0', 'hex')
+    let keys = kg.deriveNetworkKeys(seed)
+
+    let exp01 = '0w5ea.9Qhfa.yzIMA.qtR2v.sLQJz.kndZE.Rimev.3-RVV.Gtvkn.qBA66.q0jio.OPbL5.AIvkh.cpsmA.XHyjP.zViwm.m2onG.oqZ8g.8w0sp'
+    let exp02 = '0wFNh.ey9Vk.ktC4z.jKEjX.B-BIq.yVLJ6.GiNPU.vSLfd.jHWyX.kIwMP.g2qj6.mptUI.BzWy9.zbyQD.tsius.vak2O.Mj2Zj.3nF21.4038p'
+    let exp1m1 = '0w2D5.4W8DB.hhSoi.deWxf.KnWmN.GbC-Q.qFb7f.x~qYY.ReLGb.JiO33.d09Fc.ppBTy.OmfG8.CcKbi.tRN9V.NYFgb.b1cbR.cduA8.4g0ef.Ei0A1'
+    let exp1m2 = '0wkUE.Dh4YG.aeP2h.FTk9Z.O~iSd.hsTSz.l9oVY.fXnDC.FRZht.Gmgop.E1d9z.bcKYm.iNZh4.NBNqj.KK9fe.fBa1p.o9xuF.xHQx0.y01Af.Ei0A1'
+
+    let obs01  = kg.generateKeyfile(keys, 0, 1)
+    let obs02  = kg.generateKeyfile(keys, 0, 2)
+    let obs1m1 = kg.generateKeyfile(keys, 1000000, 1)
+    let obs1m2 = kg.generateKeyfile(keys, 1000000, 2)
+
+    expect(lodash.isEqual(obs01, exp01)).to.equal(true)
+    expect(lodash.isEqual(obs02, exp02)).to.equal(true)
+    expect(lodash.isEqual(obs1m1, exp1m1)).to.equal(true)
+    expect(lodash.isEqual(obs1m2, exp1m2)).to.equal(true)
+  })
+})
 
 describe('deriveNetworkKeys', () => {
   it('matches ++pit:nu:crub:crypto', () => {
