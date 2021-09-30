@@ -509,7 +509,7 @@ const generateOwnershipWallet = async config => {
     CHILD_SEED_TYPES.OWNERSHIP,
     DERIVATION_PATH,
     passphrase
-  );
+  )
 
   return node
 }
