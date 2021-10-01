@@ -8,7 +8,7 @@ const ob = require('urbit-ob')
 const secp256k1 = require('secp256k1')
 const noun = require('./nockjs/noun')
 const serial = require('./nockjs/serial')
-const BN = require('bn.js')
+const BigInteger = require('jsbn').BigInteger
 
 const { version, name } = require('../package.json')
 
@@ -107,11 +107,11 @@ const hexToBuffer = hex => {
  */
 const b64 = buf => {
   let hex = buf.reverse().toString('hex')
-  let n = new BN(hex, 'hex')
+  let n = new BigInteger(hex, 16)
   let c = []
-  while (1 === n.cmpn(0)) {
-    c.push(n.andln(0x3f))
-    n = n.shrn(6)
+  while (n.compareTo(BigInteger.ZERO) > 0) {
+    c.push(parseInt(n.and(new BigInteger('3f', 16))))
+    n = n.shiftRight(new BigInteger('6'))
   }
 
   const trans = j =>
@@ -527,7 +527,7 @@ const generateCode = pair => {
  */
 const generateKeyfile = (pair, point, revision) => {
   const ring = createRing(pair)
-  const bnsec = new BN(ring, 'hex')
+  const bnsec = new BigInteger(ring, 16)
 
   const sed = noun.dwim(
     noun.Atom.fromInt(point),
