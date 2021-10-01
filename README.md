@@ -65,7 +65,7 @@ let wallet = await generateWallet(config)
 ```
 
 This library also contains functionality for generating Arvo keyfiles, via
-`generateKeyfile`, as well as web UI login codes (`|code` in :dojo), via
+`generateKeyfile`, as well as web UI login codes (`+code` in :dojo), via
 `generateCode`.
 
 ## Security
