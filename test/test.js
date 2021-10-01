@@ -312,7 +312,7 @@ describe('generateCode', () => {
 })
 
 describe('generateKeyfile', () => {
-  it('generates the correct +code', () => {
+  it('generates the correct keyfile', () => {
     let seed = Buffer.from('88359ba61d766e1c2ec9598831668d4233b0f8f58b29da8cf33d25b2590d62a0', 'hex')
     let keys = kg.deriveNetworkKeys(seed)
 
