@@ -1,5 +1,11 @@
 # Changelog
 
+- 0.20.0 (2021-10-01)
+    * Adds 'generateKeyfile' and 'generateCode' functions for generating
+      Arvo keyfiles and web UI access codes, respectively.
+
+    * Various internal fixes.
+
 - 0.19.0 (2021-05-24)
     * Adds bitcoin testnet support. (#97)
 
