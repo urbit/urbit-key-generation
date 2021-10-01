@@ -6,6 +6,9 @@ const keccak = require('keccak')
 const nacl = require('tweetnacl')
 const ob = require('urbit-ob')
 const secp256k1 = require('secp256k1')
+const noun = require('./nockjs/noun')
+const serial = require('./nockjs/serial')
+const BigInteger = require('jsbn').BigInteger
 
 const { version, name } = require('../package.json')
 
@@ -53,6 +56,8 @@ const BITCOIN_TESTNET_INFO = {
   wif: 0xef,
 }
 
+const NETWORK_KEY_CURVE_PARAMETER = '42'
+
 /**
  * Add a hex prefix to a string, if one isn't already present.
  *
@@ -92,6 +97,57 @@ const hexToBuffer = hex => {
     throw new Error('invalid hex string: ' + hex)
   }
   return buf
+}
+
+/**
+ * Base-64 encode a buffer.
+ *
+ * @param  {Buffer}  buf
+ * @return  {String}
+ */
+const b64 = buf => {
+  let hex = buf.reverse().toString('hex')
+  let n = new BigInteger(hex, 16)
+  let c = []
+  while (n.compareTo(BigInteger.ZERO) > 0) {
+    c.push(parseInt(n.and(new BigInteger('3f', 16))))
+    n = n.shiftRight(new BigInteger('6'))
+  }
+
+  const trans = j =>
+    10 > j
+    ? j + 48
+    : 36 > j
+    ? j + 87
+    : 62 > j
+    ? j + 29
+    : 62 === j
+    ? 45
+    : 126
+
+  return (
+    '0w' +
+    c.reduce(
+      (a, b, i) =>
+        String.fromCharCode(trans(b)) + (i && 0 === i % 5 ? '.' : '') + a,
+      ''
+    )
+  )
+}
+
+/**
+ * Jam a noun.
+ *
+ * @param  {Noun}  seed
+ * @return  {Buffer}
+ */
+const jam = seed => {
+  const hex = serial
+    .jam(seed)
+    .toString()
+    .slice(2)
+  const pad = hex.length % 2 === 0 ? hex : '0' + hex
+  return Buffer.from(pad, 'hex').reverse()
 }
 
 /**
@@ -396,6 +452,94 @@ const combine = shards => {
 }
 
 /**
+ * Create ring from keypair.
+ *
+ * @param {Object} pair
+ * @return {String}
+ */
+const createRing = pair =>
+  pair.crypt.private + pair.auth.private + NETWORK_KEY_CURVE_PARAMETER
+
+/**
+ * Bytewise buffer XOR.
+ *
+ * @param {Buffer} a
+ * @param {Buffer} b
+ * @return {Uint8Array}
+ */
+const xor = (a, b) => {
+  /* istanbul ignore if */
+  if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
+    console.log('a', a)
+    console.log('b', b)
+    throw new Error('only xor buffers!')
+  }
+  const length = Math.max(a.byteLength, b.byteLength)
+  const result = new Uint8Array(length)
+  for (let i = 0; i < length; i++) {
+    result[i] = a[i] ^ b[i];
+  }
+  return result
+}
+
+/**
+ * Generate a +code from a keypair.
+ *
+ * @param {Object} pair
+ * @return {String}
+ */
+const generateCode = pair => {
+  const hex2buf = hex =>
+    Buffer.from(hex, 'hex').reverse()
+
+  const buf2hex = buf =>
+    Buffer.from(buf)
+      .reverse()
+      .toString('hex')
+
+  const shaf = (buf, salt) => {
+    const shas = (buf, salt) =>
+      sha256(xor(salt, sha256(buf)))
+
+    const result = shas(buf, salt)
+    const halfway = result.length / 2
+    const front = result.slice(0, halfway)
+    const back = result.slice(halfway, result.length)
+    return xor(front, back)
+  }
+
+  const ring = hex2buf(createRing(pair))
+  const salt = hex2buf('73736170') // salt is the noun %pass
+  const hash = sha256(ring)
+  const result = shaf(hash, salt)
+  const half = result.slice(0, result.length / 2)
+
+  return ob.hex2patp(buf2hex(half)).slice(1)
+}
+
+/**
+ * Generate a keyfile corresponding to a keypair, point, and revision.
+ *
+ * @param {Object} pair
+ * @param {Number} point
+ * @param {Number} revision
+ * @return {String}
+ */
+const generateKeyfile = (pair, point, revision) => {
+  const ring = createRing(pair)
+  const bnsec = new BigInteger(ring, 16)
+
+  const sed = noun.dwim(
+    noun.Atom.fromInt(point),
+    noun.Atom.fromInt(revision),
+    noun.Atom.fromString(bnsec.toString()),
+    noun.Atom.yes
+  )
+
+  return b64(jam(sed))
+}
+
+/**
  * Generate just the ownership branch of an Urbit HD wallet given the
  * provided configuration.
  *
@@ -428,7 +572,7 @@ const generateOwnershipWallet = async config => {
     CHILD_SEED_TYPES.OWNERSHIP,
     DERIVATION_PATH,
     passphrase
-  );
+  )
 
   return node
 }
@@ -603,6 +747,8 @@ module.exports = {
   shard,
   combine,
   addressFromSecp256k1Public,
+  generateCode,
+  generateKeyfile,
 
   _isGalaxy: isGalaxy,
   _isPlanet: isPlanet,

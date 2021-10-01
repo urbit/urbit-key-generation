@@ -64,6 +64,10 @@ let config = {
 let wallet = await generateWallet(config)
 ```
 
+This library also contains functionality for generating Arvo keyfiles, via
+`generateKeyfile`, as well as web UI login codes (`+code` in :dojo), via
+`generateCode`.
+
 ## Security
 
 Tlon runs a [bug bounty program][bugs].  If you believe you've discovered a
