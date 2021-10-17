@@ -485,10 +485,11 @@ const xor = (a, b) => {
 /**
  * Generate a +code from a keypair.
  *
- * @param {Object} pair
+ * @param {Object} pair a keypair object
+ * @param {Number} step a nonnegative integer
  * @return {String}
  */
-const generateCode = pair => {
+const generateCode = (pair, step = 0) => {
   const hex2buf = hex =>
     Buffer.from(hex, 'hex').reverse()
 
@@ -508,11 +509,13 @@ const generateCode = pair => {
     return xor(front, back)
   }
 
-  const ring = hex2buf(createRing(pair))
-  const salt = hex2buf('73736170') // salt is the noun %pass
-  const hash = sha256(ring)
+  const ring   = hex2buf(createRing(pair))
+  const bsalt  = new BigInteger('73736170', 16) // base salt is noun %pass
+  const esalt  = new BigInteger(step.toString())
+  const salt   = hex2buf(bsalt.add(esalt).toString(16))
+  const hash   = sha256(ring)
   const result = shaf(hash, salt)
-  const half = result.slice(0, result.length / 2)
+  const half   = result.slice(0, result.length / 2)
 
   return ob.hex2patp(buf2hex(half)).slice(1)
 }
