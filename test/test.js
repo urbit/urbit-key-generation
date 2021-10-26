@@ -307,6 +307,23 @@ describe('generateCode', () => {
     let keys = kg.deriveNetworkKeys(seed)
     let code = kg.generateCode(keys)
     let expected = 'fonnyd-namryd-davhep-figter'
+
+    expect(lodash.isEqual(code, expected)).to.equal(true)
+
+    keys = {
+      crypt: {
+        private:
+          '8100c20574882be2246af95ab236f206287debe63c5f358370b18e7a2b753f50'
+      },
+      auth: {
+        private:
+          '66bf4bb40cde14adeae6fe1e436928f7fa09ff3ca798c611e679418fa4fde97b'
+      }
+    }
+
+    code = kg.generateCode(keys, 1)
+    expected = 'raldev-topnul-mirnut-lablut'
+
     expect(lodash.isEqual(code, expected)).to.equal(true)
   })
 })
