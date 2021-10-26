@@ -486,7 +486,7 @@ const xor = (a, b) => {
  * Generate a +code from a keypair.
  *
  * @param {Object} pair a keypair object
- * @param {Number} step a nonnegative integer
+ * @param {Number} step an optional nonnegative integer
  * @return {String}
  */
 const generateCode = (pair, step = 0) => {

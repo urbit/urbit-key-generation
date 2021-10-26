@@ -65,8 +65,12 @@ let wallet = await generateWallet(config)
 ```
 
 This library also contains functionality for generating Arvo keyfiles, via
-`generateKeyfile`, as well as web UI login codes (`+code` in :dojo), via
+`generateKeyfile`, as well as web UI login codes (`|code` in :dojo), via
 `generateCode`.
+
+When using these functions to derive outputs for an on-chain ship, ensure that
+you're actually passing them the ship's *current* keypair, which usually
+involves specifying the ship's `%life` as the 'revision' parameter.
 
 ## Security
 
