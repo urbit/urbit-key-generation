@@ -1,5 +1,9 @@
 # Changelog
 
+- 0.20.1 (2021-10-27)
+    * Now permits specifying the optional 'step' parameter in the
+      'generateCode' function.
+
 - 0.20.0 (2021-10-01)
     * Adds 'generateKeyfile' and 'generateCode' functions for generating
       Arvo keyfiles and web UI access codes, respectively.
