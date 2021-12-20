@@ -23,15 +23,13 @@ interface WalletNode {
   derivationPath: string;
 }
 
+interface BitcoinWallet extends WalletNode {}
+
 interface WalletConfig {
   ticket: string;
   ship: number;
   passphrase?: string;
   boot?: boolean;
-}
-
-interface BitcoinWallet {
-  
 }
 
 interface UrbitWallet {
@@ -64,7 +62,20 @@ interface UrbitWallet {
 }
 
 declare module 'urbit-key-generation' {
+  function combine(shards: string[]): string;
   function deriveNetworkKeys(hex: string): NetworkKeys;
+  function deriveNetworkSeed(
+    mnemonic: string,
+    passphrase: string,
+    revision: number
+  ): string;
+  function generateCode (pair: NetworkKeys, step: number): string; 
+  function generateKeyfile(pair: NetworkKeys, point: number, revision: number): string;
+  function generateOwnershipWallet({
+    ticket,
+    ship,
+    passphrase,
+  }: WalletConfig): UrbitWallet;
   function generateWallet({
     ticket,
     ship,
