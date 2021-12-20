@@ -3,6 +3,7 @@
   "version": "0.20.1",
   "description": "Key derivation and HD wallet generation functions for Urbit.",
   "main": "src/index.js",
+  "types": "src/index.d.ts",
   "browser": {
     "urbit-key-generation": "./dist/index.js"
   },
